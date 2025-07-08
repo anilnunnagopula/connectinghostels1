@@ -1,11 +1,16 @@
-// server/controllers/authController.js
-const User = require("../models/User"); // Adjust path as needed
+const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
+// 📦 Twilio Setup
 const accountSid = process.env.TWILIO_SID;
-const authToken = process.env.TWILIO_AUTH;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
-// Register user (Student or Owner)
+
+// 💾 In-memory OTP store (use Redis/DB in production)
+const otpStore = {}; // { "+919999999999": { otp: "123456", expiresAt: 1234567890 } }
+
+// ⚡ REGISTER USER
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, phone, password, role, hostelName } = req.body;
@@ -34,12 +39,12 @@ exports.registerUser = async (req, res) => {
 
     res.status(201).json({ message: "Registered successfully", role });
   } catch (err) {
-    console.error(err);
+    console.error("🚨 Register Error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
 
-// Login
+// 🔐 LOGIN USER
 exports.loginUser = async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -54,9 +59,13 @@ exports.loginUser = async (req, res) => {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, "secretKey", {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || "secretKey",
+      {
+        expiresIn: "7d",
+      }
+    );
 
     res.status(200).json({
       message: "Login successful",
@@ -66,34 +75,64 @@ exports.loginUser = async (req, res) => {
       role: user.role,
     });
   } catch (err) {
+    console.error("🚨 Login Error:", err);
     res.status(500).json({ error: "Login failed" });
   }
 };
 
-// Send OTP 
+// 📲 SEND OTP
 exports.sendOtp = async (req, res) => {
   const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ error: "Phone number is required" });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
   try {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit
-    // Save it temporarily (Redis recommended, or DB)
     await client.messages.create({
-      body: `Your OTP for Registering as Hostel owner in ConnectingHostels is ${otp} Thank you for registering in ConnectingHostels`,
-      from: "+Your_Twilio_Number",
-      to: phone,
+      body: `Your OTP for ConnectingHostels is: ${otp}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phone.startsWith("+") ? phone : `+91${phone}`,
     });
 
-    res.status(200).json({ message: "OTP sent!" });
+    // Save OTP with expiry (5 mins)
+    otpStore[phone] = {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+    };
+
+    console.log(`✅ OTP ${otp} sent to ${phone}`);
+    res.status(200).json({ message: "OTP sent successfully ✅" });
   } catch (err) {
-    console.log(err);
+    console.error("🚨 Twilio OTP Error:", err);
     res.status(500).json({ error: "OTP failed to send" });
   }
 };
 
-// Verify OTP (dummy)
+// ✅ VERIFY OTP
 exports.verifyOtp = async (req, res) => {
   const { phone, otp } = req.body;
-  if (!otp) return res.status(400).json({ error: "OTP is required" });
 
-  // Placeholder logic
-  res.status(200).json({ message: "OTP verified" });
+  if (!phone || !otp) {
+    return res.status(400).json({ error: "Phone and OTP required" });
+  }
+
+  const record = otpStore[phone];
+  if (!record) {
+    return res.status(400).json({ error: "No OTP sent to this number" });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    delete otpStore[phone];
+    return res.status(400).json({ error: "OTP expired ⏰" });
+  }
+
+  if (record.otp !== otp) {
+    return res.status(400).json({ error: "Invalid OTP ❌" });
+  }
+
+  delete otpStore[phone];
+  return res.status(200).json({ message: "OTP verified ✅" });
 };
