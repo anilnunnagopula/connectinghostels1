@@ -1,0 +1,35 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Build output
+dist/
+build/
+.next/
+out/
+.cache/
+.parcel-cache/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Dependency cache
+package-lock.json
+yarn.lock
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+*.lcov
+
+# Optional
+*.tgz
