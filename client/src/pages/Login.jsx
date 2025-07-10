@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
   const [role, setRole] = useState("student");
@@ -19,54 +20,62 @@ const Login = () => {
       return;
     }
 
-    try {
-      // ✅ Test credentials shortcut
-      if (
-        (email === "student@gmail.com" && password === "student" && role === "student") ||
-        (email === "owner@gmail.com" && password === "owner" && role === "owner")
-      ) {
-        alert(`Logged in as ${role} (test mode)`);
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ name: email.split("@")[0], email, role })
-        );
-        if (role === "student") navigate("/student-dashboard");
-        else navigate("/owner-dashboard");
-        return;
-      }
-    
-      // 🌐 Real API call
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, role }),
-        }
+    // ✅ Test credentials shortcut
+    const isTestLogin =
+      (email === "student@gmail.com" &&
+        password === "student" &&
+        role === "student") ||
+      (email === "owner@gmail.com" && password === "owner" && role === "owner");
+
+    if (isTestLogin) {
+      alert(`Logged in as ${role} (test mode)`);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ name: email.split("@")[0], email, role })
       );
-    
-      const data = await response.json();
-    
-      if (!response.ok) {
-        setError(data.error || "Login failed.");
-      } else {
-        alert(`Logged in as ${data.role}`);
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            name: data.name || email.split("@")[0],
-            email,
-            role: data.role,
-          })
-        );
-        if (data.role === "student") navigate("/student-dashboard");
-        else navigate("/owner-dashboard");
-      }
-    } catch (err) {
-      setError("Something went wrong. Try again.");
+
+      // 💥 Dummy token
+      localStorage.setItem("token", "dummy-valid-jwt-for-test");
+
+      if (role === "student") navigate("/student-dashboard");
+      else navigate("/owner-dashboard");
+      return;
     }
-  }
-    
+
+    // 🌐 Real API call
+    try {
+      const res = await axios.post(
+        `${
+          import.meta.env.VITE_API_URL || "http://localhost:5000"
+        }/api/auth/login`,
+        { email, password, role }
+      );
+
+      const data = res.data;
+
+      alert(`Logged in as ${data.role}`);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          name: data.name || email.split("@")[0],
+          email,
+          role: data.role,
+        })
+      );
+      localStorage.setItem("token", data.token); // ✅ store token too
+
+      if (data.role === "student") navigate("/student-dashboard");
+      else navigate("/owner-dashboard");
+    } catch (err) {
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError("Something went wrong. Try again.");
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-5">

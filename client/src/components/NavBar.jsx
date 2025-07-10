@@ -15,7 +15,17 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = (() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (!stored || stored === "undefined") return null;
+      return JSON.parse(stored);
+    } catch (err) {
+      console.error("Failed to parse user:", err);
+      return null;
+    }
+  })();
+  
   const isLoggedIn = !!user;
 
   const handleLogout = () => {

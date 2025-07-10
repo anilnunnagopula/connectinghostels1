@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import axios from "axios";
 const Register = () => {
   const [role, setRole] = useState("student");
   const [form, setForm] = useState({
@@ -43,13 +43,14 @@ const Register = () => {
 
     if (!form.email || !form.phone)
       return alert("Email and phone are required!");
+
     if (form.password !== form.confirmPassword)
       return alert("Passwords don't match!");
-    if (password.length < 6) {
-      return res
-        .status(400)
-        .json({ error: "Password must be at least 6 characters long" });
+
+    if (form.password.length < 6) {
+      return alert("Password must be at least 6 characters long");
     }
+
     alert(`Registered as ${role}`);
 
     const payload = {
@@ -62,27 +63,24 @@ const Register = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) return alert(data.message);
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        payload
+      );
+      const data = res.data;
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       alert("Registered successfully ✅");
-      if (role === "student") {
-        window.location.href = "/student-dashboard";
-      } else {
-        window.location.href = "/supplier-dashboard";
-      }
+      window.location.href =
+        role === "student" ? "/student-dashboard" : "/owner-dashboard";
     } catch (err) {
-      alert("Registration failed ❌");
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Registration failed ❌";
+      alert(message);
       console.error(err);
     }
   };

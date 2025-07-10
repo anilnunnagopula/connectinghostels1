@@ -1,18 +1,42 @@
-import React from "react";
-import AddHostel from "./AddHostel";
+import React, { useState, useEffect } from "react";
 import {
   Building,
   BedDouble,
   Users,
   PlusCircle,
   MailCheckIcon,
-  Settings,
 } from "lucide-react";
 import { FaRestroom } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const OwnerDashboard = () => {
   const navigate = useNavigate();
+
+  const [stats, setStats] = useState({
+    totalHostels: 0,
+    roomsFilled: 0,
+    totalStudents: 0,
+    complaints: 0,
+    availableRooms: 0,
+  });
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const res = await axios.get("/api/owner/dashboard-metrics", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setStats(res.data);
+      } catch (err) {
+        console.error("Dashboard stats fetch failed ❌", err);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 text-gray-800 dark:text-white">
@@ -24,39 +48,38 @@ const OwnerDashboard = () => {
           {
             icon: <Building />,
             title: "Total Hostels",
-            value: 3,
+            value: stats.totalHostels,
             route: "/owner/my-hostels",
           },
           {
             icon: <BedDouble />,
             title: "Rooms Filled",
-            value: 24,
+            value: stats.roomsFilled,
             route: "/owner/filledrooms",
           },
           {
             icon: <Users />,
             title: "Students",
-            value: 45,
+            value: stats.studentsCount,
             route: "/owner/my-students",
           },
           {
             icon: <MailCheckIcon />,
             title: "View Complaints",
-            value: 12,
+            value: stats.complaintsCount,
             route: "/owner/view-complaints",
           },
           {
             icon: <FaRestroom />,
             title: "Available Rooms",
-            value: 17,
+            value: stats.availableRooms,
             route: "/owner/available-rooms",
           },
-          // { icon: <Settings />, title: "My Profile", value: "Edit/View" },
         ].map((stat, index) => (
           <div
             key={index}
             onClick={() => navigate(stat.route)}
-            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 group"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 group cursor-pointer"
           >
             <div className="flex items-center gap-3">
               <div className="text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-all">
@@ -104,4 +127,5 @@ const OwnerDashboard = () => {
     </div>
   );
 };
+
 export default OwnerDashboard;
