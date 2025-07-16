@@ -11,7 +11,7 @@ const app = express();
 // Middlewares
 app.use(
   cors({
-    origin: "http://localhost:3000", // frontend URL
+    origin: ["http://localhost:3000", "https://connectinghostels1.netlify.app"],
     credentials: true,
   })
 );
