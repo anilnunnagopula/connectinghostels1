@@ -1,19 +1,46 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaHeart, FaSearch } from "react-icons/fa";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = React.useState(
+  const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  useEffect(() => {
+    // Safely get and parse user data
+    try {
+      const userData = localStorage.getItem("user");
+
+      if (!userData) {
+        throw new Error("No user data found");
+      }
+
+      const parsedUser = JSON.parse(userData);
+
+      if (!parsedUser || parsedUser.role !== "student") {
+        throw new Error("Invalid user data or not a student");
+      }
+
+      setUser(parsedUser);
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      // Clear invalid data and redirect to login
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      navigate("/login");
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
 
   const stats = [
     {
@@ -33,20 +60,6 @@ const StudentDashboard = () => {
     },
   ];
 
-  const recentViewed = [
-    {
-      name: "Sai Krupa Boys Hostel",
-      location: "Mangalpally",
-      type: "Boys",
-      price: "₹4800/mo",
-    },
-    {
-      name: "CoLive Orange Nest",
-      location: "Mangalpally",
-      type: "Co-Living",
-      price: "₹5500/mo",
-    },
-  ];
   const cards = [
     {
       title: "🏠 Browse Hostels",
@@ -80,12 +93,26 @@ const StudentDashboard = () => {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-2xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-2xl">Redirecting to login...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-4 py-6 text-gray-800 dark:text-white">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">
-          Welcome, {user?.name || "Student"} 👋
-        </h1>
+        <h1 className="text-2xl font-bold">Welcome, {user.name} 👋</h1>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
@@ -104,5 +131,6 @@ const StudentDashboard = () => {
       </div>
     </div>
   );
-}; 
+};
+
 export default StudentDashboard;

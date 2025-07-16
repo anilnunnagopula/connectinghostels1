@@ -15,7 +15,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const user = (() => {
+  const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem("user");
       if (!stored || stored === "undefined") return null;
@@ -24,20 +24,42 @@ const Navbar = () => {
       console.error("Failed to parse user:", err);
       return null;
     }
-  })();
-  
+  });
+
   const isLoggedIn = !!user;
+
+  // 🔄 Keep synced with localStorage changes
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const stored = localStorage.getItem("user");
+        if (!stored || stored === "undefined") {
+          setUser(null);
+        } else {
+          setUser(JSON.parse(stored));
+        }
+      } catch (err) {
+        console.error("Failed to sync user:", err);
+      }
+    };
+
+    window.addEventListener("storage", syncUser);
+    return () => window.removeEventListener("storage", syncUser);
+  }, []);
 
   const handleLogout = () => {
     localStorage.clear();
+    window.dispatchEvent(new Event("storage")); // 🔥 trigger global logout
     navigate("/login");
   };
 
+  // 🌗 Dark mode setup
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -48,13 +70,19 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close dropdown and mobile menu on route change
+  useEffect(() => {
+    setDropdownOpen(false);
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   const getNavLinkClass = (route) =>
     `${
       pathname === route ? "text-blue-600 dark:text-blue-300 font-bold" : ""
     } hover:text-blue-600 dark:hover:text-blue-300 text-sm`;
 
   return (
-    <nav className="bg-white dark:bg-gray-900 shadow-md px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-800 shadow-md px-4 py-1 flex items-center justify-between sticky top-0 z-50">
       <Link
         to="/"
         className={`text-xl sm:text-2xl font-bold transition-colors duration-300 ${
@@ -94,7 +122,7 @@ const Navbar = () => {
             >
               <img
                 src={`https://api.dicebear.com/7.x/initials/svg?seed=${
-                  user.name || "U"
+                  user?.name || "U"
                 }`}
                 alt="avatar"
                 className="w-full h-full object-cover"
@@ -157,8 +185,6 @@ const Navbar = () => {
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="text-gray-700 dark:text-white"
-          aria-expanded={mobileMenuOpen}
-          aria-controls="mobile-menu"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>

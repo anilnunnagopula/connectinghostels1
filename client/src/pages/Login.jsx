@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 const Login = () => {
   const [role, setRole] = useState("student");
@@ -8,6 +9,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -20,60 +22,102 @@ const Login = () => {
       return;
     }
 
-    // ✅ Test credentials shortcut
-    const isTestLogin =
-      (email === "student@gmail.com" &&
-        password === "student" &&
+    // 💥 TEST MODE SHORTCUT
+    const testCredentials = {
+      student: { email: "student@gmail.com", password: "student" },
+      owner: { email: "owner@gmail.com", password: "owner" },
+    };
+
+    if (
+      (email === testCredentials.student.email &&
+        password === testCredentials.student.password &&
         role === "student") ||
-      (email === "owner@gmail.com" && password === "owner" && role === "owner");
+      (email === testCredentials.owner.email &&
+        password === testCredentials.owner.password &&
+        role === "owner")
+    ) {
+      const testUser = {
+        _id: "test_" + Date.now(),
+        name: email.split("@")[0],
+        email,
+        role,
+        ...(role === "owner" && { hostelName: "Test Hostel" }),
+      };
 
-    if (isTestLogin) {
-      alert(`Logged in as ${role} (test mode)`);
+      localStorage.setItem("user", JSON.stringify(testUser));
+      localStorage.setItem("token", "dummy_test_token_" + Date.now());
+      window.dispatchEvent(new Event("storage"));
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ name: email.split("@")[0], email, role })
-      );
-
-      // 💥 Dummy token
-      localStorage.setItem("token", "dummy-valid-jwt-for-test");
-
-      if (role === "student") navigate("/student-dashboard");
-      else navigate("/owner-dashboard");
+      alert(`🔐 Logged in as ${role} (TEST MODE)`);
+      navigate(role === "student" ? "/student-dashboard" : "/owner-dashboard");
       return;
     }
 
-    // 🌐 Real API call
+    // 🌐 REAL API LOGIN
     try {
+      setLoading(true);
+
       const res = await axios.post(
-        `${
-          import.meta.env.VITE_API_URL || "http://localhost:5000"
-        }/api/auth/login`,
-        { email, password, role }
+        "http://localhost:5000/api/auth/login",
+        { email, password, role },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          validateStatus: (status) => status >= 200 && status < 500,
+        }
       );
 
-      const data = res.data;
+      const responseData = res.data;
 
-      alert(`Logged in as ${data.role}`);
-
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          name: data.name || email.split("@")[0],
-          email,
-          role: data.role,
-        })
-      );
-      localStorage.setItem("token", data.token); // ✅ store token too
-
-      if (data.role === "student") navigate("/student-dashboard");
-      else navigate("/owner-dashboard");
-    } catch (err) {
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError("Something went wrong. Try again.");
+      // 🧠 Format 1: { token, user }
+      if (responseData.token && responseData.user) {
+        localStorage.setItem("token", responseData.token);
+        localStorage.setItem("user", JSON.stringify(responseData.user));
+        window.dispatchEvent(new Event("storage"));
+        navigate(
+          responseData.user.role === "student"
+            ? "/student-dashboard"
+            : "/owner-dashboard"
+        );
+        return;
       }
+
+      // 🧠 Format 2: { data: { token, user } }
+      if (responseData.data?.token && responseData.data?.user) {
+        localStorage.setItem("token", responseData.data.token);
+        localStorage.setItem("user", JSON.stringify(responseData.data.user));
+        window.dispatchEvent(new Event("storage"));
+        navigate(
+          responseData.data.user.role === "student"
+            ? "/student-dashboard"
+            : "/owner-dashboard"
+        );
+        return;
+      }
+
+      // 🧠 Format 3: Only token, decode it
+      if (responseData.token) {
+        const decoded = jwtDecode(responseData.token);
+        localStorage.setItem("token", responseData.token);
+        localStorage.setItem("user", JSON.stringify(decoded));
+        window.dispatchEvent(new Event("storage"));
+        navigate(
+          decoded.role === "student" ? "/student-dashboard" : "/owner-dashboard"
+        );
+        return;
+      }
+
+      throw new Error("Invalid response format from server");
+    } catch (err) {
+      console.error("Login error:", err);
+      let errorMsg = "Login failed. Please try again.";
+      if (err.response?.data?.message) errorMsg = err.response.data.message;
+      else if (err.response?.status === 401) errorMsg = "Invalid credentials";
+      else if (err.message) errorMsg = err.message;
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -84,44 +128,43 @@ const Login = () => {
           {role === "student" ? "Student Login" : "Hostel Owner Login"}
         </h2>
 
-        {/* Toggle Buttons */}
+        {/* Toggle Role */}
         <div className="flex justify-center gap-4 mb-6">
-          <button
-            onClick={() => setRole("student")}
-            className={`px-4 py-2 rounded-md text-sm font-semibold ${
-              role === "student"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
-            }`}
-          >
-            Student
-          </button>
-          <button
-            onClick={() => setRole("owner")}
-            className={`px-4 py-2 rounded-md text-sm font-semibold ${
-              role === "owner"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
-            }`}
-          >
-            Hostel Owner
-          </button>
+          {["student", "owner"].map((r) => (
+            <button
+              key={r}
+              onClick={() => setRole(r)}
+              className={`px-4 py-2 rounded-md text-sm font-semibold ${
+                role === r
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
+              }`}
+            >
+              {r === "student" ? "Student" : "Hostel Owner"}
+            </button>
+          ))}
         </div>
-        {/* Demo Credentials for Testing */}
-        <div className="mb-4 text-sm text-gray-600 dark:text-gray-300 bg-yellow-100 dark:bg-yellow-800 p-3 rounded">
-          <p className="font-semibold mb-1">🧪 Testing Credentials</p>
+
+        {/* Testing credentials banner */}
+        <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-800 rounded-lg text-sm text-gray-700 dark:text-white">
+          <p className="font-bold">🧪 TEST MODE:</p>
           <p>
-            👤 <strong>Student:</strong> student@gmail.com & Password: student
+            👤 <b>Student:</b> student@gmail.com / student
           </p>
           <p>
-            🏠 <strong>Owner:</strong> owner@gmail.com & Password: owner
+            🏠 <b>Owner:</b> owner@gmail.com / owner
           </p>
         </div>
 
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">
+            {error}
+          </div>
+        )}
 
+        {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">
-          {/* Email */}
           <div>
             <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
               Email
@@ -136,7 +179,6 @@ const Login = () => {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
               Password
@@ -152,28 +194,32 @@ const Login = () => {
               />
               <span
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 cursor-pointer text-gray-500 text-sm"
+                className="absolute right-3 top-3 cursor-pointer text-sm text-gray-500"
               >
                 {showPassword ? "🙈" : "👁️"}
               </span>
             </div>
-            <div className="text-right mt-2 text-sm">
-              <Link
-                to="/forgot-password"
-                className="text-blue-600 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded"
+            disabled={loading}
+            className={`w-full ${
+              loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+            } text-white font-semibold py-2 rounded`}
           >
-            Login as {role}
+            {loading ? "Logging in..." : `Login as ${role}`}
           </button>
+
+          <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Register here
+            </Link>
+          </p>
         </form>
       </div>
     </div>

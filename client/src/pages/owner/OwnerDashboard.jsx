@@ -123,6 +123,12 @@ const OwnerDashboard = () => {
         >
           Send Messages/Alerts
         </button>
+        <button
+          onClick={() => navigate("/owner/rules-and-regulations")}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow hover:scale-105 transition"
+        >
+          Rules & Regulations
+        </button>
       </div>
     </div>
   );

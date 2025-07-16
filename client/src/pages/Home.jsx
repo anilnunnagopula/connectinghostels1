@@ -74,7 +74,7 @@ const Home = () => {
       {/* Main Page */}
       <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white transition-all">
         <div
-          className="w-full h-[92vh] bg-cover bg-center relative flex flex-col items-center justify-center px-4"
+          className="w-full h-[95vh] bg-cover bg-center relative flex flex-col items-center justify-center px-4"
           style={{
             backgroundImage: `url(${process.env.PUBLIC_URL}/Hostel.jpg)`,
           }}

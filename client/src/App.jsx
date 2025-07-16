@@ -28,6 +28,17 @@ import Interested from "./pages/student/Interested";
 import Notifications from "./pages/student/Notifications";
 import RecentlyViewed from "./pages/student/RecentlyViewed";
 import RaiseComplaint from "./RaiseComplaint";
+import Support from "./pages/Support";
+//legal
+import PrivacyPolicy from "./pages/legal/privacy-policy";
+import TermsAndConditions from "./pages/legal/terms-and-conditions";
+import CookiePolicy from "./pages/legal/cookie-policy";
+import RefundPolicy from "./pages/legal/refund-policy";
+import CommunityGuidelines from "./pages/legal/community-guidelines";
+import PartnerTerms from "./pages/legal/partner-terms";
+import DataProtection from "./pages/legal/data-protection";
+import Transparency from "./pages/legal/transparency";
+
 const App = () => {
   return (
     <Router>
@@ -40,7 +51,7 @@ const App = () => {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/owner-dashboard" element={<OwnerDashboard />}/>
+        <Route path="/owner-dashboard" element={<OwnerDashboard />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/profile" element={<ViewProfile />} />
@@ -54,10 +65,22 @@ const App = () => {
         <Route path="/owner/my-students" element={<MyStudents />} />
         <Route path="/owner/view-complaints" element={<ViewComplaints />} />
         <Route path="/owner/available-rooms" element={<AvailableRooms />} />
-        <Route path="/student/interested" element={<Interested/>} />
-        <Route path="/student/notifications" element={<Notifications/>} />
-        <Route path="/student/recently-viewed" element={<RecentlyViewed/>} />
-        <Route path="/student/raise-complaint" element={<RaiseComplaint/>} />
+        <Route path="/student/interested" element={<Interested />} />
+        <Route path="/student/notifications" element={<Notifications />} />
+        <Route path="/student/recently-viewed" element={<RecentlyViewed />} />
+        <Route path="/student/raise-complaint" element={<RaiseComplaint />} />
+        <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
+        <Route
+          path="/legal/terms-and-conditions"
+          element={<TermsAndConditions />}
+        />
+        <Route path="/legal/cookie-policy" element={<CookiePolicy />} />
+        <Route path="/legal/refund-policy" element={<RefundPolicy />} />
+        <Route path="/legal/community-guidelines" element={<CommunityGuidelines />} />
+        <Route path="/legal/partner-terms" element={<PartnerTerms />} />
+        <Route path="/legal/data-protection" element={<DataProtection />} />
+        <Route path="/legal/transparency" element={<Transparency />} />
+        <Route path="/support" element={<Support />} />
 
         <Route path="*" element={<PageNotFound />} />
       </Routes>
