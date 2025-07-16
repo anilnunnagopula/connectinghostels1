@@ -9,7 +9,7 @@ const PrivacyPolicy = () => {
     // Changed base background to a lighter color for light mode,
     // and kept dark mode styles with 'dark:' prefix.
     // The outer div in App.jsx should handle the overall page background.
-    <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl shadow-[0_-10px_10px_-5px_rgba(0,0,0,0.5)] p-8 mt-10 md:p-12 text-gray-800 dark:text-gray-200">
+    <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl  p-8 mt-10 md:p-12 text-gray-800 dark:text-gray-200">
       <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
         ConnectingHostels Privacy Policy
       </h1>
