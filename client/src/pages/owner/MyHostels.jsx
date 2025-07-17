@@ -1,9 +1,9 @@
-// File: MyHostels.jsx
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Eye, Trash2 } from "lucide-react";
+import axios from "axios";
 
+// 🔒 You can still keep demo data for visual fallback or initial view
 const demoHostels = [
   {
     id: 1,
@@ -30,13 +30,34 @@ const demoHostels = [
 
 const MyHostels = () => {
   const navigate = useNavigate();
+  const [hostels, setHostels] = useState(demoHostels);
+
+  // 🧠 Fetch new hostels added by the logged-in owner
+  useEffect(() => {
+    const fetchHostels = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:5000/api/owner/my-hostels",
+          {
+            withCredentials: true, // if using cookies/auth
+          }
+        );
+        // 🔁 Merge demoHostels + fetched ones
+        setHostels((prev) => [...prev, ...res.data.hostels]);
+      } catch (err) {
+        console.error("❌ Error fetching hostels:", err);
+      }
+    };
+
+    fetchHostels();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white p-6">
       <h1 className="text-2xl font-bold mb-6">🏠 My Hostels</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {demoHostels.map((hostel) => (
+        {hostels.map((hostel) => (
           <div
             key={hostel.id}
             className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 hover:shadow-lg transition"

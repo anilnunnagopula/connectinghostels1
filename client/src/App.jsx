@@ -15,6 +15,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ViewProfile from "./pages/ViewProfile";
 import EditProfile from "./pages/EditProfile";
+//owner
+import RulesAndRegulations from "./pages/owner/RulesAndRegulations";
 import AddHostel from "./pages/owner/AddHostel";
 import ViewRequests from "./pages/owner/ViewRequests";
 import AddStudent from "./pages/owner/AddStudent";
@@ -56,6 +58,7 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/profile" element={<ViewProfile />} />
         <Route path="/edit-profile" element={<EditProfile />} />
+        {/* owner */}
         <Route path="/owner/add-hostel" element={<AddHostel />} />
         <Route path="/owner/view-requests" element={<ViewRequests />} />
         <Route path="/owner/add-student" element={<AddStudent />} />
@@ -65,10 +68,13 @@ const App = () => {
         <Route path="/owner/my-students" element={<MyStudents />} />
         <Route path="/owner/view-complaints" element={<ViewComplaints />} />
         <Route path="/owner/available-rooms" element={<AvailableRooms />} />
+        <Route path="/owner/rules-and-regulations" element={<RulesAndRegulations />} />
+        {/* student  */}
         <Route path="/student/interested" element={<Interested />} />
         <Route path="/student/notifications" element={<Notifications />} />
         <Route path="/student/recently-viewed" element={<RecentlyViewed />} />
         <Route path="/student/raise-complaint" element={<RaiseComplaint />} />
+        {/* legal  */}
         <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
         <Route
           path="/legal/terms-and-conditions"

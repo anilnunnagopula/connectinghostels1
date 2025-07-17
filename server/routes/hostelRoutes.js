@@ -1,11 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const hostelController = require("../controllers/hostelController");
-// const { authMiddleware, requireOwner } = require("../middleware/authMiddleware");
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
-router.post("/add", requireAuth, requireOwner, hostelController.addHostel); // ✅ Secure
-// Add multer middleware setup
 const multer = require("multer");
+
+// Multer config
 const upload = multer({
   storage: multer.diskStorage({
     destination: "uploads/",
@@ -14,9 +13,9 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-// Update route
+// ✅ Only this route — supports images/videos
 router.post(
-  "/add",
+  "/add-hostel", // This is the route path within this router
   requireAuth,
   requireOwner,
   upload.fields([
@@ -26,5 +25,4 @@ router.post(
   hostelController.addHostel
 );
 
-// other routes...
 module.exports = router;

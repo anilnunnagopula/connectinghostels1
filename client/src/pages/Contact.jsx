@@ -1,39 +1,59 @@
-import React from "react";
+import React, { useState } from "react";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  const name = e.target[0].value;
-  const email = e.target[1].value;
-  const message = e.target[2].value;
-
-  try {
-    const res = await fetch("http://localhost:5000/api/contact", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, email, message }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert("✅ Message sent successfully!");
-      e.target.reset(); // Clear the form
-    } else {
-      alert("❌ Failed to send message: " + data.message);
-    }
-  } catch (err) {
-    console.error("Error sending message:", err);
-    alert("❌ Something went wrong. Please try again later.");
-  }
-};
+import { Loader2 } from "lucide-react"; // Assuming lucide-react is available for the spinner
 
 const Contact = () => {
+  // State for form inputs
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+  // State for loading indicator during form submission
+  const [loading, setLoading] = useState(false);
+
+  // Handle input changes to update state
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true); // Set loading to true when submission starts
+
+    const { name, email, message } = formData; // Get data from state
+
+    try {
+      const res = await fetch("http://localhost:5000/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, message }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("✅ Message sent successfully!");
+        setFormData({ name: "", email: "", message: "" }); // Clear the form by resetting state
+      } else {
+        alert("❌ Failed to send message: " + data.message);
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+      alert("❌ Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false); // Set loading to false when submission finishes (success or error)
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4 py-6 text-gray-800 dark:text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4 py-6 text-gray-800 dark:text-white font-inter">
+      {" "}
+      {/* Added font-inter */}
       <div className="max-w-6xl mx-auto">
         {/* Heading */}
         <div className="text-center mb-6">
@@ -96,34 +116,56 @@ const Contact = () => {
           </div>
 
           {/* Right: Contact Form */}
-          <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-lg">
+          <div className="bg-white dark:bg-gray-900 p-8 pt-4 rounded-xl shadow-lg">
             <h2 className="text-2xl font-semibold mb-6 text-blue-700 dark:text-blue-300">
               📩 Send us a message
             </h2>
-            <form className="space-y-2" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {" "}
+              {/* Increased space-y for better spacing */}
               <input
                 type="text"
+                name="name" // Added name attribute
                 placeholder="Full Name"
                 required
-                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+                value={formData.name} // Controlled component
+                onChange={handleChange} // Handle changes
+                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" // Added focus styles
+                disabled={loading} // Disable when loading
               />
               <input
                 type="email"
+                name="email" // Added name attribute
                 placeholder="Email Address"
                 required
-                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+                value={formData.email} // Controlled component
+                onChange={handleChange} // Handle changes
+                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" // Added focus styles
+                disabled={loading} // Disable when loading
               />
               <textarea
-                rows="3"
+                rows="3" // Increased rows for better message input area
+                name="message" // Added name attribute
                 placeholder="Your message..."
                 required
-                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white resize-none"
+                value={formData.message} // Controlled component
+                onChange={handleChange} // Handle changes
+                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white resize-none border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" // Added focus styles
+                disabled={loading} // Disable when loading
               ></textarea>
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center" // Added disabled styles and flex for spinner
+                disabled={loading} // Disable when loading
               >
-                Send Message 🚀
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 inline-block mr-2 animate-spin" />{" "}
+                    Sending...
+                  </>
+                ) : (
+                  "Send Message 🚀"
+                )}
               </button>
             </form>
           </div>

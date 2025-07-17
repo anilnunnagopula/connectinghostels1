@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "axios"; 
+import { useNavigate, Link } from "react-router-dom";  
+
 const Register = () => {
   const [role, setRole] = useState("student");
   const [form, setForm] = useState({
@@ -12,31 +14,33 @@ const Register = () => {
     hostelName: "",
   });
 
-  const [otpSent, setOtpSent] = useState(false);
+  // const [otpSent, setOtpSent] = useState(false); // 🔒 OTP deactivated
   const [showPassword, setShowPassword] = useState(false);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const sendOtp = async () => {
-    if (!form.phone) return alert("📱 Enter phone number first");
+  // 🚫 Temporarily disabled OTP function
+  // const sendOtp = async () => {
+  //   if (!form.phone) return alert("📱 Enter phone number first");
 
-    try {
-      const res = await fetch("http://localhost:5000/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: form.phone }),
-      });
+  //   try {
+  //     const res = await fetch("http://localhost:5000/api/auth/send-otp", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ phone: form.phone }),
+  //     });
 
-      const data = await res.json();
-      if (!res.ok) return alert(data.error || "Failed to send OTP");
+  //     const data = await res.json();
+  //     if (!res.ok) return alert(data.error || "Failed to send OTP");
 
-      setOtpSent(true);
-      alert(`✅ OTP sent to ${form.phone}`);
-    } catch (err) {
-      alert("❌ Error sending OTP. Try again.");
-    }
-  };
+  //     setOtpSent(true);
+  //     alert(`✅ OTP sent to ${form.phone}`);
+  //   } catch (err) {
+  //     alert("❌ Error sending OTP. Try again.");
+  //   }
+  // };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -149,7 +153,7 @@ const Register = () => {
             />
           </div>
 
-          {/* Phone + OTP */}
+          {/* Phone (no OTP for now) */}
           <div>
             <label className="block mt-1 mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
               Number
@@ -160,22 +164,24 @@ const Register = () => {
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
+                minLength={10}
+                maxLength={10}
                 required
                 placeholder="Phone Number"
                 className="w-full px-2 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
               />
-              <button
+              {/* <button
                 type="button"
                 onClick={sendOtp}
                 className="bg-blue-600 text-white px-2 rounded hover:bg-blue-700"
               >
                 Send OTP
-              </button>
+              </button> */}
             </div>
           </div>
 
-          {/* OTP Input */}
-          {otpSent && (
+          {/* Disabled OTP Input */}
+          {/* {otpSent && (
             <input
               type="text"
               name="otp"
@@ -184,7 +190,7 @@ const Register = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
             />
-          )}
+          )} */}
 
           {/* Hostel Name for Owner */}
           {role === "owner" && (
@@ -251,6 +257,15 @@ const Register = () => {
           >
             Register as {role}
           </button>
+          <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              Login here
+            </Link>
+          </p>
         </form>
       </div>
     </div>
