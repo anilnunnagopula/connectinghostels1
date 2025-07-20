@@ -40,7 +40,8 @@ import CommunityGuidelines from "./pages/legal/community-guidelines";
 import PartnerTerms from "./pages/legal/partner-terms";
 import DataProtection from "./pages/legal/data-protection";
 import Transparency from "./pages/legal/transparency";
-
+//student 
+import HostelDetails from "./pages/student/HostelDetails";
 const App = () => {
   return (
     <Router>
@@ -49,7 +50,6 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/student/hostels" element={<HostelListings />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
@@ -68,8 +68,13 @@ const App = () => {
         <Route path="/owner/my-students" element={<MyStudents />} />
         <Route path="/owner/view-complaints" element={<ViewComplaints />} />
         <Route path="/owner/available-rooms" element={<AvailableRooms />} />
-        <Route path="/owner/rules-and-regulations" element={<RulesAndRegulations />} />
+        <Route
+          path="/owner/rules-and-regulations"
+          element={<RulesAndRegulations />}
+        />
         {/* student  */}
+        <Route path="/student/hostels" element={<HostelListings />} />
+        <Route path="/student/hostels/:id" element={<HostelListings />} />
         <Route path="/student/interested" element={<Interested />} />
         <Route path="/student/notifications" element={<Notifications />} />
         <Route path="/student/recently-viewed" element={<RecentlyViewed />} />
@@ -82,7 +87,10 @@ const App = () => {
         />
         <Route path="/legal/cookie-policy" element={<CookiePolicy />} />
         <Route path="/legal/refund-policy" element={<RefundPolicy />} />
-        <Route path="/legal/community-guidelines" element={<CommunityGuidelines />} />
+        <Route
+          path="/legal/community-guidelines"
+          element={<CommunityGuidelines />}
+        />
         <Route path="/legal/partner-terms" element={<PartnerTerms />} />
         <Route path="/legal/data-protection" element={<DataProtection />} />
         <Route path="/legal/transparency" element={<Transparency />} />

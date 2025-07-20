@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaHeart, FaSearch } from "react-icons/fa";
-
+//to render hostel under the customer dashboard bottom
+import HostelListings from "../HostelListings";
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(
@@ -129,6 +130,13 @@ const StudentDashboard = () => {
           </div>
         ))}
       </div>
+
+      <hr />
+
+      <h2 className="text-xl md:text-3xl font-extrabold text-center mb-6 mt-4 text-gray-800 dark:text-white tracking-wide">
+        🏠 Explore Hostels  
+      </h2>
+      <HostelListings />
     </div>
   );
 };

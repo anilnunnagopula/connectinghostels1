@@ -67,42 +67,40 @@ const Footer = () => {
           <h3 className="text-lg font-semibold text-white mb-4">
             Get in Touch
           </h3>
-          <p className="text-sm mb-3">
+          <div className="text-sm mb-3 space-y-1">
             <a
               href="https://www.google.com/maps/search/?api=1&query=CVR+College+Road,+Mangalpally,+Hyderabad,+Telangana"
               target="_blank"
               rel="noopener noreferrer"
               className="block"
             >
-              <div>
-                <p className="cursor-pointer hover:text-white">
-                  📍CVR College Road, Mangalpally, Hyderabad, Telangana
-                </p>
-              </div>
+              <span className="cursor-pointer hover:text-white">
+                📍CVR College Road, Mangalpally, Hyderabad, Telangana
+              </span>
             </a>
-            {/* <br /> */}
-            📧{" "}
-            <a
-              href="mailto:anilnunnagopula15@gmail.com"
-              className="hover:text-white"
-            >
-              anilnunnagopula15@gmail.com
-            </a>
-            <br />
+
+            <span>
+              📧{" "}
+              <a
+                href="mailto:anilnunnagopula15@gmail.com"
+                className="hover:text-white"
+              >
+                anilnunnagopula15@gmail.com
+              </a>
+            </span>
+
             <a
               href="tel:+919398828248"
               target="_blank"
               rel="noopener noreferrer"
               className="block"
             >
-              <div>
-                {/* <h3 className="font-semibold text-lg">Call Us</h3> */}
-                <p className="cursor-pointer hover:text-white">
-                  📞 +91 93988 28248
-                </p>
-              </div>
+              <span className="cursor-pointer hover:text-white">
+                📞 +91 93988 28248
+              </span>
             </a>
-          </p>
+          </div>
+
           <div className="flex gap-3 text-lg mt-2">
             <a href="#" className="hover:text-blue-300">
               <FaFacebookF />
@@ -152,7 +150,6 @@ const Footer = () => {
           <Link to="/legal/transparency" className="hover:text-white">
             transparency
           </Link>
-
           <Link to="/support" className="hover:text-white">
             Support
           </Link>

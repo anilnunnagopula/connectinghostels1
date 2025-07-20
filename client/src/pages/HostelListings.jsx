@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState } from "react"; 
+import { Link } from "react-router-dom";
 
 const HostelListings = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -300,8 +301,9 @@ const HostelListings = () => {
       </div>
 
       {/* 🎯 Hostels List */}
+      {/* 🎯 Hostels List */}
       {currentHostels.length === 0 ? (
-        typeFilter === "Co-Living"? (
+        typeFilter === "Co-Living" ? (
           <div className="text-center text-pink-600 dark:text-pink-400 text-xl mt-6 font-semibold animate-bounce">
             😏 Hey naughty, there are no co-lives in {locationFilter}!
           </div>
@@ -313,43 +315,42 @@ const HostelListings = () => {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
           {currentHostels.map((hostel) => (
-            <div
-              key={hostel.id}
-              className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md"
-            >
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {hostel.name}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Type: {hostel.type}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Location: {hostel.location}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Price: {hostel.price}
-              </p>
-              <p
-                className={`text-sm font-semibold ${
-                  hostel.available
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {hostel.available ? "Available" : "Not Available"}
-              </p>
+            <Link to={`/student/hostels/${hostel.id}`} key={hostel.id}>
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {hostel.name}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Type: {hostel.type}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Location: {hostel.location}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Price: {hostel.price}
+                </p>
+                <p
+                  className={`text-sm font-semibold ${
+                    hostel.available
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {hostel.available ? "Available" : "Not Available"}
+                </p>
 
-              <div className="mt-2 flex flex-wrap gap-2">
-                {hostel.features?.map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-white"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {hostel.features?.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-white"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
