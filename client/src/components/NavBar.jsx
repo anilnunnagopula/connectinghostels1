@@ -1,266 +1,294 @@
-// File: Navbar.jsx
-
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Menu, X } from "lucide-react";
+import {
+  Menu,
+  X,
+  Sun,
+  Moon,
+  Bell,
+  Plus,
+  UserCircle,
+  LogOut,
+  Heart,
+  ClipboardCheck,
+} from "lucide-react";
+import { useDarkMode } from "../context/DarkModeContext";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("theme") === "dark"
-  );
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const dropdownRef = useRef(null);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const location = useLocation();
+  const { darkMode, setDarkMode } = useDarkMode();
 
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem("user");
-      if (!stored || stored === "undefined") return null;
-      return JSON.parse(stored);
-    } catch (err) {
-      console.error("Failed to parse user:", err);
-      return null;
-    }
-  });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   const isLoggedIn = !!user;
+  const userRole = user?.role;
 
-  // 🔄 Keep synced with localStorage changes
+  const navigateToDashboard = useCallback(() => {
+    setIsMobileMenuOpen(false);
+    if (!isLoggedIn) {
+      navigate("/");
+      return;
+    }
+    if (userRole === "student") navigate("/student-dashboard");
+    else if (userRole === "owner") navigate("/owner-dashboard");
+    else navigate("/");
+  }, [isLoggedIn, userRole, navigate]);
+
   useEffect(() => {
-    const syncUser = () => {
-      try {
-        const stored = localStorage.getItem("user");
-        if (!stored || stored === "undefined") {
-          setUser(null);
-        } else {
-          setUser(JSON.parse(stored));
-        }
-      } catch (err) {
-        console.error("Failed to sync user:", err);
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsMobileMenuOpen(false);
+        setIsProfileDropdownOpen(false);
       }
     };
-
-    window.addEventListener("storage", syncUser);
-    return () => window.removeEventListener("storage", syncUser);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    window.dispatchEvent(new Event("storage")); // 🔥 trigger global logout
-    navigate("/login");
-  };
+  const isActive = (path) => location.pathname === path;
 
-  // 🌗 Dark mode setup
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("theme", darkMode ? "dark" : "light");
-  }, [darkMode]);
+  const NavLink = ({ to, children }) => (
+    <Link
+      to={to}
+      onClick={() => setIsMobileMenuOpen(false)}
+      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+        isActive(to)
+          ? "text-blue-600 dark:text-blue-400"
+          : "hover:text-blue-600 dark:hover:text-blue-300"
+      }`}
+    >
+      {children}
+    </Link>
+  );
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const NavButton = ({ onClick, children, active }) => (
+    <button
+      onClick={onClick}
+      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+        active
+          ? "text-blue-600 dark:text-blue-400"
+          : "hover:text-blue-600 dark:hover:text-blue-300"
+      }`}
+    >
+      {children}
+    </button>
+  );
 
-  // Close dropdown and mobile menu on route change
-  useEffect(() => {
-    setDropdownOpen(false);
-    setMobileMenuOpen(false);
-  }, [pathname]);
-
-  const getNavLinkClass = (route) =>
-    `${
-      pathname === route ? "text-blue-600 dark:text-blue-300 font-bold" : ""
-    } hover:text-blue-600 dark:hover:text-blue-300 text-sm`;
+  const IconLink = ({ to, title, icon: Icon }) => (
+    <Link
+      to={to}
+      onClick={() => setIsMobileMenuOpen(false)}
+      title={title}
+      className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+    >
+      <Icon size={20} />
+    </Link>
+  );
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-md px-4 py-1 flex items-center justify-between sticky top-0 z-50">
-      <Link
-        to="/"
-        className={`text-xl sm:text-2xl font-bold transition-colors duration-300 ${
-          darkMode ? "text-blue-400" : "text-blue-700"
-        }`}
-      >
-        ConnectingHostels
-      </Link>
-
-      <div className="hidden md:flex items-center gap-5">
-        {!isLoggedIn && (
-          <Link to="/about" className={getNavLinkClass("/about")}>
-            About
-          </Link>
-        )}
-        <Link to="/contact" className={getNavLinkClass("/contact")}>
-          Contact
-        </Link>
-
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:scale-110 transition"
-          title="Toggle Theme"
-        >
-          {darkMode ? (
-            <Sun size={18} className="text-yellow-400" />
-          ) : (
-            <Moon size={18} className="text-blue-600" />
-          )}
-        </button>
-
-        {isLoggedIn ? (
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-8 h-8 rounded-full overflow-hidden border hover:ring-2 transition"
-            >
-              <img
-                src={`https://api.dicebear.com/7.x/initials/svg?seed=${
-                  user?.name || "U"
-                }`}
-                alt="avatar"
-                className="w-full h-full object-cover"
-              />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg shadow-lg z-50 animate-fade-in-up">
-                <Link
-                  to="/profile"
-                  onClick={() => setDropdownOpen(false)}
-                  className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                >
-                  View Profile
-                </Link>
-                <Link
-                  to="/edit-profile"
-                  onClick={() => setDropdownOpen(false)}
-                  className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                >
-                  Edit Profile
-                </Link>
-                <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <Link
-              to="/login"
-              className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="px-2 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-            >
-              Register
-            </Link>
-          </>
-        )}
-      </div>
-
-      <div className="md:hidden flex items-center gap-2">
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
-        >
-          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="text-gray-700 dark:text-white"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {mobileMenuOpen && (
-        <div
-          id="mobile-menu"
-          className="absolute top-16 left-0 w-full md:hidden bg-white dark:bg-gray-900 px-4 py-4 flex flex-col gap-3 shadow-md z-40 animate-fade-in-down"
-        >
+    <nav className="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-50 text-slate-800 dark:text-slate-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Left Side: Brand */}
           <Link
             to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className={getNavLinkClass("/")}
+            className="text-2xl font-bold text-blue-600 dark:text-blue-400"
           >
-            Home
-          </Link>
-          {!isLoggedIn && (
-            <Link
-              to="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className={getNavLinkClass("/about")}
-            >
-              About
-            </Link>
-          )}
-          <Link
-            to="/contact"
-            onClick={() => setMobileMenuOpen(false)}
-            className={getNavLinkClass("/contact")}
-          >
-            Contact
+            ConnectingHostels
           </Link>
 
-          {isLoggedIn ? (
-            <>
-              <Link
-                to="/profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className={getNavLinkClass("/profile")}
-              >
-                View Profile
-              </Link>
-              <Link
-                to="/edit-profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className={getNavLinkClass("/edit-profile")}
-              >
-                Edit Profile
-              </Link>
+          {/* Right Side: All Links, Actions & Profile */}
+          <div className="hidden md:flex items-center space-x-4">
+            <NavButton
+              onClick={navigateToDashboard}
+              active={
+                isActive("/student-dashboard") || isActive("/owner-dashboard")
+              }
+            >
+              Home
+            </NavButton>
+            <NavLink to="/about">About Us</NavLink>
+
+            {userRole === "owner" && (
+              <>
+                <NavLink to="/owner/my-hostels">My Hostels</NavLink>
+                <NavLink to="/owner/view-requests">Booking Requests</NavLink>
+                <NavLink to="/owner/payment-settings">Payouts</NavLink>
+              </>
+            )}
+            {userRole === "student" && (
+              <NavLink to="/student/hostels">Browse Hostels</NavLink>
+            )}
+            <NavLink to="/contact">Contact</NavLink>
+
+            {/* Icons and Login/Profile */}
+            <div className="flex items-center space-x-4 pl-4 border-l border-slate-200 dark:border-slate-700">
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleLogout();
-                }}
-                className="text-left text-red-600 hover:text-red-700"
+                onClick={() => setDarkMode(!darkMode)}
+                title="Toggle Theme"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
-                Logout
+                {darkMode ? (
+                  <Sun size={20} className="text-yellow-400" />
+                ) : (
+                  <Moon size={20} className="text-blue-500" />
+                )}
               </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-100"
-              >
-                Register
-              </Link>
-            </>
-          )}
+
+              {isLoggedIn ? (
+                <>
+                  {userRole === "student" && (
+                    <>
+                      <IconLink
+                        to="/student/interested"
+                        title="Interested List"
+                        icon={Heart}
+                      />
+                      <IconLink
+                        to="/student/my-bookings"
+                        title="My Bookings"
+                        icon={ClipboardCheck}
+                      />
+                    </>
+                  )}
+                  {userRole === "owner" && (
+                    <IconLink
+                      to="/owner/add-hostel"
+                      title="Add New Hostel"
+                      icon={Plus}
+                    />
+                  )}
+                  <IconLink
+                    to={`/${userRole}/notifications`}
+                    title="Notifications"
+                    icon={Bell}
+                  />
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
+                      className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-full text-sm font-medium"
+                    >
+                      <UserCircle size={20} />
+                      <span>{user.name || "Profile"}</span>
+                    </button>
+                    {isProfileDropdownOpen && (
+                      <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <div className="py-1">
+                          <Link
+                            to={
+                              userRole === "student"
+                                ? "/student-dashboard"
+                                : "/owner-dashboard"
+                            }
+                            className="block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                          >
+                            Dashboard
+                          </Link>
+                          <Link
+                            to={`/${userRole}/profile-settings`}
+                            className="block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                          >
+                            Settings
+                          </Link>
+                          <button
+                            onClick={logout}
+                            className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          >
+                            <LogOut size={16} /> Logout
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                >
+                  Login / Sign Up
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-md inline-flex items-center justify-center"
+            >
+              {isMobileMenuOpen ? <X /> : <Menu />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <NavButton
+              onClick={navigateToDashboard}
+              active={
+                isActive("/student-dashboard") || isActive("/owner-dashboard")
+              }
+            >
+              Home
+            </NavButton>
+            <NavLink to="/about">About Us</NavLink>
+            {userRole === "owner" && (
+              <>
+                <NavLink to="/owner/my-hostels">My Hostels</NavLink>
+                <NavLink to="/owner/view-requests">Booking Requests</NavLink>
+                <NavLink to="/owner/payment-settings">Payouts</NavLink>
+              </>
+            )}
+            {userRole === "student" && (
+              <NavLink to="/student/hostels">Browse Hostels</NavLink>
+            )}
+            <NavLink to="/contact">Contact</NavLink>
+
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+              {isLoggedIn ? (
+                <>
+                  <NavLink
+                    to={
+                      userRole === "student"
+                        ? "/student-dashboard"
+                        : "/owner-dashboard"
+                    }
+                  >
+                    Dashboard
+                  </NavLink>
+                  <NavLink to={`/${userRole}/profile-settings`}>
+                    Settings
+                  </NavLink>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600"
+                  >
+                    <LogOut size={16} /> Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block w-full text-left px-3 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
+                >
+                  Login / Sign Up
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </nav>

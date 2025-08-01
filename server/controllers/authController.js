@@ -16,12 +16,12 @@ exports.registerUser = async (req, res) => {
     const { name, email, phone, password, role, hostelName } = req.body;
 
     if (!name || !email || !phone || !password || !role) {
-      return res.status(400).json({ error: "All fields are required" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     const existing = await User.findOne({ email });
     if (existing) {
-      return res.status(409).json({ error: "Email already registered" });
+      return res.status(409).json({ message: "Email already registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -37,10 +37,36 @@ exports.registerUser = async (req, res) => {
 
     await user.save();
 
-    res.status(201).json({ message: "Registered successfully", role });
+    // --- FIX START ---
+    // After successful registration, immediately create a token and log the user in.
+    // This matches the expectation of the Register.jsx component.
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || "secretKey",
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    // Construct the user object to be sent in the response, matching frontend expectations.
+    const userPayload = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      hostelName: user.hostelName,
+    };
+
+    res.status(201).json({
+      message: "Registered successfully",
+      token,
+      user: userPayload,
+    });
+    // --- FIX END ---
   } catch (err) {
     console.error("🚨 Register Error:", err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -51,12 +77,12 @@ exports.loginUser = async (req, res) => {
 
     const user = await User.findOne({ email, role });
     if (!user) {
-      return res.status(404).json({ error: "User not found or wrong role" });
+      return res.status(404).json({ message: "User not found or wrong role" });
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return res.status(401).json({ error: "Invalid password" });
+      return res.status(401).json({ message: "Invalid password" });
     }
 
     const token = jwt.sign(
@@ -67,16 +93,25 @@ exports.loginUser = async (req, res) => {
       }
     );
 
-    res.status(200).json({
-      message: "Login successful",
-      token,
+    // --- FIX START ---
+    // The frontend expects a nested 'user' object in the response.
+    // This creates the expected structure.
+    const userPayload = {
+      _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+    };
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: userPayload, // Send the nested user object
     });
+    // --- FIX END ---
   } catch (err) {
     console.error("🚨 Login Error:", err);
-    res.status(500).json({ error: "Login failed" });
+    res.status(500).json({ message: "Login failed" });
   }
 };
 
@@ -85,7 +120,7 @@ exports.sendOtp = async (req, res) => {
   const { phone } = req.body;
 
   if (!phone) {
-    return res.status(400).json({ error: "Phone number is required" });
+    return res.status(400).json({ message: "Phone number is required" });
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -95,9 +130,8 @@ exports.sendOtp = async (req, res) => {
       body: `Your OTP for ConnectingHostels is: ${otp}`,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: phone.startsWith("+") ? phone : `+91${phone}`,
-    });
+    }); // Save OTP with expiry (5 mins)
 
-    // Save OTP with expiry (5 mins)
     otpStore[phone] = {
       otp,
       expiresAt: Date.now() + 5 * 60 * 1000,
@@ -107,7 +141,7 @@ exports.sendOtp = async (req, res) => {
     res.status(200).json({ message: "OTP sent successfully ✅" });
   } catch (err) {
     console.error("🚨 Twilio OTP Error:", err);
-    res.status(500).json({ error: "OTP failed to send" });
+    res.status(500).json({ message: "OTP failed to send" });
   }
 };
 
@@ -116,21 +150,21 @@ exports.verifyOtp = async (req, res) => {
   const { phone, otp } = req.body;
 
   if (!phone || !otp) {
-    return res.status(400).json({ error: "Phone and OTP required" });
+    return res.status(400).json({ message: "Phone and OTP required" });
   }
 
   const record = otpStore[phone];
   if (!record) {
-    return res.status(400).json({ error: "No OTP sent to this number" });
+    return res.status(400).json({ message: "No OTP sent to this number" });
   }
 
   if (Date.now() > record.expiresAt) {
     delete otpStore[phone];
-    return res.status(400).json({ error: "OTP expired ⏰" });
+    return res.status(400).json({ message: "OTP expired ⏰" });
   }
 
   if (record.otp !== otp) {
-    return res.status(400).json({ error: "Invalid OTP ❌" });
+    return res.status(400).json({ message: "Invalid OTP ❌" });
   }
 
   delete otpStore[phone];

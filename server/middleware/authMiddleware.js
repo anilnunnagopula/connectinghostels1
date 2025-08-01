@@ -10,7 +10,7 @@ const requireAuth = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, "secretKey"); // 🗝️ Use env variable later
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // ✅ Correct
     req.user = decoded; // Now req.user.id and req.user.role are available
     next();
   } catch (err) {

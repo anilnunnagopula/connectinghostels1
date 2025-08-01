@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
+import { useAuth } from "../context/AuthContext"; // 1. Import useAuth
 
 const Login = () => {
+  const { login } = useAuth(); // 2. Get the login function from context
+
   const [role, setRole] = useState("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,7 +13,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
+  const API_URL = `${process.env.REACT_APP_API_URL}/auth/login`;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,99 +24,43 @@ const Login = () => {
       return;
     }
 
-    // 💥 TEST MODE SHORTCUT
+    // Test mode for quick dashboard access
     const testCredentials = {
       student: { email: "student@gmail.com", password: "student" },
       owner: { email: "owner@gmail.com", password: "owner" },
     };
-
     if (
-      (email === testCredentials.student.email &&
-        password === testCredentials.student.password &&
-        role === "student") ||
-      (email === testCredentials.owner.email &&
-        password === testCredentials.owner.password &&
-        role === "owner")
+      email === testCredentials[role].email &&
+      password === testCredentials[role].password
     ) {
       const testUser = {
-        _id: "test_" + Date.now(),
+        _id: `test_${Date.now()}`,
         name: email.split("@")[0],
         email,
         role,
-        ...(role === "owner" && { hostelName: "Test Hostel" }),
       };
-
-      localStorage.setItem("user", JSON.stringify(testUser));
-      localStorage.setItem("token", "dummy_test_token_" + Date.now());
-      window.dispatchEvent(new Event("storage"));
-
+      const testToken = `dummy_test_token_${Date.now()}`;
       alert(`🔐 Logged in as ${role} (TEST MODE)`);
-      navigate(role === "student" ? "/student-dashboard" : "/owner-dashboard");
+      login(testUser, testToken); // 3. Use context's login function
       return;
     }
 
-    // 🌐 REAL API LOGIN
+    // Real API login logic
+    setLoading(true);
     try {
-      setLoading(true);
+      const response = await axios.post(API_URL, { email, password, role });
+      const { token, user } = response.data;
 
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        { email, password, role },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          validateStatus: (status) => status >= 200 && status < 500,
-        }
-      );
-
-      const responseData = res.data;
-
-      // 🧠 Format 1: { token, user }
-      if (responseData.token && responseData.user) {
-        localStorage.setItem("token", responseData.token);
-        localStorage.setItem("user", JSON.stringify(responseData.user));
-        window.dispatchEvent(new Event("storage"));
-        navigate(
-          responseData.user.role === "student"
-            ? "/student-dashboard"
-            : "/owner-dashboard"
-        );
-        return;
+      if (token && user) {
+        login(user, token); // 4. Use context's login function
+      } else {
+        throw new Error("Invalid response format from server.");
       }
-
-      // 🧠 Format 2: { data: { token, user } }
-      if (responseData.data?.token && responseData.data?.user) {
-        localStorage.setItem("token", responseData.data.token);
-        localStorage.setItem("user", JSON.stringify(responseData.data.user));
-        window.dispatchEvent(new Event("storage"));
-        navigate(
-          responseData.data.user.role === "student"
-            ? "/student-dashboard"
-            : "/owner-dashboard"
-        );
-        return;
-      }
-
-      // 🧠 Format 3: Only token, decode it
-      if (responseData.token) {
-        const decoded = jwtDecode(responseData.token);
-        localStorage.setItem("token", responseData.token);
-        localStorage.setItem("user", JSON.stringify(decoded));
-        window.dispatchEvent(new Event("storage"));
-        navigate(
-          decoded.role === "student" ? "/student-dashboard" : "/owner-dashboard"
-        );
-        return;
-      }
-
-      throw new Error("Invalid response format from server");
     } catch (err) {
       console.error("Login error:", err);
-      let errorMsg = "Login failed. Please try again.";
-      if (err.response?.data?.message) errorMsg = err.response.data.message;
-      else if (err.response?.status === 401) errorMsg = "Invalid credentials";
-      else if (err.message) errorMsg = err.message;
+      const errorMsg =
+        err.response?.data?.message ||
+        "Login failed. Invalid credentials or server error.";
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -127,8 +73,7 @@ const Login = () => {
         <h2 className="text-2xl font-bold text-center mb-6 text-blue-700 dark:text-white">
           {role === "student" ? "Student Login" : "Hostel Owner Login"}
         </h2>
-
-        {/* Toggle Role */}
+        {/* Role Toggle Buttons */}
         <div className="flex justify-center gap-4 mb-6">
           {["student", "owner"].map((r) => (
             <button
@@ -144,10 +89,11 @@ const Login = () => {
             </button>
           ))}
         </div>
-
-        {/* Testing credentials banner */}
+        {/* Test Credentials Banner */}
         <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-800 rounded-lg text-sm text-gray-700 dark:text-white">
-          <p className="font-bold">🧪 TEST MODE:</p>
+          <p className="font-bold">
+            Want to Explore dashboards? Use these credentials:
+          </p>
           <p>
             👤 <b>Student:</b> student@gmail.com / student
           </p>
@@ -155,14 +101,12 @@ const Login = () => {
             🏠 <b>Owner:</b> owner@gmail.com / owner
           </p>
         </div>
-
-        {/* Error message */}
+        {/* Error Message */}
         {error && (
           <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">
             {error}
           </div>
         )}
-
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -178,7 +122,6 @@ const Login = () => {
               required
             />
           </div>
-
           <div>
             <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
               Password
@@ -200,7 +143,6 @@ const Login = () => {
               </span>
             </div>
           </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -210,7 +152,6 @@ const Login = () => {
           >
             {loading ? "Logging in..." : `Login as ${role}`}
           </button>
-
           <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
             Don't have an account?{" "}
             <Link
