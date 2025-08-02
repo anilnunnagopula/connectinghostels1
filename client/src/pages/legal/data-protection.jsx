@@ -508,19 +508,7 @@ const DataProtection = () => {
           any material changes by posting the new Policy on this page and
           updating the "Last updated" date. We encourage you to review this
           Policy periodically.
-        </p>
-
-        <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-          **Legal Disclaimer:** This Data Protection Policy is provided as a
-          template for informational purposes only. Given the specifics of the
-          Digital Personal Data Protection Act, 2023, and other applicable laws,
-          it is absolutely essential to consult with a qualified legal
-          professional to ensure your policy fully complies with all legal
-          requirements, including the establishment of a robust consent
-          mechanism, data breach notification protocols, and appropriate data
-          transfer agreements if applicable. This document does not constitute
-          legal advice.
-        </p>
+        </p> 
 
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
           Last updated: July 17, 2025

@@ -179,7 +179,11 @@ const AddHostel = () => {
       // 5. Respond with success or detailed error messages.
 
       // You would also typically include an authorization token for authenticated users:
-      const authToken = localStorage.getItem("token"); // Assuming token is stored in localStorage
+      const authToken = localStorage.getItem("token"); // Get token
+      if (!authToken) {
+        alert("Authentication token not found. Please log in again.");
+        return;
+      }
       const headers = {
         "Content-Type": "multipart/form-data", // Essential for file uploads
       };
@@ -188,9 +192,14 @@ const AddHostel = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:5000/api/owner/add-hostel",
-        data,
-        { headers }
+        `${process.env.REACT_APP_API_URL}/api/hostels`, // Ensure this URL matches your backend route
+        data, // Your FormData
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${authToken}`, // This line is most important
+          },
+        }
       );
 
       alert("✅ Hostel added successfully!");

@@ -18,6 +18,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ViewProfile from "./pages/ViewProfile";
 import EditProfile from "./pages/EditProfile";
+import StudentSettingsPage from "./pages/student/SettingsPage";
+
 //owner
 import RulesAndRegulations from "./pages/owner/RulesAndRegulations";
 import AddHostel from "./pages/owner/AddHostel";
@@ -32,10 +34,13 @@ import AvailableRooms from "./pages/owner/AvailableRooms";
 import Interested from "./pages/student/Interested";
 import Notifications from "./pages/student/Notifications";
 import RecentlyViewed from "./pages/student/RecentlyViewed";
-import RaiseComplaint from "./RaiseComplaint";
+import RaiseComplaint from "./pages/student/RaiseComplaint";
 import Support from "./pages/Support";
 import PaymentsPage from "./pages/owner/PaymentsPage";
-import SettingsPage from "./pages/owner/SettingsPage";
+import OwnerSettingsPage from "./pages/owner/SettingsPage";
+import OwnerNotificationsPage from "./pages/owner/OwnerNotificationsPage";
+
+
 //legal
 import PrivacyPolicy from "./pages/legal/privacy-policy";
 import TermsAndConditions from "./pages/legal/terms-and-conditions";
@@ -64,6 +69,10 @@ const App = () => {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<ViewProfile />} />
+            <Route
+              path="/student/profile-settings"
+              element={<StudentSettingsPage />}
+            />
             <Route path="/edit-profile" element={<EditProfile />} />
             {/* owner */}
             <Route path="/owner/add-hostel" element={<AddHostel />} />
@@ -71,7 +80,7 @@ const App = () => {
             <Route path="/owner/add-student" element={<AddStudent />} />
             <Route path="/owner/send-alerts" element={<SendAlerts />} />
             <Route path="/owner/my-hostels" element={<MyHostels />} />
-            <Route path="/owner/filledrooms" element={<FilledRooms />} />
+            <Route path="/owner/filled-rooms" element={<FilledRooms />} />
             <Route path="/owner/my-students" element={<MyStudents />} />
             <Route path="/owner/view-complaints" element={<ViewComplaints />} />
             <Route path="/owner/available-rooms" element={<AvailableRooms />} />
@@ -80,7 +89,12 @@ const App = () => {
               element={<RulesAndRegulations />}
             />
             <Route path="/owner/payment-settings" element={<PaymentsPage />} />
-            <Route path="/owner/profile-settings" element={<SettingsPage />} />
+            <Route
+              path="/owner/profile-settings"
+              element={<OwnerSettingsPage />}
+            />
+            <Route path="/owner/notifications" element={<OwnerNotificationsPage />} />
+
             {/* student  */}
             <Route path="/student/hostels" element={<HostelListings />} />
             <Route path="/student/hostels/:id" element={<HostelListings />} />
@@ -94,6 +108,7 @@ const App = () => {
               path="/student/raise-complaint"
               element={<RaiseComplaint />}
             />
+
             {/* legal  */}
             <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
             <Route

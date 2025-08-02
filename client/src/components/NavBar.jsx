@@ -49,6 +49,11 @@ const Navbar = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsProfileDropdownOpen(false);
+  }, [location.pathname]);
+
   const isActive = (path) => location.pathname === path;
 
   const NavLink = ({ to, children }) => (
@@ -91,18 +96,18 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-50 text-slate-800 dark:text-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-2">
         <div className="flex items-center justify-between h-16">
           {/* Left Side: Brand */}
-          <Link
-            to="/"
+          <button
+            onClick={navigateToDashboard}
             className="text-2xl font-bold text-blue-600 dark:text-blue-400"
           >
             ConnectingHostels
-          </Link>
+          </button>
 
           {/* Right Side: All Links, Actions & Profile */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             <NavButton
               onClick={navigateToDashboard}
               active={
@@ -111,7 +116,7 @@ const Navbar = () => {
             >
               Home
             </NavButton>
-            <NavLink to="/about">About Us</NavLink>
+            {!isLoggedIn && <NavLink to="/about">About Us</NavLink>}
 
             {userRole === "owner" && (
               <>
@@ -243,7 +248,7 @@ const Navbar = () => {
             >
               Home
             </NavButton>
-            <NavLink to="/about">About Us</NavLink>
+            {!isLoggedIn && <NavLink to="/about">About Us</NavLink>}
             {userRole === "owner" && (
               <>
                 <NavLink to="/owner/my-hostels">My Hostels</NavLink>

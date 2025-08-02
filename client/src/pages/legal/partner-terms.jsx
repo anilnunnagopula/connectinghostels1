@@ -458,18 +458,6 @@ const PartnerTerms = () => {
           ConnectingHostels - Hyderabad-501506, Telangana, India
         </p>
 
-        <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-          **Legal Disclaimer:** These Partner Terms & Conditions are provided as
-          a general template for informational purposes only and do not
-          constitute legal advice. It is highly recommended to consult with a
-          qualified legal professional to draft a comprehensive and legally
-          binding agreement tailored to your specific business operations,
-          revenue model, and fully compliant with all applicable laws in India
-          (including but not limited to contract law, consumer protection law,
-          IT law, and data protection laws like the Digital Personal Data
-          Protection Act, 2023).
-        </p>
-
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
           Last updated: July 17, 2025
         </p>

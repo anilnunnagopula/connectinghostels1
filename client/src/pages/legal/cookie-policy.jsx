@@ -272,15 +272,6 @@ const CookiePolicy = () => {
           ConnectingHostels - Hyderbad-501506, Telanagana, India
         </p>
 
-        <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-          <strong>Legal Disclaimer:</strong> This Cookie Policy is provided as a
-          general template. It is highly recommended to consult with a legal
-          professional to ensure full compliance with all applicable data
-          protection and privacy laws, such as GDPR (for EU users), CCPA (for
-          California users), and India's Digital Personal Data Protection Act,
-          2023, which may require specific details and consent mechanisms.
-        </p>
-
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
           Last updated: July , 2025
         </p>

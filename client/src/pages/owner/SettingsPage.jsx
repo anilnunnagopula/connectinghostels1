@@ -29,7 +29,7 @@ const baseURL = process.env.REACT_APP_API_URL;
 const MAX_PROFILE_IMAGE_SIZE_MB = 2;
 const MAX_PROFILE_IMAGE_SIZE_BYTES = MAX_PROFILE_IMAGE_SIZE_MB * 1024 * 1024;
 
-const SettingsPage = () => {
+const OwnerSettingsPage = () => {
   const navigate = useNavigate();
 
   // --- State Management ---
@@ -310,4 +310,4 @@ const SettingsPage = () => {
   );
 };
 
-export default SettingsPage;
+export default OwnerSettingsPage;

@@ -289,16 +289,6 @@ const RefundPolicy = () => {
           .
         </p>
 
-        <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-          **Legal Disclaimer:** This Refund & Cancellation Policy is a general
-          template and should not be considered legal advice. It is imperative
-          to consult with a legal professional to draft a policy that is
-          specific to your business model, payment processing flows, and fully
-          compliant with all applicable consumer protection and e-commerce laws
-          in India (e.g., Consumer Protection Act, 2019) and other relevant
-          jurisdictions.
-        </p>
-
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
           Last updated: July, 2025
         </p>

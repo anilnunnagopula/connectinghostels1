@@ -377,18 +377,7 @@ const TermsAndConditions = () => {
         <p className="mb-8 text-gray-700 dark:text-gray-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderbad-501506, Telanagana, India
-        </p>
-
-        <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
-          <strong>Legal Disclaimer:</strong> These Terms and Conditions are
-          provided as a general template and may not be exhaustive or compliant
-          with all local, national, and international laws applicable to your
-          business. It is crucial to consult with a legal professional to draft
-          a Terms and Conditions agreement that is tailored to your specific
-          operations, business model, and the jurisdictions in which you
-          operate, particularly regarding consumer protection, data privacy,
-          e-commerce, and contractual laws.
-        </p>
+        </p> 
 
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
           Last updated: July , 2025

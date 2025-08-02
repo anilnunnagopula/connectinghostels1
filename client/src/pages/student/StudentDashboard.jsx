@@ -75,7 +75,7 @@ const StudentDashboard = () => {
       icon: <FaUserAlt />,
       title: "My Profile",
       description: "Update your personal information.",
-      route: "/student/profile",
+      route: "/student/profile-settings",
     },
     {
       icon: <FaCreditCard />,
