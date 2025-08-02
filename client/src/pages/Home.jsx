@@ -84,7 +84,7 @@ const Home = () => {
 
   // Progress popup logic
   useEffect(() => {
-    const timer = setTimeout(() => setShowProgressPopup(false), 5000);
+    const timer = setTimeout(() => setShowProgressPopup(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
