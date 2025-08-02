@@ -66,7 +66,7 @@ const OwnerDashboard = () => {
       title: "Rooms Filled",
       description: "Currently occupied",
       value: stats.roomsFilled,
-      route: "/owner/rooms-filled",
+      route: "/owner/filled-rooms",
     },
     {
       icon: <Users className="text-purple-500" />,

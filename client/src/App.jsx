@@ -19,6 +19,8 @@ import ResetPassword from "./pages/ResetPassword";
 import ViewProfile from "./pages/ViewProfile";
 import EditProfile from "./pages/EditProfile";
 import StudentSettingsPage from "./pages/student/SettingsPage";
+import StudentPaymentsPage from "./pages/student/PaymentsPage";
+import MyBookingsPage from "./pages/student/MyBookingsPage";
 
 //owner
 import RulesAndRegulations from "./pages/owner/RulesAndRegulations";
@@ -93,7 +95,10 @@ const App = () => {
               path="/owner/profile-settings"
               element={<OwnerSettingsPage />}
             />
-            <Route path="/owner/notifications" element={<OwnerNotificationsPage />} />
+            <Route
+              path="/owner/notifications"
+              element={<OwnerNotificationsPage />}
+            />
 
             {/* student  */}
             <Route path="/student/hostels" element={<HostelListings />} />
@@ -108,6 +113,8 @@ const App = () => {
               path="/student/raise-complaint"
               element={<RaiseComplaint />}
             />
+            <Route path="/student/payments" element={<StudentPaymentsPage />} />
+            <Route path="/student/my-bookings" element={<MyBookingsPage />} />
 
             {/* legal  */}
             <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
