@@ -13,7 +13,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_URL = `${process.env.REACT_APP_API_URL}/auth/login`;
+  const API_URL = `${process.env.REACT_APP_API_URL}/api/auth/login`;
 
   const handleLogin = async (e) => {
     e.preventDefault();

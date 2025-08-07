@@ -71,7 +71,7 @@ const Register = () => {
     };
 
     try {
-      const res = await axios.post(`${API_URL}/auth/register`, payload);
+      const res = await axios.post(`${API_URL}/api/auth/register`, payload);
       const { token, user } = res.data;
 
       login(user, token); // 3. Use context's login to sign in and redirect

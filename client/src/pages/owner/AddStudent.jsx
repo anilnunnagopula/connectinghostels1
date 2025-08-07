@@ -1,71 +1,84 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify"; // assuming you're using it
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 const AddStudent = () => {
+  const navigate = useNavigate();
   const [studentData, setStudentData] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
-    hostel: "",
+    hostel: "", // This will hold the hostel _id
     floor: "",
     room: "",
   });
+
+  const [hostels, setHostels] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
+
+  // Function to fetch the hostels owned by the current user
+  const fetchOwnerHostels = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication token not found.");
+      }
+
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/owner/my-hostels`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setHostels(res.data.hostels);
+      // Set the first hostel as the default selection if available
+      if (res.data.hostels.length > 0) {
+        setStudentData((prev) => ({
+          ...prev,
+          hostel: res.data.hostels[0]._id,
+        }));
+      }
+    } catch (err) {
+      console.error("⚠️ Failed to fetch hostels:", err);
+      toast.error("Failed to load your hostels. Please try again.");
+      navigate("/owner-dashboard"); // Redirect on error
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOwnerHostels();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setStudentData({ ...studentData, [name]: value });
   };
-  const [hostels, setHostels] = useState([
-    { _id: "sample123", name: "GreenView Hostel" },
-  ]);
-
-  useEffect(() => {
-    // Set default hostel name in studentData if not already selected
-    setStudentData((prev) => ({
-      ...prev,
-      hostel: "GreenView Hostel",
-    }));
-
-    // 🧠 Optional: If you wanna try fetching real hostels later, keep this:
-    /*
-    const fetchHostels = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/hostels/mine", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-  
-        if (res.data.length > 0) {
-          setHostels(res.data);
-          setStudentData((prev) => ({
-            ...prev,
-            hostel: res.data[0].name,
-          }));
-        }
-      } catch (err) {
-        console.error("⚠️ Failed to fetch hostels:", err);
-      }
-    };
-  
-    fetchHostels();
-    */
-  }, []);
-
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentication token not found. Please log in again.");
+        return;
+      }
+
       const res = await axios.post(
-        "http://localhost:5000/api/students/add",
+        `${process.env.REACT_APP_API_URL}/api/students/add`,
         studentData,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -76,17 +89,49 @@ const AddStudent = () => {
         email: "",
         phone: "",
         address: "",
-        hostel: "",
+        hostel: hostels.length > 0 ? hostels[0]._id : "", // Reset to default hostel
         floor: "",
         room: "",
       });
+      console.log(res.data);
     } catch (error) {
       console.error("Add student error:", error.response?.data);
-      toast.error("❌ Failed to add student");
+      toast.error(error.response?.data?.message || "❌ Failed to add student");
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading state while fetching hostels
+  if (fetchLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <p className="text-xl text-gray-700 dark:text-gray-300">
+          Loading your hostels...
+        </p>
+      </div>
+    );
+  }
+
+  // Handle case where owner has no hostels
+  if (hostels.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <h2 className="text-2xl font-bold mb-4 text-gray-700 dark:text-gray-300">
+          No Hostels Found
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400">
+          You need to add a hostel before you can add students.
+        </p>
+        <button
+          onClick={() => navigate("/owner/add-hostel")}
+          className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition"
+        >
+          Add Your First Hostel
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-2 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white">
@@ -106,6 +151,7 @@ const AddStudent = () => {
             className="input"
             placeholder="e.g. Anil Rebel"
             required
+            disabled={loading}
           />
         </div>
 
@@ -119,6 +165,7 @@ const AddStudent = () => {
             className="input"
             placeholder="e.g. anilnunnagopula@email.com"
             required
+            disabled={loading}
           />
         </div>
 
@@ -133,6 +180,7 @@ const AddStudent = () => {
             placeholder="10-digit number"
             minLength={10}
             required
+            disabled={loading}
           />
         </div>
         <div>
@@ -144,6 +192,7 @@ const AddStudent = () => {
             onChange={handleChange}
             className="input"
             placeholder="Enter the student address(optional)"
+            disabled={loading}
           />
         </div>
         <div className="flex-1">
@@ -153,10 +202,12 @@ const AddStudent = () => {
             value={studentData.hostel}
             onChange={handleChange}
             className="input"
+            required
+            disabled={loading}
           >
-            <option value="">-- Select Hostel --</option>
+            {/* The first option is now dynamic */}
             {hostels.map((h) => (
-              <option key={h._id} value={h.name}>
+              <option key={h._id} value={h._id}>
                 {h.name}
               </option>
             ))}
@@ -174,6 +225,7 @@ const AddStudent = () => {
               className="input"
               placeholder="Enter floor number you want"
               required
+              disabled={loading}
             />
           </div>
           <div className="flex-1">
@@ -186,17 +238,19 @@ const AddStudent = () => {
               className="input"
               placeholder="e.g. 101"
               required
+              disabled={loading}
             />
           </div>
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || fetchLoading}
           className={`w-full ${
             loading ? "bg-gray-400" : "bg-blue-600"
-          } text-white py-2 rounded transition`}
+          } text-white py-2 rounded transition flex items-center justify-center`}
         >
+          {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
           {loading ? "Adding..." : "Add Student"}
         </button>
       </form>

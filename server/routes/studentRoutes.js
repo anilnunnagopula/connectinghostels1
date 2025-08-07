@@ -1,16 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const {
-  addStudent,
-  getAllStudents,
-} = require("../controllers/studentController");
-
+const studentController = require("../controllers/studentController");
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
 
-// 👇 only owners with valid token can add students
-router.post("/add", requireAuth, requireOwner, addStudent);
-
-// 👇 anyone logged in can fetch (optional: restrict this too)
-router.get("/", requireAuth, getAllStudents);
+// Route to add a new student
+router.post("/add", requireAuth, requireOwner, studentController.addStudent);
+router.get(
+  "/mine",
+  requireAuth,
+  requireOwner,
+  studentController.getOwnerStudents
+);
 
 module.exports = router;

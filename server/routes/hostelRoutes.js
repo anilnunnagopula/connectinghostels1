@@ -1,6 +1,14 @@
+// routes/hostelRoutes.js
 const express = require("express");
 const router = express.Router();
+
+// ✅ Make sure this import is correct and the file path is right.
 const hostelController = require("../controllers/hostelController");
+
+// The TypeError is almost always because `hostelController` is defined,
+// but `hostelController.getMyHostels` is undefined.
+// This happens if there's a typo, like `hostelControllar.getMyHostels`.
+
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
 const multer = require("multer");
 
@@ -13,9 +21,9 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-// ✅ Only this route — supports images/videos
+// ✅ Route to add a new hostel
 router.post(
-  "/add-hostel", // This is the route path within this router
+  "/add-hostel",
   requireAuth,
   requireOwner,
   upload.fields([
@@ -23,6 +31,14 @@ router.post(
     { name: "video", maxCount: 1 },
   ]),
   hostelController.addHostel
+);
+
+// ✅ Check for typos here. It must be `hostelController.getMyHostels`.
+router.get(
+  "/my-hostels",
+  requireAuth,
+  requireOwner,
+  hostelController.getMyHostels
 );
 
 module.exports = router;

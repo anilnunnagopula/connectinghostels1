@@ -79,7 +79,7 @@ const OwnerDashboard = () => {
       icon: <MailCheckIcon className="text-red-500" />,
       title: "Pending Complaints",
       description: "Needs your attention",
-      value: stats.complaints, // Bug Fixed: was stats.complaintsCount
+      value: stats.complaints,
       route: "/owner/view-complaints",
     },
     {
@@ -88,6 +88,13 @@ const OwnerDashboard = () => {
       description: "Ready for booking",
       value: stats.availableRooms,
       route: "/owner/available-rooms",
+    },
+    {
+      icon: <BedDouble className="text-orange-500" />, 
+      title: "Manage Rooms",
+      description: "Edit, toggle, and view rooms",
+      value: stats.roomsFilled + stats.availableRooms,
+      route: "/owner/manage-rooms",
     },
   ];
 

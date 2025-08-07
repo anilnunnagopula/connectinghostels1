@@ -192,21 +192,20 @@ const AddHostel = () => {
       }
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/hostels`, // Ensure this URL matches your backend route
-        data, // Your FormData
+        `${process.env.REACT_APP_API_URL}/api/owner/add-hostel`,
+        data,
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${authToken}`, // This line is most important
+            Authorization: `Bearer ${authToken}`,
           },
         }
       );
 
       alert("✅ Hostel added successfully!");
-      console.log("Hostel added:", response.data); // Log the response from the backend
-      navigate("/owner-dashboard"); // Redirect on successful submission
-    } catch (err) {
-      // Enhanced error handling for backend responses
+      console.log("Hostel added:", response.data);  
+      navigate("/owner-dashboard");  
+    } catch (err) { 
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
