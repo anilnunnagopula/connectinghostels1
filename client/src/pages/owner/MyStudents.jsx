@@ -57,33 +57,35 @@ const MyStudents = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white p-6 font-inter">
-      <h1 className="text-3xl font-bold mb-4 text-center">
-        🎓 My Hostel Students
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          🎓 My Hostel Students
+        </h1>
 
-      {/* Dropdown filter for hostels */}
-      {hostels.length > 1 && (
-        <div className="mb-6 max-w-sm mx-auto">
-          <label
-            htmlFor="hostel-filter"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-          >
-            Filter by Hostel:
-          </label>
-          <select
-            id="hostel-filter"
-            value={selectedHostel}
-            onChange={(e) => setSelectedHostel(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-          >
-            {hostels.map((hostel) => (
-              <option key={hostel._id} value={hostel._id}>
-                {hostel.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+        {/* Dropdown filter for hostels */}
+        {hostels.length > 1 && (
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="hostel-filter"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Filter by Hostel:
+            </label>
+            <select
+              id="hostel-filter"
+              value={selectedHostel}
+              onChange={(e) => setSelectedHostel(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+            >
+              {hostels.map((hostel) => (
+                <option key={hostel._id} value={hostel._id}>
+                  {hostel.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <p className="text-center text-gray-600 dark:text-gray-400">

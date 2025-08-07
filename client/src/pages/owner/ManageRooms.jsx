@@ -1,15 +1,26 @@
+// ManageRooms.jsx;
 import React, { useEffect, useState } from "react";
-import { CheckCircle, XCircle, Home, BedDouble } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  CheckCircle,
+  XCircle,
+  Home,
+  BedDouble,
+  Pencil,
+  Eye,
+  AlertCircle,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const FilledRooms = () => {
+const ManageRooms = () => {
   const navigate = useNavigate();
   const [hostels, setHostels] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
   const [selectedHostel, setSelectedHostel] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
 
   // Fetch all hostels and all students for the logged-in owner
   const fetchData = async () => {
@@ -35,7 +46,7 @@ const FilledRooms = () => {
 
       // Fetch all students for the owner
       const studentsRes = await axios.get(
-        `${process.env.REACT_APP_API_APP_URL}/api/students/mine`,
+        `${process.env.REACT_APP_API_URL}/api/students/mine`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setAllStudents(studentsRes.data.students);
@@ -61,7 +72,6 @@ const FilledRooms = () => {
     if (!acc[roomKey]) {
       acc[roomKey] = {
         roomNo: student.room,
-        floor: student.floor,
         students: [],
       };
     }
@@ -74,7 +84,6 @@ const FilledRooms = () => {
     const rooms = [];
     if (!selectedHostel) return rooms;
 
-    // ✅ NEW: Dynamically fetch the total number of rooms from the selected hostel
     const selectedHostelData = hostels.find((h) => h._id === selectedHostel);
     const totalRooms = selectedHostelData ? selectedHostelData.rooms : 0;
 
@@ -93,11 +102,33 @@ const FilledRooms = () => {
 
   const roomList = generateRoomList();
 
+  const handleEditClick = (room) => {
+    setSelectedRoom(room);
+    setShowModal(true);
+  };
+
+  const handleViewClick = (room) => {
+    setSelectedRoom(room);
+    setShowModal(true);
+  };
+
+  // This is a placeholder, you would create a new backend route for this.
+  const handleToggleStatus = (room) => {
+    alert(
+      `Toggle status for Room ${room.roomNo} - this needs a new backend endpoint!`
+    );
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedRoom(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white p-6 font-inter">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BedDouble className="text-blue-500" /> Room Occupancy
+          <BedDouble className="text-blue-500" /> Manage Rooms
         </h1>
 
         {/* Dropdown filter for hostels */}
@@ -121,7 +152,7 @@ const FilledRooms = () => {
 
       {loading ? (
         <p className="text-center text-gray-600 dark:text-gray-400">
-          Loading room data...
+          Loading rooms...
         </p>
       ) : hostels.length === 0 ? (
         <div className="text-center mt-10">
@@ -167,16 +198,104 @@ const FilledRooms = () => {
                   <XCircle className="w-5 h-5" /> Vacant
                 </p>
               )}
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={() => handleEditClick(room)}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-md transition disabled:opacity-50"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleViewClick(room)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md transition"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </div>
             </motion.div>
           ))}
         </div>
       ) : (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-10">
-          No rooms found. Please add students to see room statuses.
+          No rooms found. Please add students to a hostel to see room statuses.
         </p>
       )}
+
+      {/* Modal for editing/viewing room details */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleCloseModal}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              onClick={(e) => e.stopPropagation()} // Prevent closing on modal content click
+              className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-lg w-full shadow-lg"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">
+                  Room {selectedRoom?.roomNo} Details
+                </h2>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-500 hover:text-gray-800 dark:hover:text-white transition"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+              {selectedRoom?.isFilled ? (
+                <div>
+                  <p className="text-gray-700 dark:text-gray-300 mb-2 font-semibold">
+                    Occupants:
+                  </p>
+                  <ul className="list-disc list-inside pl-4 space-y-1">
+                    {selectedRoom?.students.map((student, index) => (
+                      <li
+                        key={index}
+                        className="text-gray-600 dark:text-gray-400"
+                      >
+                        {student}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={() => handleToggleStatus(selectedRoom)}
+                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-md transition"
+                    >
+                      <AlertCircle className="w-5 h-5" /> Mark as Vacant
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    This room is currently vacant.
+                  </p>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={() => handleToggleStatus(selectedRoom)}
+                      className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md transition"
+                    >
+                      <CheckCircle className="w-5 h-5" /> Mark as Filled
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default FilledRooms;
+export default ManageRooms;
+

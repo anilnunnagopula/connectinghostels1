@@ -1,14 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const { getOwnerDashboardMetrics } = require("../controllers/ownerController");
+const ownerController = require("../controllers/ownerController");
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
 
-// 👉 Protect route by auth + owner
+// Route to get all dashboard metrics for the authenticated owner
 router.get(
-  "/dashboard-metrics",
+  "/dashboard/metrics",
   requireAuth,
   requireOwner,
-  getOwnerDashboardMetrics
+  ownerController.getOwnerDashboardMetrics
 );
 
 module.exports = router;

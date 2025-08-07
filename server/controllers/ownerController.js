@@ -6,27 +6,27 @@ const Student = require("../models/Student");
 exports.getOwnerDashboardMetrics = async (req, res) => {
   try {
     const ownerId = req.user.id; // from JWT decoded user
+    const totalHostels = await Hostel.countDocuments({ owner: ownerId }); // These are your key counts
 
-    const totalHostels = await Hostel.countDocuments({ owner: ownerId });
+    const roomsFilled = await Student.countDocuments({ owner: ownerId }); // Count students as filled rooms for now
+    const totalStudents = await Student.countDocuments({ owner: ownerId });
+    const complaintsCount = await Complaint.countDocuments({
+      owner: ownerId,
+      status: "Pending",
+    }); // This part might need a more complex query if you have different room capacities
 
-    const rooms = await Room.find({ owner: ownerId });
-    const roomsFilled = rooms.reduce(
-      (count, room) => count + room.filledBeds,
-      0
-    );
-    const availableRooms = rooms.reduce(
-      (count, room) => count + (room.totalBeds - room.filledBeds),
-      0
-    );
-
-    const studentsCount = await Student.countDocuments({ owner: ownerId });
-
-    const complaintsCount = await Complaint.countDocuments({ owner: ownerId });
+    const totalRooms = await Hostel.aggregate([
+      { $match: { owner: new mongoose.Types.ObjectId(ownerId) } },
+      { $group: { _id: null, total: { $sum: "$rooms" } } },
+    ]);
+    const availableRooms = totalRooms[0]
+      ? totalRooms[0].total - roomsFilled
+      : 0;
 
     res.json({
       totalHostels,
       roomsFilled,
-      studentsCount,
+      studentsCount: totalStudents, // The frontend expects 'studentsCount'
       complaintsCount,
       availableRooms,
     });

@@ -1,4 +1,3 @@
-// /server/index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
@@ -19,11 +18,24 @@ const authRoutes = require("./routes/authRoutes");
 const hostelRoutes = require("./routes/hostelRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const contactRoutes = require("./routes/contact");
+const roomRoutes = require("./routes/roomRoutes");
+const complaintRoutes = require("./routes/complaintRoutes");
+const alertRoutes = require("./routes/alertRoutes");
+const ruleRoutes = require("./routes/ruleRoutes");
+const ownerDashboardRoutes = require("./routes/ownerDashboardRoutes"); // ✅ NEW: Dashboard routes
 
 app.use("/api/auth", authRoutes);
-app.use("/api/owner", hostelRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/complaints", complaintRoutes);
+app.use("/api/alerts", alertRoutes);
+
+// ✅ UPDATED: Mount all owner-specific routes under a single /api/owner prefix
+// This is the correct way to handle hierarchical routing in Express.
+app.use("/api/owner", ownerDashboardRoutes); // New dedicated router for dashboard
+app.use("/api/owner/hostels", hostelRoutes);
+app.use("/api/owner/rooms", roomRoutes);
+app.use("/api/owner/rules", ruleRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)

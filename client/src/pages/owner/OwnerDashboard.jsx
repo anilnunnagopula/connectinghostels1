@@ -5,16 +5,20 @@ import {
   Users,
   PlusCircle,
   MailCheckIcon,
-  CreditCard, // Added for new button
-  Settings, // Added for new button
+  CreditCard,
+  Settings,
   Send,
   ScrollText,
   GitPullRequest,
   UserPlus,
+  Loader2,
 } from "lucide-react";
 import { FaRestroom } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+
+// The authentication token is retrieved from local storage, as in other components
+const getToken = () => localStorage.getItem("token");
 
 const OwnerDashboard = () => {
   const navigate = useNavigate();
@@ -26,6 +30,7 @@ const OwnerDashboard = () => {
     complaints: 0,
     availableRooms: 0,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch user name for welcome message
@@ -35,23 +40,33 @@ const OwnerDashboard = () => {
     }
 
     const fetchDashboardStats = async () => {
+      setLoading(true);
+      const token = getToken();
+      if (!token) {
+        navigate("/login");
+        return;
+      }
       try {
-        // const res = await axios.get(...)
-        // Using mock data for now
+        const res = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/owner/dashboard/metrics`, // New endpoint
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setStats({
-          totalHostels: 2,
-          roomsFilled: 45,
-          totalStudents: 80,
-          complaints: 3,
-          availableRooms: 15,
+          totalHostels: res.data.totalHostels,
+          roomsFilled: res.data.roomsFilled,
+          totalStudents: res.data.studentsCount,
+          complaints: res.data.complaintsCount,
+          availableRooms: res.data.availableRooms,
         });
       } catch (err) {
         console.error("Dashboard stats fetch failed ❌", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchDashboardStats();
-  }, []);
+  }, [navigate]);
 
   const statCards = [
     {
@@ -72,7 +87,7 @@ const OwnerDashboard = () => {
       icon: <Users className="text-purple-500" />,
       title: "Total Students",
       description: "Across all properties",
-      value: stats.totalStudents, // Bug Fixed: was stats.studentsCount
+      value: stats.totalStudents,
       route: "/owner/my-students",
     },
     {
@@ -90,13 +105,21 @@ const OwnerDashboard = () => {
       route: "/owner/available-rooms",
     },
     {
-      icon: <BedDouble className="text-orange-500" />, 
+      icon: <BedDouble className="text-orange-500" />,
       title: "Manage Rooms",
       description: "Edit, toggle, and view rooms",
       value: stats.roomsFilled + stats.availableRooms,
       route: "/owner/manage-rooms",
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white">

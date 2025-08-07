@@ -41,6 +41,7 @@ import Support from "./pages/Support";
 import PaymentsPage from "./pages/owner/PaymentsPage";
 import OwnerSettingsPage from "./pages/owner/SettingsPage";
 import OwnerNotificationsPage from "./pages/owner/OwnerNotificationsPage";
+import ManageRooms from "./pages/owner/ManageRooms";
 
 
 //legal
@@ -86,6 +87,7 @@ const App = () => {
             <Route path="/owner/my-students" element={<MyStudents />} />
             <Route path="/owner/view-complaints" element={<ViewComplaints />} />
             <Route path="/owner/available-rooms" element={<AvailableRooms />} />
+            <Route path="/owner/manage-rooms" element={<ManageRooms />} />
             <Route
               path="/owner/rules-and-regulations"
               element={<RulesAndRegulations />}

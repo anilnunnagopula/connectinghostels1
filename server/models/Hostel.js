@@ -7,30 +7,30 @@ const hostelSchema = new mongoose.Schema(
       required: true,
     },
     contact: {
-      // ADDED
       type: String,
       required: true,
     },
-    rooms: {
-      // ADDED
-      type: Number,
-      required: true,
-    },
+    // ✅ The 'rooms' field is now an array of references to the Room model
+    rooms: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Room",
+      },
+    ],
     facilities: {
-      // ADDED
       type: String,
       required: true,
     },
     location: String,
     type: {
-      type: String, // Matches frontend 'category'
-      enum: ["Boys", "Girls", "Co-Live"], // Fixed 'Co-Living' to 'Co-Live'
+      type: String, // Boys, Girls, Co-Live
+      enum: ["Boys", "Girls", "Co-Live"],
       default: "Boys",
     },
-    price: String, // Consider adding 'required: true' if needed
+    price: String,
     description: String,
     images: [String],
-    video: String, // ADDED for video file path
+    video: String,
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
