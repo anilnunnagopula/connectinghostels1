@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const ownerPaymentController = require("../controllers/ownerPaymentController");
+const ownerPaymentController = require("../controllers/ownerPaymentController"); // ✅ Corrected file name
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
 
-// Route to get the owner's payment settings
+// All top-level owner payment routes go here
 router.get(
   "/payment-settings",
   requireAuth,
@@ -11,7 +11,6 @@ router.get(
   ownerPaymentController.getPaymentSettings
 );
 
-// Route to save or update the owner's payment settings
 router.post(
   "/payment-settings",
   requireAuth,
@@ -19,7 +18,6 @@ router.post(
   ownerPaymentController.savePaymentSettings
 );
 
-// ✅ NEW: Route to get payout methods
 router.get(
   "/payout-methods",
   requireAuth,
@@ -27,7 +25,6 @@ router.get(
   ownerPaymentController.getPayoutMethods
 );
 
-// ✅ NEW: Route to get payout history
 router.get(
   "/payout-history",
   requireAuth,

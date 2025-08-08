@@ -28,7 +28,7 @@ const complaintRoutes = require("./routes/complaintRoutes");
 const alertRoutes = require("./routes/alertRoutes");
 const ruleRoutes = require("./routes/ruleRoutes");
 const ownerRoutes = require("./routes/ownerRoutes");
-const bookingRoutes = require("./routes/bookingRoutes"); 
+const bookingRoutes = require("./routes/bookingRoutes");
 const ownerPaymentRoutes = require("./routes/ownerPaymentRoutes");
 
 // Mount the main routers
@@ -38,14 +38,14 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/alerts", alertRoutes);
 
-// ✅ Mount the main owner router at the top-level /api/owner path
+// Mount the main owner router at the top-level /api/owner path
 app.use("/api/owner", ownerRoutes);
-// Mount the sub-routers under their correct prefixes
+// Then, mount the sub-routers under their correct prefixes
 app.use("/api/owner/hostels", hostelRoutes);
 app.use("/api/owner/rooms", roomRoutes);
 app.use("/api/owner/rules", ruleRoutes);
-app.use("/api/owner/booking-requests", bookingRoutes); 
-app.use("/api/owner", ownerPaymentRoutes); 
+app.use("/api/owner/booking-requests", bookingRoutes);
+app.use("/api/owner", ownerPaymentRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)

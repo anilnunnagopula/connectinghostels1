@@ -1,33 +1,22 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Plus, Loader2, ArrowLeft
+  Loader2,
+  Plus,
+  Trash2,
+  ArrowLeft,
+  Building,
+  CreditCard,
+  CheckCircle,
+  Clock,
+  Download,
+  IndianRupee,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-// --- Centralized API instance ---
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// --- Utility to handle unauthorized users ---
-const requireAuth = (navigate) => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    navigate("/login");
-    return false;
-  }
-  return true;
-};
+// The authentication token is retrieved from local storage
+const getToken = () => localStorage.getItem("token");
 
 const PaymentsPage = () => {
   const navigate = useNavigate();
@@ -47,20 +36,30 @@ const PaymentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // --- Fetch Payout Methods & History ---
+  // --- Fetch Payout Methods and History ---
   const fetchData = useCallback(async () => {
-    if (!requireAuth(navigate)) return;
     setLoading(true);
+    const token = getToken();
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
       const [methodsRes, historyRes] = await Promise.all([
-        api.get("/api/owner/payout-methods"),
-        api.get("/api/owner/payout-history"),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/owner/payout-methods`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${process.env.REACT_APP_API_URL}/api/owner/payout-history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
-      setPayoutMethods(methodsRes.data);
+
+      setPayoutMethods(methodsRes.data.methods); // ✅ Corrected to match backend response
       setPayoutHistory(historyRes.data.history);
     } catch (err) {
       console.error("Error loading payment data:", err);
-      toast.error(err.response?.data?.message || "Unable to load payment data.");
+      toast.error(err.response?.data?.message || "Error loading payment data.");
     } finally {
       setLoading(false);
     }
@@ -70,7 +69,6 @@ const PaymentsPage = () => {
     fetchData();
   }, [fetchData]);
 
-  // --- Form Change Handler ---
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === "type") {
@@ -95,20 +93,32 @@ const PaymentsPage = () => {
     }
   };
 
-  // --- Unified API Action ---
   const performApiAction = async (method, url, data = null) => {
-    if (!requireAuth(navigate)) return;
     setSubmitting(true);
+    const token = getToken();
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
     try {
-      const apiMethods = {
-        POST: () => api.post(url, data),
-        PUT: () => api.put(url, data),
-        DELETE: () => api.delete(url),
-      };
-      const response = await apiMethods[method]();
+      let response;
+      if (method === "POST") {
+        response = await axios.post(url, data, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else if (method === "PUT") {
+        response = await axios.put(url, data, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else if (method === "DELETE") {
+        response = await axios.delete(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
       toast.success(response.data.message || "Action successful!");
-      await fetchData();
+      fetchData(); // Re-fetch all data to update the UI
     } catch (err) {
       console.error("API Action Error:", err);
       toast.error(err.response?.data?.message || "An error occurred.");
@@ -117,27 +127,36 @@ const PaymentsPage = () => {
     }
   };
 
-  // --- Handlers ---
   const handleSubmitNewMethod = (e) => {
     e.preventDefault();
-    performApiAction("POST", "/api/owner/payout-methods", newMethodForm);
+    performApiAction(
+      "POST",
+      `${process.env.REACT_APP_API_URL}/api/owner/payout-methods`,
+      newMethodForm
+    );
   };
 
   const handleSetDefault = (methodId) => {
-    performApiAction("PUT", `/api/owner/payout-methods/${methodId}/default`, {});
+    performApiAction(
+      "PUT",
+      `${process.env.REACT_APP_API_URL}/api/owner/payout-methods/${methodId}/default`,
+      {}
+    );
   };
 
   const handleDeleteMethod = (methodId) => {
-    if (window.confirm("Are you sure you want to delete this payout method?")) {
-      performApiAction("DELETE", `/api/owner/payout-methods/${methodId}`);
-    }
+    if (!window.confirm("Are you sure you want to delete this payout method?"))
+      return;
+    performApiAction(
+      "DELETE",
+      `${process.env.REACT_APP_API_URL}/api/owner/payout-methods/${methodId}`
+    );
   };
 
-  // --- Loading State ---
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
       </div>
     );
   }

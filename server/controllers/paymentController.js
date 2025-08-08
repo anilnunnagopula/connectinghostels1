@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const Payment = require("../models/Payment");
 const Student = require("../models/Student");
 const Hostel = require("../models/Hostel");
-const OwnerPayment = require("../models/OwnerPayment"); // ✅ ADDED: OwnerPayment model
+const OwnerPayment = require("../models/OwnerPayments"); // ✅ ADDED: OwnerPayment model
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,

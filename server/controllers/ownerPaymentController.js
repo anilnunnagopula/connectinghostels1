@@ -1,11 +1,10 @@
-const OwnerPayment = require("../models/OwnerPayment");
-// Assume you also have a Payment model for history
-const Payment = require("../models/Payment");
+const OwnerPayments = require("../models/OwnerPayments"); // ✅ Corrected model name
+// const Payout = require("../models/Payout"); // Assume this model exists
 
 exports.getPaymentSettings = async (req, res) => {
   try {
     const ownerId = req.user.id;
-    const settings = await OwnerPayment.findOne({ owner: ownerId });
+    const settings = await OwnerPayments.findOne({ owner: ownerId });
 
     res.status(200).json({ settings });
   } catch (err) {
@@ -19,7 +18,7 @@ exports.savePaymentSettings = async (req, res) => {
     const ownerId = req.user.id;
     const { bankDetails, upiId } = req.body;
 
-    const updatedSettings = await OwnerPayment.findOneAndUpdate(
+    const updatedSettings = await OwnerPayments.findOneAndUpdate(
       { owner: ownerId },
       { bankDetails, upiId },
       { new: true, upsert: true, setDefaultsOnInsert: true }
@@ -37,31 +36,48 @@ exports.savePaymentSettings = async (req, res) => {
   }
 };
 
-// ✅ NEW: Controller function to get payout methods
 exports.getPayoutMethods = async (req, res) => {
   try {
     const ownerId = req.user.id;
-    const settings = await OwnerPayment.findOne({ owner: ownerId });
+    const settings = await OwnerPayments.findOne({ owner: ownerId });
 
     if (!settings) {
-      return res.status(404).json({ message: "Payment methods not found." });
+      return res.status(200).json({ methods: [] });
     }
 
-    res.status(200).json({
-      bankDetails: settings.bankDetails,
-      upiId: settings.upiId,
-    });
+    // Logic to construct the methods array
+    const methods = [];
+    if (settings.bankDetails && settings.bankDetails.accountNumber) {
+      methods.push({
+        _id: settings._id,
+        type: "BANK_TRANSFER",
+        isDefault: settings.bankDetails.isDefault,
+        details: settings.bankDetails,
+      });
+    }
+
+    if (settings.upiId) {
+      methods.push({
+        _id: settings._id,
+        type: "UPI",
+        isDefault: settings.upiId.isDefault,
+        details: { upiId: settings.upiId.upiId },
+      });
+    }
+
+    res.status(200).json({ methods });
   } catch (err) {
     console.error("Error fetching payout methods:", err);
     res.status(500).json({ message: "Failed to fetch payout methods." });
   }
 };
 
-// ✅ NEW: Controller function to get payout history
 exports.getPayoutHistory = async (req, res) => {
   try {
     const ownerId = req.user.id;
-    const history = await Payment.find({ owner: ownerId }).sort({ paidAt: -1 });
+    const history = await Payout.find({ owner: ownerId }).sort({
+      processedAt: -1,
+    });
 
     res.status(200).json({ history });
   } catch (err) {
