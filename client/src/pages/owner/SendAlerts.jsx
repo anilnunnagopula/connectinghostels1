@@ -45,7 +45,7 @@ const SendAlerts = () => {
 
       // Fetch hostels to populate the dropdown
       const hostelsRes = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/my-hostels`,
+        `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const hostelOptions = hostelsRes.data.hostels.map((hostel) => ({

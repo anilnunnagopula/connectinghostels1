@@ -3,6 +3,7 @@ const router = express.Router();
 const ruleController = require("../controllers/ruleController");
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
 
+router.post("/bulk", requireAuth, requireOwner, ruleController.bulkAddRule);
 // Route to get all rules for the authenticated owner
 router.get("/mine", requireAuth, requireOwner, ruleController.getOwnerRules);
 

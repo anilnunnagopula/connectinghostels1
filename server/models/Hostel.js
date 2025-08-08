@@ -10,13 +10,11 @@ const hostelSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // ✅ The 'rooms' field is now an array of references to the Room model
-    rooms: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Room",
-      },
-    ],
+    // ✅ The `rooms` field is now a number to match the frontend form
+    rooms: {
+      type: Number,
+      required: true,
+    },
     facilities: {
       type: String,
       required: true,

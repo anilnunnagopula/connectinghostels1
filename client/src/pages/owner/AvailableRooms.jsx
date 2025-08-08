@@ -23,7 +23,7 @@ const AvailableRooms = () => {
 
       // Fetch hostels for the dropdown filter
       const hostelsRes = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/my-hostels`,
+        `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setHostels(hostelsRes.data.hostels);
@@ -83,7 +83,7 @@ const AvailableRooms = () => {
   const availableRooms = getAvailableRooms();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-100 via-orange-200 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white p-6 font-inter">
+    <div className="min-h-screen bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white p-6 font-inter">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold">Available Rooms</h1>
 

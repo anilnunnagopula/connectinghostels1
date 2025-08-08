@@ -1,5 +1,33 @@
 import React, { useState, useEffect, useCallback } from "react";
+import {
+  Plus, Loader2, ArrowLeft
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+// --- Centralized API instance ---
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL,
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// --- Utility to handle unauthorized users ---
+const requireAuth = (navigate) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    navigate("/login");
+    return false;
+  }
+  return true;
+};
 
 const PaymentsPage = () => {
   const navigate = useNavigate();
@@ -18,67 +46,31 @@ const PaymentsPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
 
-  // Corrected to get token for the current project
-  const getToken = useCallback(() => localStorage.getItem("token"), []);
-
-  // --- Fetch Payout Methods and History ---
+  // --- Fetch Payout Methods & History ---
   const fetchData = useCallback(async () => {
+    if (!requireAuth(navigate)) return;
     setLoading(true);
-    const token = getToken();
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
     try {
-      // API endpoints updated for 'owner'
       const [methodsRes, historyRes] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_URL}/api/owner/payout-methods`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${process.env.REACT_APP_API_URL}/api/owner/payout-history`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        api.get("/api/owner/payout-methods"),
+        api.get("/api/owner/payout-history"),
       ]);
-
-      const methodsData = await methodsRes.json();
-      if (!methodsRes.ok)
-        throw new Error(
-          methodsData.message || "Failed to fetch payout methods."
-        );
-      setPayoutMethods(methodsData);
-
-      const historyData = await historyRes.json();
-      if (!historyRes.ok)
-        throw new Error(
-          historyData.message || "Failed to fetch payout history."
-        );
-      setPayoutHistory(historyData);
+      setPayoutMethods(methodsRes.data);
+      setPayoutHistory(historyRes.data.history);
     } catch (err) {
-      setMessage(err.message || "Error loading payment data.");
-      setMessageType("error");
+      console.error("Error loading payment data:", err);
+      toast.error(err.response?.data?.message || "Unable to load payment data.");
     } finally {
       setLoading(false);
     }
-  }, [navigate, getToken]);
+  }, [navigate]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => {
-        setMessage("");
-        setMessageType("");
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
+  // --- Form Change Handler ---
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === "type") {
@@ -103,71 +95,45 @@ const PaymentsPage = () => {
     }
   };
 
-  const performApiAction = async (url, options) => {
+  // --- Unified API Action ---
+  const performApiAction = async (method, url, data = null) => {
+    if (!requireAuth(navigate)) return;
     setSubmitting(true);
-    setMessage("");
-    setMessageType("");
-    const token = getToken();
+
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          ...options.headers,
-        },
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "An error occurred.");
-      setMessage(data.message || "Action successful!");
-      setMessageType("success");
-      fetchData(); // Re-fetch all data
-      return data;
+      const apiMethods = {
+        POST: () => api.post(url, data),
+        PUT: () => api.put(url, data),
+        DELETE: () => api.delete(url),
+      };
+      const response = await apiMethods[method]();
+      toast.success(response.data.message || "Action successful!");
+      await fetchData();
     } catch (err) {
-      setMessage(err.message);
-      setMessageType("error");
+      console.error("API Action Error:", err);
+      toast.error(err.response?.data?.message || "An error occurred.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleSubmitNewMethod = async (e) => {
+  // --- Handlers ---
+  const handleSubmitNewMethod = (e) => {
     e.preventDefault();
-    const result = await performApiAction(
-      `${process.env.REACT_APP_API_URL}/api/owner/payout-methods`,
-      { method: "POST", body: JSON.stringify(newMethodForm) }
-    );
-    if (result) {
-      setNewMethodForm({
-        type: "BANK_TRANSFER",
-        details: {
-          accountNumber: "",
-          upiId: "",
-          ifscCode: "",
-          bankName: "",
-          accountHolderName: "",
-        },
-        isDefault: false,
-      });
-    }
+    performApiAction("POST", "/api/owner/payout-methods", newMethodForm);
   };
 
   const handleSetDefault = (methodId) => {
-    performApiAction(
-      `${process.env.REACT_APP_API_URL}/api/owner/payout-methods/${methodId}`,
-      { method: "PUT", body: JSON.stringify({ isDefault: true }) }
-    );
+    performApiAction("PUT", `/api/owner/payout-methods/${methodId}/default`, {});
   };
 
   const handleDeleteMethod = (methodId) => {
-    if (!window.confirm("Are you sure you want to delete this payout method?"))
-      return;
-    performApiAction(
-      `${process.env.REACT_APP_API_URL}/api/owner/payout-methods/${methodId}`,
-      { method: "DELETE" }
-    );
+    if (window.confirm("Are you sure you want to delete this payout method?")) {
+      performApiAction("DELETE", `/api/owner/payout-methods/${methodId}`);
+    }
   };
 
+  // --- Loading State ---
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
@@ -177,27 +143,24 @@ const PaymentsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 md:p-8">
-        <h2 className="text-3xl font-bold mb-8 text-center text-slate-800 dark:text-white">
-          Payment Methods & History
-        </h2>
-
-        {message && (
-          <div
-            className={`mb-6 p-4 rounded-lg text-center font-medium ${
-              messageType === "success"
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white font-inter">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition"
           >
-            {message}
-          </div>
-        )}
+            <ArrowLeft />
+          </button>
+          <h2 className="text-3xl font-bold text-center flex-1">
+            Payment Methods & History
+          </h2>
+        </div>
 
         {/* Add New Payout Method Form */}
         <section className="mb-10 p-6 border border-slate-200 dark:border-slate-700 rounded-lg">
-          <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-white">
+          <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+            <Plus size={20} />
             Add New Payout Method
           </h3>
           <form
@@ -213,7 +176,7 @@ const PaymentsPage = () => {
                 value={newMethodForm.type}
                 onChange={handleFormChange}
                 disabled={submitting}
-                className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border-transparent focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="BANK_TRANSFER">Bank Transfer</option>
                 <option value="UPI">UPI</option>
@@ -230,7 +193,7 @@ const PaymentsPage = () => {
                     onChange={handleFormChange}
                     required
                     disabled={submitting}
-                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border-transparent focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -242,7 +205,7 @@ const PaymentsPage = () => {
                     onChange={handleFormChange}
                     required
                     disabled={submitting}
-                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border-transparent focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -254,7 +217,7 @@ const PaymentsPage = () => {
                     onChange={handleFormChange}
                     required
                     disabled={submitting}
-                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border-transparent focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -268,7 +231,7 @@ const PaymentsPage = () => {
                     onChange={handleFormChange}
                     required
                     disabled={submitting}
-                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border-transparent focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </>
@@ -282,7 +245,7 @@ const PaymentsPage = () => {
                   onChange={handleFormChange}
                   required
                   disabled={submitting}
-                  className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border-transparent focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
@@ -306,7 +269,11 @@ const PaymentsPage = () => {
                 disabled={submitting}
                 className="w-full bg-blue-600 text-white px-6 py-2.5 rounded-md hover:bg-blue-700 transition font-semibold disabled:opacity-50"
               >
-                {submitting ? "Adding..." : "Add Payout Method"}
+                {submitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  "Add Payout Method"
+                )}
               </button>
             </div>
           </form>
@@ -314,59 +281,68 @@ const PaymentsPage = () => {
 
         {/* Existing Payout Methods */}
         <section className="mb-10">
-          <h3 className="text-xl font-semibold mb-4">
-            Your Payout Methods ({payoutMethods.length})
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            Your Payout Methods
+            <span className="text-sm font-normal text-slate-500">
+              ({payoutMethods.length})
+            </span>
           </h3>
           <div className="space-y-4">
-            {payoutMethods.map((method) => (
-              <div
-                key={method._id}
-                className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center"
-              >
-                <div>
-                  <p className="font-bold">
-                    {method.type === "BANK_TRANSFER" ? "Bank Transfer" : "UPI"}
-                  </p>
-                  {method.type === "BANK_TRANSFER" ? (
-                    <>
-                      <p className="text-sm text-slate-600 dark:text-slate-300">
-                        Account: ****{method.details.accountNumber.slice(-4)}
-                      </p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300">
-                        Bank: {method.details.bankName}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-slate-600 dark:text-slate-300">
-                      ID: {method.details.upiId}
+            {payoutMethods.length === 0 ? (
+              <p className="text-slate-500">No payout methods added yet.</p>
+            ) : (
+              payoutMethods.map((method) => (
+                <div
+                  key={method._id}
+                  className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center"
+                >
+                  <div>
+                    <p className="font-bold">
+                      {method.type === "BANK_TRANSFER"
+                        ? "Bank Transfer"
+                        : "UPI"}
                     </p>
-                  )}
-                  {method.isDefault && (
-                    <span className="mt-1 inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-semibold">
-                      Default
-                    </span>
-                  )}
-                </div>
-                <div className="flex space-x-2 mt-3 md:mt-0 self-end md:self-center">
-                  {!method.isDefault && (
+                    {method.type === "BANK_TRANSFER" ? (
+                      <>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                          Account: ****{method.details.accountNumber.slice(-4)}
+                        </p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                          Bank: {method.details.bankName}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                        ID: {method.details.upiId}
+                      </p>
+                    )}
+                    {method.isDefault && (
+                      <span className="mt-1 inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex space-x-2 mt-3 md:mt-0 self-end md:self-center">
+                    {!method.isDefault && (
+                      <button
+                        onClick={() => handleSetDefault(method._id)}
+                        disabled={submitting}
+                        className="bg-slate-200 dark:bg-slate-600 text-xs px-3 py-1.5 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 transition disabled:opacity-50"
+                      >
+                        Set Default
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleSetDefault(method._id)}
+                      onClick={() => handleDeleteMethod(method._id)}
                       disabled={submitting}
-                      className="bg-slate-200 dark:bg-slate-600 text-xs px-3 py-1.5 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 transition disabled:opacity-50"
+                      className="bg-red-100 dark:bg-red-900/50 text-red-600 px-3 py-1.5 rounded-md text-xs hover:bg-red-200 dark:hover:bg-red-900 transition disabled:opacity-50"
                     >
-                      Set Default
+                      Delete
                     </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteMethod(method._id)}
-                    disabled={submitting}
-                    className="bg-red-100 dark:bg-red-900/50 text-red-600 px-3 py-1.5 rounded-md text-xs hover:bg-red-200 dark:hover:bg-red-900 transition disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
 
@@ -392,33 +368,44 @@ const PaymentsPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                {payoutHistory.map((payout) => (
-                  <tr key={payout._id}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      {new Date(payout.processedAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-green-600">
-                      ₹{payout.amount.toLocaleString("en-IN")}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      {payout.payoutMethodDetailsSnapshot?.type.replace(
-                        "_",
-                        " "
-                      ) || "N/A"}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          payout.status === "Completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {payout.status}
-                      </span>
+                {payoutHistory.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="4"
+                      className="px-4 py-3 text-center text-sm text-slate-500"
+                    >
+                      No payout history found.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  payoutHistory.map((payout) => (
+                    <tr key={payout._id}>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        {new Date(payout.processedAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-green-600">
+                        ₹{payout.amount.toLocaleString("en-IN")}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        {payout.payoutMethodDetailsSnapshot?.type.replace(
+                          "_",
+                          " "
+                        ) || "N/A"}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            payout.status === "Completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {payout.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

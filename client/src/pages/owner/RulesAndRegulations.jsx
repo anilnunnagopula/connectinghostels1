@@ -5,7 +5,6 @@ import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
-// The authentication token is retrieved from local storage, as in other components
 const getToken = () => localStorage.getItem("token");
 
 const RulesAndRegulations = () => {
@@ -17,11 +16,9 @@ const RulesAndRegulations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State for hostel filtering
   const [hostels, setHostels] = useState([]);
   const [selectedHostel, setSelectedHostel] = useState(null);
 
-  // Fetch hostels from the backend
   useEffect(() => {
     const fetchHostels = async () => {
       const token = getToken();
@@ -31,7 +28,7 @@ const RulesAndRegulations = () => {
       }
       try {
         const hostelsRes = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/owner/my-hostels`,
+          `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const hostelOptions = hostelsRes.data.hostels.map((hostel) => ({
@@ -49,7 +46,6 @@ const RulesAndRegulations = () => {
     fetchHostels();
   }, [navigate]);
 
-  // Fetch and listen for real-time changes to rules from the backend
   const fetchRules = async () => {
     setLoading(true);
     setError(null);
@@ -58,7 +54,6 @@ const RulesAndRegulations = () => {
       navigate("/login");
       return;
     }
-
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/owner/rules/mine`,
@@ -78,7 +73,6 @@ const RulesAndRegulations = () => {
     fetchRules();
   }, []);
 
-  // ✅ NEW: Function to add a rule to a single hostel
   const addRule = async () => {
     if (!newRuleText.trim()) {
       toast.error("Rule text cannot be empty.");
@@ -88,13 +82,11 @@ const RulesAndRegulations = () => {
       toast.error("Please select a specific hostel to add a rule.");
       return;
     }
-
     const token = getToken();
     if (!token) {
       navigate("/login");
       return;
     }
-
     try {
       setLoading(true);
       await axios.post(
@@ -104,7 +96,7 @@ const RulesAndRegulations = () => {
       );
       setNewRuleText("");
       toast.success("Rule added successfully!");
-      fetchRules(); // Re-fetch to update the list
+      fetchRules();
     } catch (err) {
       console.error("Error adding rule:", err);
       toast.error("Failed to add rule.");
@@ -113,22 +105,18 @@ const RulesAndRegulations = () => {
     }
   };
 
-  // ✅ NEW: Function to add a rule to all hostels
   const bulkAddRule = async () => {
     if (!newRuleText.trim()) {
       toast.error("Rule text cannot be empty.");
       return;
     }
-
     const token = getToken();
     if (!token) {
       navigate("/login");
       return;
     }
-
     try {
       setLoading(true);
-      // We will create a new endpoint to handle this bulk operation
       await axios.post(
         `${process.env.REACT_APP_API_URL}/api/owner/rules/bulk`,
         { text: newRuleText.trim() },
@@ -136,7 +124,7 @@ const RulesAndRegulations = () => {
       );
       setNewRuleText("");
       toast.success("Rule added to all hostels successfully!");
-      fetchRules(); // Re-fetch to update the list
+      fetchRules();
     } catch (err) {
       console.error("Error adding rule:", err);
       toast.error("Failed to add rule to all hostels.");
@@ -146,7 +134,7 @@ const RulesAndRegulations = () => {
   };
 
   const startEditing = (rule) => {
-    setEditingRuleId(rule._id); // Use MongoDB _id
+    setEditingRuleId(rule._id);
     setEditingRuleText(rule.text);
   };
 
@@ -155,13 +143,11 @@ const RulesAndRegulations = () => {
       toast.error("Rule text cannot be empty.");
       return;
     }
-
     const token = getToken();
     if (!token) {
       navigate("/login");
       return;
     }
-
     try {
       setLoading(true);
       await axios.put(
@@ -172,7 +158,7 @@ const RulesAndRegulations = () => {
       setEditingRuleId(null);
       setEditingRuleText("");
       toast.success("Rule updated successfully!");
-      fetchRules(); // Re-fetch to update the list
+      fetchRules();
     } catch (err) {
       console.error("Error updating rule:", err);
       toast.error("Failed to update rule.");
@@ -190,13 +176,11 @@ const RulesAndRegulations = () => {
     if (!window.confirm("Are you sure you want to delete this rule?")) {
       return;
     }
-
     const token = getToken();
     if (!token) {
       navigate("/login");
       return;
     }
-
     try {
       setLoading(true);
       await axios.delete(
@@ -204,7 +188,7 @@ const RulesAndRegulations = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Rule deleted successfully!");
-      fetchRules(); // Re-fetch to update the list
+      fetchRules();
     } catch (err) {
       console.error("Error deleting rule:", err);
       toast.error("Failed to delete rule.");
@@ -216,9 +200,11 @@ const RulesAndRegulations = () => {
   const hostelOptions = [{ value: "all", label: "All Hostels" }, ...hostels];
 
   const filteredRules =
-    selectedHostel && selectedHostel.value !== "all"
+    selectedHostel && selectedHostel.value === "all"
+      ? rules
+      : selectedHostel
       ? rules.filter((rule) => rule.hostelId === selectedHostel.value)
-      : rules;
+      : [];
 
   if (loading && rules.length === 0) {
     return (
@@ -275,7 +261,6 @@ const RulesAndRegulations = () => {
           <h2 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400">
             Add New Rule
           </h2>
-          {/* ✅ UPDATED LOGIC HERE */}
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
@@ -300,7 +285,7 @@ const RulesAndRegulations = () => {
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
-              ) : selectedHostel.value === "all" ? (
+              ) : selectedHostel && selectedHostel.value === "all" ? (
                 "Add to All"
               ) : (
                 "Add Rule"
@@ -322,7 +307,7 @@ const RulesAndRegulations = () => {
             <ul className="space-y-4">
               {filteredRules.map((rule) => (
                 <li
-                  key={rule._id} // Use MongoDB _id
+                  key={rule._id}
                   className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
                 >
                   {editingRuleId === rule._id ? (

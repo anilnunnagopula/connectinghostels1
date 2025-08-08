@@ -20,7 +20,7 @@ const MyHostels = () => {
       }
 
       const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/my-hostels`,
+        `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`, // Sending auth token

@@ -1,4 +1,5 @@
 const Rule = require("../models/Rule");
+const Hostel = require("../models/Hostel"); // Import Hostel model
 
 exports.getOwnerRules = async (req, res) => {
   try {
@@ -64,5 +65,38 @@ exports.deleteRule = async (req, res) => {
   } catch (err) {
     console.error("Error deleting rule:", err);
     res.status(500).json({ message: "Failed to delete rule." });
+  }
+};
+
+// ✅ NEW: Function to add a rule to all hostels
+exports.bulkAddRule = async (req, res) => {
+  try {
+    const { text } = req.body;
+    const ownerId = req.user.id;
+    if (!text) {
+      return res.status(400).json({ message: "Rule text is required." });
+    }
+
+    const hostels = await Hostel.find({ owner: ownerId });
+    if (hostels.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No hostels found for this owner." });
+    }
+
+    const rules = hostels.map((hostel) => ({
+      text,
+      hostelId: hostel._id,
+      ownerId,
+    }));
+
+    await Rule.insertMany(rules);
+
+    res
+      .status(201)
+      .json({ message: "Rules added to all hostels successfully." });
+  } catch (err) {
+    console.error("Error adding bulk rules:", err);
+    res.status(500).json({ message: "Failed to add bulk rules." });
   }
 };

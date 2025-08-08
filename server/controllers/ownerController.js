@@ -1,22 +1,23 @@
+const mongoose = require("mongoose"); // ✅ ADD THIS LINE
 const Hostel = require("../models/Hostel");
-const Room = require("../models/Room");
 const Complaint = require("../models/Complaint");
 const Student = require("../models/Student");
 
 exports.getOwnerDashboardMetrics = async (req, res) => {
   try {
     const ownerId = req.user.id; // from JWT decoded user
-    const totalHostels = await Hostel.countDocuments({ owner: ownerId }); // These are your key counts
+    const totalHostels = await Hostel.countDocuments({ owner: ownerId });
 
-    const roomsFilled = await Student.countDocuments({ owner: ownerId }); // Count students as filled rooms for now
+    const roomsFilled = await Student.countDocuments({ owner: ownerId });
     const totalStudents = await Student.countDocuments({ owner: ownerId });
     const complaintsCount = await Complaint.countDocuments({
       owner: ownerId,
       status: "Pending",
-    }); // This part might need a more complex query if you have different room capacities
+    });
 
+    // The error is here, where `mongoose.Types.ObjectId` is used without importing mongoose.
     const totalRooms = await Hostel.aggregate([
-      { $match: { owner: new mongoose.Types.ObjectId(ownerId) } },
+      { $match: { owner: new mongoose.Types.ObjectId(ownerId) } }, // This line needs mongoose
       { $group: { _id: null, total: { $sum: "$rooms" } } },
     ]);
     const availableRooms = totalRooms[0]
@@ -26,7 +27,7 @@ exports.getOwnerDashboardMetrics = async (req, res) => {
     res.json({
       totalHostels,
       roomsFilled,
-      studentsCount: totalStudents, // The frontend expects 'studentsCount'
+      studentsCount: totalStudents,
       complaintsCount,
       availableRooms,
     });

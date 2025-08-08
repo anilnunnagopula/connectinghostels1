@@ -192,7 +192,7 @@ const AddHostel = () => {
       }
 
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/owner/add-hostel`,
+        `${process.env.REACT_APP_API_URL}/api/owner/hostels/add-hostel`,
         data,
         {
           headers: {

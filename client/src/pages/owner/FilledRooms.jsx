@@ -21,9 +21,9 @@ const FilledRooms = () => {
         throw new Error("Authentication token not found");
       }
 
-      // Fetch hostels for the dropdown filter
+      // ✅ CORRECTED: Use the full backend URL for hostels
       const hostelsRes = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/my-hostels`,
+        `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setHostels(hostelsRes.data.hostels);
@@ -33,9 +33,9 @@ const FilledRooms = () => {
         setSelectedHostel(hostelsRes.data.hostels[0]._id);
       }
 
-      // Fetch all students for the owner
+      // ✅ CORRECTED: Use the full backend URL for students
       const studentsRes = await axios.get(
-        `${process.env.REACT_APP_API_APP_URL}/api/students/mine`,
+        `${process.env.REACT_APP_API_URL}/api/students/mine`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setAllStudents(studentsRes.data.students);
@@ -74,7 +74,7 @@ const FilledRooms = () => {
     const rooms = [];
     if (!selectedHostel) return rooms;
 
-    // ✅ NEW: Dynamically fetch the total number of rooms from the selected hostel
+    // Dynamically fetch the total number of rooms from the selected hostel
     const selectedHostelData = hostels.find((h) => h._id === selectedHostel);
     const totalRooms = selectedHostelData ? selectedHostelData.rooms : 0;
 
@@ -172,7 +172,7 @@ const FilledRooms = () => {
         </div>
       ) : (
         <p className="text-center text-gray-500 dark:text-gray-400 mt-10">
-          No rooms found. Please add students to see room statuses.
+          No rooms found. Please add students to a hostel to see room statuses.
         </p>
       )}
     </div>

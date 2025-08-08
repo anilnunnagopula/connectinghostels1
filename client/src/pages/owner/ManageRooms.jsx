@@ -34,7 +34,7 @@ const ManageRooms = () => {
 
       // Fetch hostels for the dropdown filter
       const hostelsRes = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/my-hostels`,
+        `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setHostels(hostelsRes.data.hostels);
