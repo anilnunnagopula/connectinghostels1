@@ -1,14 +1,19 @@
 const Student = require("../models/Student");
+const Hostel = require("../models/Hostel");
+const Booking = require("../models/StudentHostel");
+const mongoose = require("mongoose"); 
+const Complaint = require("../models/Complaint"); 
+const Payment = require("../models/Payment");
 
 exports.addStudent = async (req, res) => {
   try {
     const { name, email, phone, address, hostel, floor, room } = req.body;
+    const ownerId = req.user.id;
 
-    // Validation
     if (!name || !email || !phone || !hostel || !floor || !room) {
       return res
         .status(400)
-        .json({ message: "Please fill in all required fields." });
+        .json({ message: "All required fields are needed." });
     }
 
     const newStudent = new Student({
@@ -19,7 +24,7 @@ exports.addStudent = async (req, res) => {
       hostel,
       floor,
       room,
-      owner: req.user.id, // Get owner from auth token
+      owner: ownerId,
     });
 
     await newStudent.save();
@@ -40,7 +45,6 @@ exports.addStudent = async (req, res) => {
 exports.getOwnerStudents = async (req, res) => {
   try {
     const ownerId = req.user.id;
-    // We populate the 'hostel' field to get the hostel name for the frontend filter.
     const students = await Student.find({ owner: ownerId }).populate(
       "hostel",
       "name"
@@ -49,5 +53,154 @@ exports.getOwnerStudents = async (req, res) => {
   } catch (err) {
     console.error("Error fetching owner's students:", err);
     res.status(500).json({ message: "Failed to fetch students." });
+  }
+};
+
+// Search for hostels based on location and query
+ exports.searchHostels = async (req, res) => {
+   try {
+     const { location } = req.query;
+
+     const searchQuery = { available: true };
+
+     if (location && location.trim() && location !== "Others") {
+       searchQuery.location = { $regex: location.trim(), $options: "i" };
+     }
+
+     // Fetch all hostels matching location
+     const hostels = await Hostel.find(searchQuery).sort({ createdAt: -1 });
+
+     res.status(200).json({
+       success: true,
+       count: hostels.length,
+       hostels,
+     });
+   } catch (err) {
+     console.error("❌ Error searching hostels:", err);
+     res.status(500).json({
+       success: false,
+       message: "Failed to search for hostels.",
+     });
+   }
+ };
+
+
+// Create a new booking request
+exports.createBookingRequest = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { hostelId } = req.body;
+
+    const hostel = await Hostel.findById(hostelId);
+    if (!hostel) {
+      return res.status(404).json({ message: "Hostel not found." });
+    }
+
+    const existingBooking = await Booking.findOne({
+      student: studentId,
+      status: { $in: ["Pending", "Active"] },
+    });
+    if (existingBooking) {
+      return res
+        .status(409)
+        .json({ message: "You already have a pending or active booking." });
+    }
+
+    const newBooking = new Booking({
+      student: studentId,
+      hostel: hostelId,
+      owner: hostel.owner,
+      status: "Pending",
+      roomNumber: 0,
+      checkInDate: new Date(),
+    });
+
+    await newBooking.save();
+    res
+      .status(201)
+      .json({
+        message: "Booking request sent successfully.",
+        booking: newBooking,
+      });
+  } catch (err) {
+    console.error("Error creating booking request:", err);
+    res.status(500).json({ message: "Failed to create booking request." });
+  }
+};
+
+// Get all bookings for a specific student
+exports.getStudentBookings = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const bookings = await Booking.find({ student: studentId })
+      .populate("hostel", "name images")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ bookings });
+  } catch (err) {
+    console.error("Error fetching student bookings:", err);
+    res.status(500).json({ message: "Failed to fetch bookings." });
+  }
+};
+
+// Get the student's active hostel
+exports.getStudentHostel = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    const activeBooking = await Booking.findOne({
+      student: studentId,
+      status: "Active",
+    }).populate("hostel");
+
+    if (!activeBooking) {
+      return res
+        .status(404)
+        .json({ message: "No active hostel found for this student." });
+    }
+
+    res.status(200).json({ hostel: activeBooking.hostel });
+  } catch (err) {
+    console.error("Error fetching student's hostel:", err);
+    res.status(500).json({ message: "Failed to fetch student's hostel." });
+  }
+};
+
+exports.getStudentDashboardMetrics = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // Count total hostels
+    const totalHostels = await Hostel.countDocuments({ students: studentId });
+
+    // Count active and pending complaints
+    const pendingComplaints = await Complaint.countDocuments({
+      student: studentId,
+      status: "Pending",
+    });
+
+    // Find the student's active booking
+    const activeBooking = await Booking.findOne({
+      student: studentId,
+      status: "Active",
+    }).populate("hostel");
+    const hostelName = activeBooking ? activeBooking.hostel.name : "N/A";
+    const roomNumber = activeBooking ? activeBooking.roomNumber : "N/A";
+
+    // Find pending fees (placeholder logic)
+    const pendingFees = await Payment.countDocuments({
+      student: studentId,
+      status: "Pending",
+    });
+
+    res.json({
+      hostelName,
+      roomNumber,
+      pendingFees,
+      pendingComplaints,
+    });
+  } catch (err) {
+    console.error("Error fetching dashboard metrics:", err);
+    res.status(500).json({ message: "Failed to load metrics" });
   }
 };

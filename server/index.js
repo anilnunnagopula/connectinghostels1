@@ -33,7 +33,7 @@ const ownerPaymentRoutes = require("./routes/ownerPaymentRoutes");
 
 // Mount the main routers
 app.use("/api/auth", authRoutes);
-app.use("/api/students", studentRoutes);
+app.use("/api/student", studentRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/alerts", alertRoutes);

@@ -24,5 +24,12 @@ const requireOwner = (req, res, next) => {
   }
   next();
 };
+const requireStudent = (req, res, next) => {
+  if (req.user && req.user.role === "student") {
+    next();
+  } else {
+    return res.status(403).json({ message: "Access denied. Students only." });
+  }
+};
 
-module.exports = { requireAuth, requireOwner };
+module.exports = { requireAuth, requireOwner, requireStudent };
