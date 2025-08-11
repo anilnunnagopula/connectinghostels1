@@ -55,6 +55,7 @@ import DataProtection from "./pages/legal/data-protection";
 import Transparency from "./pages/legal/transparency";
 //student 
 import HostelDetails from "./pages/student/HostelDetails";
+import MyHostelPage from "./pages/student/MyHostelPage";
 const App = () => {
   return (
     <Router>
@@ -117,6 +118,7 @@ const App = () => {
             />
             <Route path="/student/payments" element={<StudentPaymentsPage />} />
             <Route path="/student/my-bookings" element={<MyBookingsPage />} />
+            <Route path="/student/my-hostel" element={<MyHostelPage />} />
 
             {/* legal  */}
             <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
