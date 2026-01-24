@@ -21,6 +21,7 @@ import EditProfile from "./pages/EditProfile";
 import StudentSettingsPage from "./pages/student/SettingsPage";
 import StudentPaymentsPage from "./pages/student/PaymentsPage";
 import MyBookingsPage from "./pages/student/MyBookingsPage";
+import CompleteProfile from "./pages/CompleteProfile"
 
 //owner
 import RulesAndRegulations from "./pages/owner/RulesAndRegulations";
@@ -72,6 +73,7 @@ const App = () => {
             <Route path="/owner-dashboard" element={<OwnerDashboard />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/profile" element={<ViewProfile />} />
             <Route
               path="/student/profile-settings"

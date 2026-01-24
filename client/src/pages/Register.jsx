@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext"; // 1. Import useAuth
 
+import { useGoogleLogin } from "@react-oauth/google";
 const Register = () => {
   const { login } = useAuth(); // 2. Get the login function from context
 
@@ -26,7 +27,42 @@ const Register = () => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+  // Google OAuth Handler
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      setError("");
 
+      try {
+        const res = await axios.post(
+          `${process.env.REACT_APP_API_URL}/api/auth/google`,
+          {
+            credential: tokenResponse.access_token,
+          }
+        );
+
+        const { token, user, requiresProfileCompletion } = res.data;
+
+        if (requiresProfileCompletion) {
+          localStorage.setItem("tempToken", token);
+          localStorage.setItem("tempUser", JSON.stringify(user));
+          navigate("/complete-profile");
+        } else {
+          login(user, token);
+        }
+      } catch (err) {
+        setError(
+          err.response?.data?.message ||
+            "Google sign-in failed. Please try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      setError("Google sign-in failed. Please try again.");
+    },
+  });
   /*
   // --- OTP Sending Logic (for future use) ---
   const sendOtp = async () => {
@@ -227,6 +263,25 @@ const Register = () => {
               Login here
             </Link>
           </p>
+          {/* Google Sign-In Button */}
+          <button
+            onClick={() => handleGoogleLogin()}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 text-gray-700 dark:text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 mb-6"
+          >
+            {loading ? (
+              "Signing in..."
+            ) : (
+              <>
+                <img
+                  src="https://www.google.com/favicon.ico"
+                  alt="Google"
+                  className="w-5 h-5"
+                />
+                Continue with Google
+              </>
+            )}
+          </button>
         </form>
       </div>
     </div>

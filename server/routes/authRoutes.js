@@ -1,39 +1,71 @@
-// const express = require("express");
-// const router = express.Router();
-// const {
-//   registerUser,
-//   loginUser,
-//   sendOtp,
-//   verifyOtp,
-// } = require("../controllers/authController");
-
-// router.post("/register", registerUser);
-// router.post("/login", loginUser);
-// router.post("/send-otp", sendOtp);
-// router.post("/verify-otp", verifyOtp);
-
-// module.exports = router;
 const express = require("express");
 const router = express.Router();
+const { requireAuth } = require("../middleware/authMiddleware");
 const {
-  registerUser,
-  loginUser,
-  sendOtp,
-  verifyOtp,
-  getProfile, // ✅ NEW: Import getProfile
-  updateProfile, // ✅ NEW: Import updateProfile
+  googleAuth,
+  completeProfile,
+  registerWithEmail,
+  loginWithEmail,
+  getProfile,
+  updateProfile,
+  logout,
 } = require("../controllers/authController");
-const { requireAuth } = require("../middleware/authMiddleware"); // ✅ NEW: Import requireAuth
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/send-otp", sendOtp);
-router.post("/verify-otp", verifyOtp);
+// ==================== GOOGLE OAUTH ROUTES ====================
 
-// ✅ NEW: Route to get the user's profile
+/**
+ * POST /api/auth/google
+ * Handle Google OAuth login/signup
+ * Body: { credential: "google_access_token" }
+ */
+router.post("/google", googleAuth);
+
+/**
+ * POST /api/auth/complete-profile
+ * Complete user profile after OAuth (add role, phone, etc.)
+ * Requires: Authentication
+ * Body: { role, phone, hostelName? }
+ */
+router.post("/complete-profile", requireAuth, completeProfile);
+
+// ==================== EMAIL/PASSWORD AUTH ROUTES ====================
+
+/**
+ * POST /api/auth/register
+ * Register with email/password
+ * Body: { name, email, phone, password, role, hostelName? }
+ */
+router.post("/register", registerWithEmail);
+
+/**
+ * POST /api/auth/login
+ * Login with email/password
+ * Body: { email, password, role? }
+ */
+router.post("/login", loginWithEmail);
+
+// ==================== PROFILE MANAGEMENT ROUTES ====================
+
+/**
+ * GET /api/auth/profile
+ * Get current user profile
+ * Requires: Authentication
+ */
 router.get("/profile", requireAuth, getProfile);
 
-// ✅ NEW: Route to update the user's profile
+/**
+ * PUT /api/auth/profile
+ * Update user profile
+ * Requires: Authentication
+ * Body: { name?, phone?, hostelName? }
+ */
 router.put("/profile", requireAuth, updateProfile);
+
+/**
+ * POST /api/auth/logout
+ * Logout (token removal happens on frontend)
+ * Requires: Authentication
+ */
+router.post("/logout", requireAuth, logout);
 
 module.exports = router;
