@@ -27,6 +27,33 @@ const Register = () => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  // Password validation function
+  const validatePassword = (password) => {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (password.length < minLength) {
+      return "Password must be at least 8 characters long.";
+    }
+    if (!hasUpperCase) {
+      return "Password must contain at least one uppercase letter.";
+    }
+    if (!hasLowerCase) {
+      return "Password must contain at least one lowercase letter.";
+    }
+    if (!hasNumber) {
+      return "Password must contain at least one number.";
+    }
+    if (!hasSpecialChar) {
+      return "Password must contain at least one special character.";
+    }
+    return null;
+  };
+
   // Google OAuth Handler
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -38,7 +65,7 @@ const Register = () => {
           `${process.env.REACT_APP_API_URL}/api/auth/google`,
           {
             credential: tokenResponse.access_token,
-          }
+          },
         );
 
         const { token, user, requiresProfileCompletion } = res.data;
@@ -53,7 +80,7 @@ const Register = () => {
       } catch (err) {
         setError(
           err.response?.data?.message ||
-            "Google sign-in failed. Please try again."
+            "Google sign-in failed. Please try again.",
         );
       } finally {
         setLoading(false);
@@ -86,8 +113,11 @@ const Register = () => {
 
     if (form.password !== form.confirmPassword)
       return setError("Passwords do not match!");
-    if (form.password.length < 6)
-      return setError("Password must be at least 6 characters long.");
+
+    // Enhanced password validation
+    const passwordError = validatePassword(form.password);
+    if (passwordError) return setError(passwordError);
+
     if (form.phone.length !== 10)
       return setError("Please enter a valid 10-digit phone number.");
     if (role === "owner" && !form.hostelName.trim())

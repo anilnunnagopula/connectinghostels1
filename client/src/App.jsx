@@ -10,7 +10,7 @@ import About from "./pages/About";
 import Navbar from "./components/NavBar";
 import Footer from "./components/Footer";
 import HostelListings from "./pages/HostelListings";
-import Contact from "./pages/Contact"; 
+import Contact from "./pages/Contact";
 import StudentDashboard from "./pages/student/StudentDashboard";
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import PageNotFound from "./pages/PageNotFound";
@@ -21,9 +21,12 @@ import EditProfile from "./pages/EditProfile";
 import StudentSettingsPage from "./pages/student/SettingsPage";
 import StudentPaymentsPage from "./pages/student/PaymentsPage";
 import MyBookingsPage from "./pages/student/MyBookingsPage";
-import CompleteProfile from "./pages/CompleteProfile"
+import CompleteProfile from "./pages/CompleteProfile";
 
-//owner
+// Owner Layout
+import OwnerLayout from "./components/layout/OwnerLayout";
+
+// Owner Pages
 import RulesAndRegulations from "./pages/owner/RulesAndRegulations";
 import AddHostel from "./pages/owner/AddHostel";
 import ViewRequests from "./pages/owner/ViewRequests";
@@ -44,8 +47,7 @@ import OwnerSettingsPage from "./pages/owner/SettingsPage";
 import OwnerNotificationsPage from "./pages/owner/OwnerNotificationsPage";
 import ManageRooms from "./pages/owner/ManageRooms";
 
-
-//legal
+// Legal
 import PrivacyPolicy from "./pages/legal/privacy-policy";
 import TermsAndConditions from "./pages/legal/terms-and-conditions";
 import CookiePolicy from "./pages/legal/cookie-policy";
@@ -54,9 +56,11 @@ import CommunityGuidelines from "./pages/legal/community-guidelines";
 import PartnerTerms from "./pages/legal/partner-terms";
 import DataProtection from "./pages/legal/data-protection";
 import Transparency from "./pages/legal/transparency";
-//student 
+
+// Student
 import HostelDetails from "./pages/student/HostelDetails";
 import MyHostelPage from "./pages/student/MyHostelPage";
+
 const App = () => {
   return (
     <Router>
@@ -64,48 +68,25 @@ const App = () => {
         <DarkModeProvider>
           <Navbar />
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
-            <Route path="/owner-dashboard" element={<OwnerDashboard />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/profile" element={<ViewProfile />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
+            <Route path="/support" element={<Support />} />
+
+            {/* Student Routes (No Layout Wrapper Yet) */}
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
             <Route
               path="/student/profile-settings"
               element={<StudentSettingsPage />}
             />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            {/* owner */}
-            <Route path="/owner/add-hostel" element={<AddHostel />} />
-            <Route path="/owner/view-requests" element={<ViewRequests />} />
-            <Route path="/owner/add-student" element={<AddStudent />} />
-            <Route path="/owner/send-alerts" element={<SendAlerts />} />
-            <Route path="/owner/my-hostels" element={<MyHostels />} />
-            <Route path="/owner/filled-rooms" element={<FilledRooms />} />
-            <Route path="/owner/my-students" element={<MyStudents />} />
-            <Route path="/owner/view-complaints" element={<ViewComplaints />} />
-            <Route path="/owner/available-rooms" element={<AvailableRooms />} />
-            <Route path="/owner/manage-rooms" element={<ManageRooms />} />
-            <Route
-              path="/owner/rules-and-regulations"
-              element={<RulesAndRegulations />}
-            />
-            <Route path="/owner/payment-settings" element={<PaymentsPage />} />
-            <Route
-              path="/owner/profile-settings"
-              element={<OwnerSettingsPage />}
-            />
-            <Route
-              path="/owner/notifications"
-              element={<OwnerNotificationsPage />}
-            />
-
-            {/* student  */}
             <Route path="/student/hostels" element={<HostelListings />} />
             <Route path="/student/hostels/:id" element={<HostelListings />} />
             <Route path="/student/interested" element={<Interested />} />
@@ -122,7 +103,129 @@ const App = () => {
             <Route path="/student/my-bookings" element={<MyBookingsPage />} />
             <Route path="/student/my-hostel" element={<MyHostelPage />} />
 
-            {/* legal  */}
+            {/* Owner Routes - Wrapped in OwnerLayout */}
+            <Route
+              path="/owner-dashboard"
+              element={
+                <OwnerLayout>
+                  <OwnerDashboard />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/add-hostel"
+              element={
+                <OwnerLayout>
+                  <AddHostel />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/view-requests"
+              element={
+                <OwnerLayout>
+                  <ViewRequests />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/add-student"
+              element={
+                <OwnerLayout>
+                  <AddStudent />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/send-alerts"
+              element={
+                <OwnerLayout>
+                  <SendAlerts />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/my-hostels"
+              element={
+                <OwnerLayout>
+                  <MyHostels />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/filled-rooms"
+              element={
+                <OwnerLayout>
+                  <FilledRooms />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/my-students"
+              element={
+                <OwnerLayout>
+                  <MyStudents />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/view-complaints"
+              element={
+                <OwnerLayout>
+                  <ViewComplaints />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/available-rooms"
+              element={
+                <OwnerLayout>
+                  <AvailableRooms />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/manage-rooms"
+              element={
+                <OwnerLayout>
+                  <ManageRooms />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/rules-and-regulations"
+              element={
+                <OwnerLayout>
+                  <RulesAndRegulations />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/payment-settings"
+              element={
+                <OwnerLayout>
+                  <PaymentsPage />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/profile-settings"
+              element={
+                <OwnerLayout>
+                  <OwnerSettingsPage />
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/notifications"
+              element={
+                <OwnerLayout>
+                  <OwnerNotificationsPage />
+                </OwnerLayout>
+              }
+            />
+
+            {/* Legal Routes */}
             <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
             <Route
               path="/legal/terms-and-conditions"
@@ -137,8 +240,8 @@ const App = () => {
             <Route path="/legal/partner-terms" element={<PartnerTerms />} />
             <Route path="/legal/data-protection" element={<DataProtection />} />
             <Route path="/legal/transparency" element={<Transparency />} />
-            <Route path="/support" element={<Support />} />
 
+            {/* 404 Page */}
             <Route path="*" element={<PageNotFound />} />
           </Routes>
           <Footer />

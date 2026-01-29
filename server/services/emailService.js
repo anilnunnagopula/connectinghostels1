@@ -36,8 +36,8 @@ const sendEmail = async (options) => {
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `${process.env.EMAIL_FROM_NAME || "Hostel Finder"} <${
-        process.env.EMAIL_FROM || "noreply@hostelfinder.com"
+      from: `${process.env.EMAIL_FROM_NAME || "Connecting Hostels"} <${
+        process.env.EMAIL_FROM || "noreply@connectinghostels.com"
       }>`,
       to: options.email,
       subject: options.subject,
@@ -69,7 +69,7 @@ const sendPasswordResetEmail = async (user, resetToken) => {
   const message = `
 Hi ${user.name},
 
-You requested to reset your password for your Hostel Finder account.
+You requested to reset your password for your Connecting Hostels  account.
 
 Click the link below to reset your password:
 ${resetURL}
@@ -79,7 +79,7 @@ This link will expire in 10 minutes.
 If you didn't request this, please ignore this email and your password will remain unchanged.
 
 Best regards,
-Hostel Finder Team
+Connecting Hostels Team
   `;
 
   const html = `
@@ -149,7 +149,7 @@ Hostel Finder Team
     
     <p>Hi <strong>${user.name}</strong>,</p>
     
-    <p>You requested to reset your password for your Hostel Finder account.</p>
+    <p>You requested to reset your password for your Connecting Hostels account.</p>
     
     <p>Click the button below to reset your password:</p>
     
@@ -167,7 +167,7 @@ Hostel Finder Team
     <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
     
     <div class="footer">
-      <p>Best regards,<br><strong>Hostel Finder Team</strong></p>
+      <p>Best regards,<br><strong>Connecting Hostels Team</strong></p>
       <p style="margin-top: 10px;">
         This is an automated email. Please do not reply to this message.
       </p>
@@ -197,7 +197,7 @@ Your password has been successfully changed.
 If you did not make this change, please contact our support team immediately.
 
 Best regards,
-Hostel Finder Team
+Connecting Hostels Team
   `;
 
   const html = `
@@ -261,7 +261,7 @@ Hostel Finder Team
     </div>
     
     <div class="footer">
-      <p>Best regards,<br><strong>Hostel Finder Team</strong></p>
+      <p>Best regards,<br><strong>Connecting Hostels Team</strong></p>
       <p style="margin-top: 10px;">
         This is an automated email. Please do not reply to this message.
       </p>
