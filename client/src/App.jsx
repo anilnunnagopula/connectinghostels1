@@ -72,7 +72,7 @@ const App = () => {
             <Route path="/student-dashboard" element={<StudentDashboard />} />
             <Route path="/owner-dashboard" element={<OwnerDashboard />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/complete-profile" element={<CompleteProfile />} />
             <Route path="/profile" element={<ViewProfile />} />
             <Route

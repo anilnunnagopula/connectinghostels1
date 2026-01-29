@@ -170,6 +170,12 @@ const Login = () => {
                 {showPassword ? "🙈" : "👁️"}
               </span>
             </div>
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-600 hover:underline block text-right mt-1"
+            >
+              Forgot password?
+            </Link>
           </div>
           <button
             type="submit"
@@ -208,12 +214,12 @@ const Login = () => {
                 Continue with Google
               </>
             )}
-          </button> 
+          </button>
         </form>
 
         {/* Updated Bottom Text */}
         <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
-          By continuing, you agree to our Terms of Service and Privacy Policy
+          By continuing, you agree to our Terms and Privacy Policy
         </p>
       </div>
     </div>

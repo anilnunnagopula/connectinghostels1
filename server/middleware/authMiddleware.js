@@ -5,6 +5,7 @@ const User = require("../models/User");
 
 /**
  * Verify JWT token and attach user to req.user
+ * ✅ UPDATED: Now checks if password was changed after token issue
  */
 const requireAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -19,15 +20,25 @@ const requireAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Attach full user object to request
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select(
+      "-password +passwordChangedAt",
+    ); // ✅ Include passwordChangedAt
 
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
 
+    // ✅ NEW: Check if password was changed after token was issued
+    if (user.changedPasswordAfter && user.changedPasswordAfter(decoded.iat)) {
+      return res.status(401).json({
+        error: "Password was recently changed. Please log in again.",
+      });
+    }
+
     req.user = user;
     next();
   } catch (err) {
+    console.error("Auth middleware error:", err);
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 };
@@ -84,6 +95,51 @@ const requireStudent = (req, res, next) => {
   next();
 };
 
+// ==================== 🆕 OPTIONAL: RATE LIMITING MIDDLEWARE ====================
+
+/**
+ * Rate limiter for password reset endpoints
+ * Prevents abuse of forgot password feature
+ * Usage: router.post('/forgot-password', passwordResetRateLimiter, forgotPassword)
+ */
+const passwordResetRateLimiter = (req, res, next) => {
+  // This is a simple in-memory rate limiter
+  // For production, use express-rate-limit or Redis
+
+  const { email } = req.body;
+
+  if (!email) {
+    return next();
+  }
+
+  // Store attempts in memory (will reset on server restart)
+  if (!global.passwordResetAttempts) {
+    global.passwordResetAttempts = new Map();
+  }
+
+  const now = Date.now();
+  const attempts = global.passwordResetAttempts.get(email) || [];
+
+  // Filter attempts within last 15 minutes
+  const recentAttempts = attempts.filter(
+    (timestamp) => now - timestamp < 15 * 60 * 1000,
+  );
+
+  // Allow max 3 attempts per 15 minutes
+  if (recentAttempts.length >= 3) {
+    return res.status(429).json({
+      error: "Too many password reset attempts",
+      message: "Please try again in 15 minutes",
+    });
+  }
+
+  // Add current attempt
+  recentAttempts.push(now);
+  global.passwordResetAttempts.set(email, recentAttempts);
+
+  next();
+};
+
 // ==================== USAGE EXAMPLES ====================
 /*
 // Route requires authentication only
@@ -97,6 +153,9 @@ router.post('/hostels', requireAuth, requireProfileComplete, requireOwner, creat
 
 // Route requires authentication + complete profile + student role
 router.post('/bookings', requireAuth, requireProfileComplete, requireStudent, createBooking);
+
+// ✅ NEW: Password reset with rate limiting
+router.post('/forgot-password', passwordResetRateLimiter, forgotPassword);
 */
 
 module.exports = {
@@ -104,4 +163,5 @@ module.exports = {
   requireProfileComplete,
   requireOwner,
   requireStudent,
+  passwordResetRateLimiter, // ✅ NEW
 };

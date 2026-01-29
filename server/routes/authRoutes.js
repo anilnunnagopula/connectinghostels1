@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { requireAuth } = require("../middleware/authMiddleware");
+const {
+  requireAuth,
+  passwordResetRateLimiter,
+} = require("../middleware/authMiddleware");
 const {
   googleAuth,
   completeProfile,
@@ -9,6 +12,9 @@ const {
   getProfile,
   updateProfile,
   logout,
+  forgotPassword, 
+  resetPassword, 
+  verifyResetToken, 
 } = require("../controllers/authController");
 
 // ==================== GOOGLE OAUTH ROUTES ====================
@@ -44,6 +50,33 @@ router.post("/register", registerWithEmail);
  */
 router.post("/login", loginWithEmail);
 
+// ==================== 🆕 PASSWORD RESET ROUTES ====================
+
+/**
+ * POST /api/auth/forgot-password
+ * Request password reset email
+ * Public route
+ * Body: { email }
+ */
+router.post("/forgot-password", forgotPassword);
+
+/**
+ * POST /api/auth/reset-password/:token
+ * Reset password using token from email
+ * Public route
+ * Body: { password, confirmPassword }
+ */
+router.post("/reset-password/:token", resetPassword);
+
+/**
+ * GET /api/auth/verify-reset-token/:token
+ * Verify if reset token is valid (optional - for frontend validation)
+ * Public route
+ */
+router.get("/verify-reset-token/:token", verifyResetToken);
+
+// Apply rate limiter to forgot password
+router.post("/forgot-password", passwordResetRateLimiter, forgotPassword);
 // ==================== PROFILE MANAGEMENT ROUTES ====================
 
 /**

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema(
   {
@@ -48,6 +49,29 @@ const userSchema = new mongoose.Schema(
       select: false, // Don't return password in queries by default
     },
 
+    // ==================== NEW: PASSWORD RESET FIELDS ====================
+    resetPasswordToken: {
+      type: String,
+      select: false, // Don't return in queries
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false, // Don't return in queries
+    },
+
+    // Track when password was last changed (for JWT invalidation)
+    passwordChangedAt: {
+      type: Date,
+      select: false,
+    },
+
+    // Authentication provider tracking
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+
     // ==================== PHASE 2+ FIELDS (Frozen) ====================
     // Uncomment when needed
     /*
@@ -60,8 +84,10 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
+
+// ==================== EXISTING VIRTUALS & HOOKS ====================
 
 // Virtual field to check if profile is complete
 userSchema.virtual("isProfileComplete").get(function () {
@@ -77,5 +103,57 @@ userSchema.pre("save", function (next) {
   }
   next();
 });
+
+// ==================== NEW: PASSWORD RESET METHODS ====================
+
+/**
+ * Generate a cryptographically secure password reset token
+ * @returns {String} Unhashed reset token (to be sent via email)
+ */
+userSchema.methods.createPasswordResetToken = function () {
+  // Generate random 32-byte token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  // Hash token before storing in database (security best practice)
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Set expiry time (10 minutes from now)
+  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  // Return the unhashed token (this will be sent via email)
+  return resetToken;
+};
+
+/**
+ * Check if password was changed after a JWT was issued
+ * Used to invalidate old tokens after password reset
+ * @param {Number} JWTTimestamp - The timestamp when JWT was issued
+ * @returns {Boolean} True if password was changed after JWT
+ */
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10,
+    );
+    return JWTTimestamp < changedTimestamp;
+  }
+  // Password was never changed
+  return false;
+};
+
+/**
+ * Check if user can reset password (not OAuth-only user)
+ * @returns {Boolean} True if user can reset password
+ */
+userSchema.methods.canResetPassword = function () {
+  // User can reset password if:
+  // 1. They have a password set (not OAuth-only)
+  // 2. OR they are a local provider user
+  return !!(this.password || this.authProvider === "local");
+};
 
 module.exports = mongoose.model("User", userSchema);

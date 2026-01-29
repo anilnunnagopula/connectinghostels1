@@ -122,8 +122,8 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-5">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-3">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6 text-blue-700 dark:text-white">
           {role === "owner"
             ? "Hostel Owner Registration"
@@ -283,6 +283,10 @@ const Register = () => {
             )}
           </button>
         </form>
+        {/* Updated Bottom Text */}
+        <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
+          By continuing, you agree to our Service and Privacy Policy
+        </p>
       </div>
     </div>
   );
