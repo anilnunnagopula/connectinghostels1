@@ -26,6 +26,7 @@ const Navbar = () => {
 
   const isLoggedIn = !!user;
   const userRole = user?.role;
+  const isOwnerPage = location.pathname.startsWith("/owner");
 
   const navigateToDashboard = useCallback(() => {
     setIsMobileMenuOpen(false);
@@ -83,30 +84,35 @@ const Navbar = () => {
     </button>
   );
 
-  const IconLink = ({ to, title, icon: Icon }) => (
+  const IconLink = ({ to, title, icon: Icon, badge }) => (
     <Link
       to={to}
       onClick={() => setIsMobileMenuOpen(false)}
       title={title}
-      className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+      className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
     >
       <Icon size={20} />
+      {badge > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
     </Link>
   );
 
   return (
     <nav className="bg-white dark:bg-slate-800 shadow-md sticky top-0 z-50 text-slate-800 dark:text-slate-200">
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-2">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Left Side: Brand */}
           <button
             onClick={navigateToDashboard}
-            className="text-2xl font-bold text-blue-600 dark:text-blue-400"
+            className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
           >
             ConnectingHostels
           </button>
 
-          {/* Right Side: All Links, Actions & Profile */}
+          {/* Right Side: Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-3">
             <NavButton
               onClick={navigateToDashboard}
@@ -118,13 +124,15 @@ const Navbar = () => {
             </NavButton>
             {!isLoggedIn && <NavLink to="/about">About Us</NavLink>}
 
-            {userRole === "owner" && (
+            {/* Owner-specific links - Hide when on owner pages (sidebar has them) */}
+            {userRole === "owner" && !isOwnerPage && (
               <>
                 <NavLink to="/owner/my-hostels">My Hostels</NavLink>
                 <NavLink to="/owner/view-requests">Booking Requests</NavLink>
                 <NavLink to="/owner/payment-settings">Payouts</NavLink>
               </>
             )}
+
             {userRole === "student" && (
               <NavLink to="/student/hostels">Browse Hostels</NavLink>
             )}
@@ -171,15 +179,18 @@ const Navbar = () => {
                     to={`/${userRole}/notifications`}
                     title="Notifications"
                     icon={Bell}
+                    badge={0} // Can be made dynamic later
                   />
 
                   <div className="relative">
                     <button
                       onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
-                      className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-full text-sm font-medium"
+                      className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-2 rounded-full text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                     >
                       <UserCircle size={20} />
-                      <span>{user.name || "Profile"}</span>
+                      <span className="hidden lg:inline">
+                        {user.name || "Profile"}
+                      </span>
                     </button>
                     {isProfileDropdownOpen && (
                       <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 focus:outline-none">
@@ -190,21 +201,21 @@ const Navbar = () => {
                                 ? "/student-dashboard"
                                 : "/owner-dashboard"
                             }
-                            className="block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                            className="block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             onClick={() => setIsProfileDropdownOpen(false)}
                           >
                             Dashboard
                           </Link>
                           <Link
                             to={`/${userRole}/profile-settings`}
-                            className="block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                            className="block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             onClick={() => setIsProfileDropdownOpen(false)}
                           >
                             Settings
                           </Link>
                           <button
                             onClick={logout}
-                            className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                           >
                             <LogOut size={16} /> Logout
                           </button>
@@ -216,7 +227,7 @@ const Navbar = () => {
               ) : (
                 <Link
                   to="/login"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
                 >
                   Login
                 </Link>
@@ -225,10 +236,23 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            {isLoggedIn && (
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                title="Toggle Theme"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                {darkMode ? (
+                  <Sun size={20} className="text-yellow-400" />
+                ) : (
+                  <Moon size={20} className="text-blue-500" />
+                )}
+              </button>
+            )}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-md inline-flex items-center justify-center"
+              className="p-2 rounded-md inline-flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
               {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
@@ -238,7 +262,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden">
+        <div className="md:hidden border-t border-slate-200 dark:border-slate-700">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <NavButton
               onClick={navigateToDashboard}
@@ -249,13 +273,16 @@ const Navbar = () => {
               Home
             </NavButton>
             {!isLoggedIn && <NavLink to="/about">About Us</NavLink>}
-            {userRole === "owner" && (
+
+            {/* Owner links in mobile menu only if NOT on owner pages */}
+            {userRole === "owner" && !isOwnerPage && (
               <>
                 <NavLink to="/owner/my-hostels">My Hostels</NavLink>
                 <NavLink to="/owner/view-requests">Booking Requests</NavLink>
                 <NavLink to="/owner/payment-settings">Payouts</NavLink>
               </>
             )}
+
             {userRole === "student" && (
               <NavLink to="/student/hostels">Browse Hostels</NavLink>
             )}
@@ -278,7 +305,7 @@ const Navbar = () => {
                   </NavLink>
                   <button
                     onClick={logout}
-                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600"
+                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors"
                   >
                     <LogOut size={16} /> Logout
                   </button>
@@ -287,7 +314,7 @@ const Navbar = () => {
                 <Link
                   to="/login"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block w-full text-left px-3 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
+                  className="block w-full text-left px-3 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors"
                 >
                   Login / Sign Up
                 </Link>

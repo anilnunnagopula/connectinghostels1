@@ -55,6 +55,8 @@ const OwnerDashboard = () => {
           `${process.env.REACT_APP_API_URL}/api/owner/dashboard/metrics`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
+        console.log("📊 Owner Dashboard Metrics:", res.data);
+
         setStats({
           totalHostels: res.data.totalHostels,
           roomsFilled: res.data.roomsFilled,

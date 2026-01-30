@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Footer from "../../components/Footer";
 import {
   Building,
   BedDouble,
@@ -237,6 +238,7 @@ const StudentDashboard = () => {
         </h2>
         <HostelListings />
       </div>
+      
     </div>
   );
 };

@@ -1,6 +1,19 @@
-import React, { useState, useEffect } from "react"; // Added useEffect for dark mode
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles, LocateFixed } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  LocateFixed,
+  Upload,
+  X,
+  CheckCircle,
+  Building,
+  Phone,
+  MapPin,
+  IndianRupee,
+  Bed,
+  FileText,
+} from "lucide-react";
 import axios from "axios";
 
 const AddHostel = () => {
@@ -13,26 +26,16 @@ const AddHostel = () => {
     category: "",
     description: "",
     location: "",
+    pricePerMonth: "",
   });
-  const [loading, setLoading] = useState(false); // General loading state for form actions
-  const [aiLoading, setAiLoading] = useState(false); // Specific loading state for AI generation
-  const [locationLoading, setLocationLoading] = useState(false); // Specific loading state for location
+
+  const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [video, setVideo] = useState(null);
-
-  // State for dark mode (conceptual, typically managed by a context/global state)
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Effect to apply dark mode class to body based on state (for demonstration)
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    // In a real app, you'd likely read user preference from localStorage or a global context
-    // and provide a toggle button in a header/settings component.
-  }, [isDarkMode]);
+  const [currentStep, setCurrentStep] = useState(1); // Step indicator
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,14 +43,25 @@ const AddHostel = () => {
   };
 
   const handleImageChange = (e) => {
-    setImages(Array.from(e.target.files));
+    const files = Array.from(e.target.files);
+    setImages(files);
+
+    // Create previews
+    const previews = files.map((file) => URL.createObjectURL(file));
+    setImagePreviews(previews);
+  };
+
+  const removeImage = (index) => {
+    const newImages = images.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImages(newImages);
+    setImagePreviews(newPreviews);
   };
 
   const handleVideoChange = (e) => {
     setVideo(e.target.files[0]);
   };
 
-  // Function to generate description using Gemini API
   const handleGenerateDescription = async () => {
     setAiLoading(true);
     try {
@@ -59,12 +73,9 @@ const AddHostel = () => {
 
         Keep it under 100 words. Focus on benefits for students/working professionals.`;
 
-      const chatHistory = [];
-      chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-
+      const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
       const payload = { contents: chatHistory };
       const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
-; // Canvas will provide this in runtime
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
@@ -75,31 +86,21 @@ const AddHostel = () => {
 
       const result = await response.json();
 
-      if (
-        result.candidates &&
-        result.candidates.length > 0 &&
-        result.candidates[0].content &&
-        result.candidates[0].content.parts &&
-        result.candidates[0].content.parts.length > 0
-      ) {
+      if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
         const generatedText = result.candidates[0].content.parts[0].text;
         setFormData({ ...formData, description: generatedText });
         alert("✨ Description generated successfully!");
       } else {
         alert("❌ Failed to generate description. Please try again.");
-        console.error("Gemini API response structure unexpected:", result);
       }
     } catch (err) {
-      alert(
-        "❌ Error generating description. Please check your network or try again."
-      );
-      console.error("Error calling Gemini API:", err);
+      alert("❌ Error generating description. Please try again.");
+      console.error("Gemini API error:", err);
     } finally {
       setAiLoading(false);
     }
   };
 
-  // Function to get current location
   const handleUseCurrentLocation = () => {
     if (navigator.geolocation) {
       setLocationLoading(true);
@@ -108,32 +109,26 @@ const AddHostel = () => {
           const { latitude, longitude } = position.coords;
           setFormData({
             ...formData,
-            location: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(
-              4
-            )}`,
+            location: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`,
           });
           alert("📍 Current location fetched!");
           setLocationLoading(false);
         },
         (error) => {
-          console.error("Error getting location:", error);
-          alert(
-            "❌ Error getting location. Please enable location services or enter manually."
-          );
+          alert("❌ Error getting location. Please enable location services.");
           setLocationLoading(false);
-        }
+        },
       );
     } else {
       alert("⚠️ Geolocation is not supported by your browser.");
     }
   };
 
-  // Handles form submission, including file uploads
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Basic client-side validation
+    // Validation
     if (
       !formData.name ||
       !formData.contact ||
@@ -145,50 +140,42 @@ const AddHostel = () => {
       images.length === 0
     ) {
       alert(
-        "Please fill in all required fields and upload at least one image."
+        "Please fill in all required fields and upload at least one image.",
       );
       setLoading(false);
       return;
     }
 
-    // For large-scale applications, you'd typically send a FormData object
-    // which handles both text fields and file uploads.
     const data = new FormData();
-    for (const key in formData) {
-      data.append(key, formData[key]);
-    }
 
-    // Append each image file
+    // ===== STRICT BACKEND MAPPING =====
+    data.append("name", formData.name);
+    data.append("contactNumber", formData.contact); // ✅ FIX
+    data.append("totalRooms", formData.rooms); // ✅ FIX
+    data.append("amenities", formData.facilities); // ✅ FIX
+    data.append("category", formData.category); // OR category
+    data.append("description", formData.description);
+    data.append("pricePerMonth", formData.pricePerMonth);
+
+    // TEMP mapping (until UI split later)
+    data.append("address", formData.location); // ✅ REQUIRED
+    data.append("locality", "Other"); // ✅ REQUIRED ENUM
+
+    // Images
     images.forEach((image) => {
-      data.append(`images`, image); // 'images' should match the field name expected by your backend
+      data.append("images", image);
     });
 
-    // Append video file if available
     if (video) {
-      data.append("video", video); // 'video' should match the field name expected by your backend
+      data.append("video", video);
     }
 
-    try {
-      // In a real-time, large-scale application, this axios.post request
-      // would go to your dedicated backend API (e.g., Node.js, Python, Java).
-      // The backend would:
-      // 1. Validate the incoming data.
-      // 2. Store text data (hostel details) in a database (e.g., MongoDB, PostgreSQL).
-      // 3. Upload images/videos to cloud storage (e.g., AWS S3, Google Cloud Storage, Cloudinary).
-      // 4. Save the URLs of the uploaded files in the database along with hostel details.
-      // 5. Respond with success or detailed error messages.
 
-      // You would also typically include an authorization token for authenticated users:
-      const authToken = localStorage.getItem("token"); // Get token
+    try {
+      const authToken = localStorage.getItem("token");
       if (!authToken) {
         alert("Authentication token not found. Please log in again.");
         return;
-      }
-      const headers = {
-        "Content-Type": "multipart/form-data", // Essential for file uploads
-      };
-      if (authToken) {
-        headers["Authorization"] = `Bearer ${authToken}`; // Add token for authenticated requests
       }
 
       const response = await axios.post(
@@ -199,17 +186,17 @@ const AddHostel = () => {
             "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${authToken}`,
           },
-        }
+        },
       );
 
+      // Success animation/message
       alert("✅ Hostel added successfully!");
-      console.log("Hostel added:", response.data);  
-      navigate("/owner-dashboard");  
-    } catch (err) { 
+      navigate("/owner/my-hostels");
+    } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        "Failed to add hostel. Please check your input and try again.";
+        "Failed to add hostel. Please try again.";
       alert(`❌ ${errorMessage}`);
       console.error("Error adding hostel:", err);
     } finally {
@@ -217,272 +204,383 @@ const AddHostel = () => {
     }
   };
 
+  // Form step validation
+  const canProceedToStep2 =
+    formData.name && formData.contact && formData.category;
+  const canProceedToStep3 =
+    canProceedToStep2 && formData.rooms && formData.location;
+
   return (
-    // Main container with responsive padding and font-inter
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white p-4 sm:p-8 font-inter">
-      {" "}
-      {/* Added font-inter */}
-      {/* Dark mode toggle (for demonstration, typically in a header/settings) */}
-      <div className="absolute top-4 right-4">
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="px-3 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white text-xs font-semibold"
-        >
-          {isDarkMode ? "Light Mode" : "Dark Mode"}
-        </button>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-3">
+            <Building className="text-blue-500" />
+            Add New Hostel
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400">
+            Fill in the details to list your hostel property
+          </p>
+        </div>
+
+        {/* Step Indicator */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 mb-6">
+          <div className="flex items-center justify-between">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center flex-1">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
+                    currentStep >= step
+                      ? "bg-blue-500 text-white"
+                      : "bg-slate-200 dark:bg-slate-700 text-slate-500"
+                  }`}
+                >
+                  {currentStep > step ? (
+                    <CheckCircle className="w-6 h-6" />
+                  ) : (
+                    step
+                  )}
+                </div>
+                {step < 3 && (
+                  <div
+                    className={`flex-1 h-1 mx-2 transition-colors ${
+                      currentStep > step
+                        ? "bg-blue-500"
+                        : "bg-slate-200 dark:bg-slate-700"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+            <span>Basic Info</span>
+            <span>Details</span>
+            <span>Media</span>
+          </div>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Step 1: Basic Information */}
+          {currentStep === 1 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 space-y-5">
+              <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">
+                Basic Information
+              </h3>
+
+              {/* Hostel Name */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <Building className="inline w-4 h-4 mr-1" />
+                  Hostel Name *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                  placeholder="e.g. Sunrise Girls Hostel"
+                  required
+                />
+              </div>
+
+              {/* Contact & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <Phone className="inline w-4 h-4 mr-1" />
+                    Contact Number *
+                  </label>
+                  <input
+                    type="tel"
+                    name="contact"
+                    value={formData.contact}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                    placeholder="9876543210"
+                    minLength={10}
+                    maxLength={10}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Category *
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                    required
+                  >
+                    <option value="">Select Category</option>
+                    <option value="Girls">Girls</option>
+                    <option value="Boys">Boys</option>
+                    <option value="Co-Live">Co-Live</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                disabled={!canProceedToStep2}
+                className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+                  canProceedToStep2
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
+                }`}
+              >
+                Next Step →
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Details */}
+          {currentStep === 2 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 space-y-5">
+              <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">
+                Hostel Details
+              </h3>
+
+              {/* Rooms & Price */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <Bed className="inline w-4 h-4 mr-1" />
+                    Total Rooms *
+                  </label>
+                  <input
+                    type="number"
+                    name="rooms"
+                    value={formData.rooms}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                    min="1"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    <IndianRupee className="inline w-4 h-4 mr-1" />
+                    Price/Month
+                  </label>
+                  <input
+                    type="number"
+                    name="pricePerMonth"
+                    value={formData.pricePerMonth}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                    placeholder="8000"
+                  />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <MapPin className="inline w-4 h-4 mr-1" />
+                    Location *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    disabled={locationLoading}
+                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    {locationLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Getting...
+                      </>
+                    ) : (
+                      <>
+                        <LocateFixed className="w-4 h-4" />
+                        Use Current
+                      </>
+                    )}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                  placeholder="e.g. Mangalpally, Hyderabad"
+                  required
+                />
+              </div>
+
+              {/* Facilities */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Facilities *
+                </label>
+                <textarea
+                  name="facilities"
+                  value={formData.facilities}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                  placeholder="WiFi, Mess, AC Rooms, Study Area, etc"
+                  rows="3"
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <FileText className="inline w-4 h-4 mr-1" />
+                    Description *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateDescription}
+                    disabled={aiLoading}
+                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    {aiLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        AI Generate
+                      </>
+                    )}
+                  </button>
+                </div>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                  placeholder="Describe your hostel..."
+                  rows="4"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(1)}
+                  className="flex-1 py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-lg font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(3)}
+                  disabled={!canProceedToStep3}
+                  className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
+                    canProceedToStep3
+                      ? "bg-blue-600 hover:bg-blue-700 text-white"
+                      : "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
+                  }`}
+                >
+                  Next Step →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Media Upload */}
+          {currentStep === 3 && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 space-y-5">
+              <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">
+                Upload Media
+              </h3>
+
+              {/* Images Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <Upload className="inline w-4 h-4 mr-1" />
+                  Hostel Images * ({images.length} selected)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 file:font-semibold hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer"
+                  required
+                />
+
+                {/* Image Previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Video Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Hostel Video (Optional) {video && `(${video.name})`}
+                </label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoChange}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 file:font-semibold hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className="flex-1 py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-lg font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || images.length === 0}
+                  className={`flex-1 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
+                    loading || images.length === 0
+                      ? "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 text-white"
+                  }`}
+                >
+                  {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                  {loading ? "Submitting..." : "Submit Hostel"}
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
       </div>
-      <h2 className="text-2xl font-bold mb-6 text-center sm:text-left text-blue-700 dark:text-blue-300">
-        🏢 Add New Hostel
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        // Responsive form container
-        className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-5"
-      >
-        {/* Hostel Name */}
-        <div>
-          <label
-            htmlFor="name"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Hostel Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="input" // Custom Tailwind class for consistent input styling
-            placeholder="e.g. Sunrise Girls Hostel"
-            required
-            disabled={loading}
-          />
-        </div>
-
-        {/* Contact Number */}
-        <div>
-          <label
-            htmlFor="contact"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Contact Number
-          </label>
-          <input
-            type="number"
-            id="contact"
-            name="contact"
-            value={formData.contact}
-            onChange={handleChange}
-            className="input"
-            placeholder="e.g. 9876543210"
-            minLength={10}
-            required
-            disabled={loading}
-          />
-        </div>
-
-        {/* Rooms Available & Category - responsive layout */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <label
-              htmlFor="rooms"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Rooms Available
-            </label>
-            <input
-              type="number"
-              id="rooms"
-              name="rooms"
-              value={formData.rooms}
-              onChange={handleChange}
-              className="input"
-              required
-              disabled={loading}
-            />
-          </div>
-          <div className="flex-1">
-            <label
-              htmlFor="category"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Category
-            </label>
-            <select
-              id="category"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="input"
-              required
-              disabled={loading}
-            >
-              <option value="">Select</option>
-              <option value="Girls">Girls</option>
-              <option value="Boys">Boys</option>
-              <option value="Co-Live">Co-Live</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Facilities */}
-        <div>
-          <label
-            htmlFor="facilities"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Facilities
-          </label>
-          <textarea
-            id="facilities"
-            name="facilities"
-            value={formData.facilities}
-            onChange={handleChange}
-            className="input"
-            placeholder="WiFi, Mess, AC Rooms, Study Area, etc"
-            rows="3" // Added rows for better textarea display
-            required
-            disabled={loading}
-          />
-        </div>
-
-        {/* Hostel Description with AI Generate button */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          {" "}
-          {/* flex-wrap for mobile */}
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Hostel Description
-          </label>
-          <button
-            type="button"
-            onClick={handleGenerateDescription}
-            className="text-blue-600 text-sm flex items-center gap-1 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={aiLoading || loading} // Disable if AI is loading or general loading
-          >
-            {aiLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" /> Use AI to Generate
-              </>
-            )}
-          </button>
-        </div>
-        <textarea
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="input"
-          placeholder="Leave empty and let AI generate if needed 🤖"
-          rows="5" // Added rows for better textarea display
-          required
-          disabled={loading}
-        />
-
-        {/* Location with Use Current Location button */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          {" "}
-          {/* flex-wrap for mobile */}
-          <label
-            htmlFor="location"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Enter Location
-          </label>
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            className="text-blue-600 text-sm flex items-center gap-1 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={locationLoading || loading}
-          >
-            {locationLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Getting Location...
-              </>
-            ) : (
-              <>
-                <LocateFixed className="w-4 h-4" /> Use Current Location
-              </>
-            )}
-          </button>
-        </div>
-        <input
-          type="text"
-          id="location"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          className="input"
-          placeholder="e.g. Mangalpally, Hyderabad"
-          required
-          disabled={loading}
-        />
-
-        {/* Image Upload */}
-        <div>
-          <label
-            htmlFor="images"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Upload Hostel Images ({images.length} selected)
-          </label>
-          <input
-            type="file"
-            id="images"
-            accept="image/*"
-            multiple
-            onChange={handleImageChange}
-            // Tailwind file input styling for better appearance
-            className="input file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-200 dark:hover:file:bg-blue-800"
-            required
-            disabled={loading}
-          />
-        </div>
-
-        {/* Video Upload */}
-        <div>
-          <label
-            htmlFor="video"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            Upload Hostel Video (Optional) {video ? `(${video.name})` : ""}
-          </label>
-          <input
-            type="file"
-            id="video"
-            accept="video/*"
-            onChange={handleVideoChange}
-            className="input file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-200 dark:hover:file:bg-blue-800"
-            disabled={loading}
-          />
-        </div>
-
-        {/* Submit Button with Loading Indicator */}
-        <button
-          type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          disabled={loading || aiLoading || locationLoading}
-        >
-          {loading ? (
-            <Loader2 className="w-5 h-5 inline-block mr-2 animate-spin" />
-          ) : null}
-          {loading ? "Submitting..." : "Submit Hostel"}
-        </button>
-      </form>
     </div>
   );
 };
 
 export default AddHostel;
-
-// Add the following Tailwind class globally or locally for `.input`
-// .input {
-//   @apply w-full px-3 py-2 mt-1 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white;
-// }
