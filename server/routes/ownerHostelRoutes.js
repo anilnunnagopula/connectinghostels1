@@ -37,7 +37,7 @@ router.get(
 
 // ========== HOSTEL ROUTES ==========
 router.post(
-  "/hostels/add-hostel",
+  "/add-hostel",
   requireAuth,
   requireOwner,
   upload.fields([
@@ -48,7 +48,7 @@ router.post(
 );
 
 router.get(
-  "/hostels/my-hostels",
+  "/my-hostels",
   requireAuth,
   requireOwner,
   hostelController.getMyHostels,

@@ -33,31 +33,37 @@ app.use("/api/otp", otpRoutes);
 
 // ==================== PHASE 2A (OWNER – ACTIVE) ====================
 const ownerRoutes = require("./routes/ownerRoutes");
-const ownerHostelRoutes = require("./routes/ownerHostelRoutes");
+const ownerHostelRoutes = require("./routes/ownerHostelRoutes"); // ✅ Fixed filename
 const roomRoutes = require("./routes/roomRoutes");
 const ruleRoutes = require("./routes/ruleRoutes");
 const ownerPaymentRoutes = require("./routes/ownerPaymentRoutes");
 
-app.use("/api/owner", ownerRoutes);
+// ✅ SPECIFIC ROUTES FIRST
 app.use("/api/owner/hostels", ownerHostelRoutes);
 app.use("/api/owner/rooms", roomRoutes);
 app.use("/api/owner/rules", ruleRoutes);
 app.use("/api/owner/payments", ownerPaymentRoutes);
 
+// ✅ GENERAL ROUTES LAST
+app.use("/api/owner", ownerRoutes);
+
+
 // ==================== PHASE 2B (STUDENT – FROZEN) ====================
-/*
+
 const studentRoutes = require("./routes/studentRoutes");
-const bookingRoutes = require("./routes/bookingRoutes");
-const complaintRoutes = require("./routes/complaintRoutes");
+// const bookingRoutes = require("./routes/bookingRoutes");
+const complaintRoutes = require("./routes/complaintRoutes"); // Kept active for owner view
+/*
 const alertRoutes = require("./routes/alertRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
-
-app.use("/api/student", studentRoutes);
-app.use("/api/bookings", bookingRoutes);
-app.use("/api/complaints", complaintRoutes);
-app.use("/api/alerts", alertRoutes);
-app.use("/api/payments", paymentRoutes);
 */
+
+app.use("/api/students", studentRoutes); // ✅ PLURAL to match ownerService
+// app.use("/api/bookings", bookingRoutes);
+app.use("/api/complaints", complaintRoutes);
+// app.use("/api/alerts", alertRoutes);
+// app.use("/api/payments", paymentRoutes);
+
 
 // ==================== HEALTH CHECK ====================
 app.get("/api/health", (req, res) => {

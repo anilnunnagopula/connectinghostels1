@@ -8,7 +8,11 @@ const {
 } = require("../middleware/authMiddleware");
 
 // Route to add a new student
-router.post("/add", requireAuth, requireOwner, studentController.addStudent);
+// Route to add a new student
+router.post("/", requireAuth, requireOwner, studentController.addStudent);
+
+// Route to delete a student
+router.delete("/:id", requireAuth, requireOwner, studentController.deleteStudent);
 
 // Route to get all students for a specific owner
 router.get(

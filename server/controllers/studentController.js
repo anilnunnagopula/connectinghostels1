@@ -16,6 +16,16 @@ exports.addStudent = async (req, res) => {
         .json({ message: "All required fields are needed." });
     }
 
+    // 1. Check Hostel Availability
+    const hostelDoc = await Hostel.findOne({ _id: hostel, ownerId });
+    if (!hostelDoc) {
+      return res.status(404).json({ message: "Hostel not found." });
+    }
+
+    if (hostelDoc.availableRooms <= 0) {
+      return res.status(400).json({ message: "No available rooms in this hostel." });
+    }
+
     const newStudent = new Student({
       name,
       email,
@@ -28,6 +38,11 @@ exports.addStudent = async (req, res) => {
     });
 
     await newStudent.save();
+
+    // 2. Decrement Available Rooms
+    hostelDoc.availableRooms = Math.max(0, hostelDoc.availableRooms - 1);
+    await hostelDoc.save();
+
     res
       .status(201)
       .json({ message: "Student added successfully", student: newStudent });
@@ -39,6 +54,38 @@ exports.addStudent = async (req, res) => {
     }
     console.error("Error adding student:", err);
     res.status(500).json({ message: "Failed to add student." });
+  }
+};
+
+exports.deleteStudent = async (req, res) => {
+  try {
+    const studentId = req.params.id;
+    const ownerId = req.user.id; // Verify ownership
+
+    const student = await Student.findOne({ _id: studentId, owner: ownerId });
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    // 1. Increment Available Rooms
+    if (student.hostel) {
+      const hostelDoc = await Hostel.findById(student.hostel);
+      if (hostelDoc) {
+        // Ensure we don't exceed total rooms (safety check)
+        if (hostelDoc.availableRooms < hostelDoc.totalRooms) {
+          hostelDoc.availableRooms += 1;
+          await hostelDoc.save();
+        }
+      }
+    }
+
+    // 2. Delete Student
+    await Student.findByIdAndDelete(studentId);
+
+    res.status(200).json({ message: "Student removed successfully" });
+  } catch (err) {
+    console.error("Error deleting student:", err);
+    res.status(500).json({ message: "Failed to remove student." });
   }
 };
 
