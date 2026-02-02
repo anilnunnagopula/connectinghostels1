@@ -1,16 +1,34 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Pencil, Eye, Trash2, MapPin, Bed, Users } from "lucide-react";
+import { API_BASE_URL } from "../../apiConfig";
 
 /**
  * Enhanced HostelCard Component
- * Reusable card for displaying hostel information
+ * Reusable card for displaying hostel information with navigation to view details
  *
  * @param {Object} hostel - Hostel data
  * @param {Function} onDelete - Delete handler
  */
 const HostelCard = ({ hostel, onDelete }) => {
   const navigate = useNavigate();
+
+  // Navigation Helper
+  const goToView = () => navigate(`/owner/hostel/${hostel._id}/view`);
+  const goToEdit = () => navigate(`/owner/hostel/${hostel._id}/edit`);
+
+  // Helper function to construct image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+
+    // If it's already a full URL, return as-is
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+      return imagePath;
+    }
+
+    // Otherwise, construct the full URL using API_BASE_URL
+    return `${API_BASE_URL}/uploads/${imagePath}`;
+  };
 
   // Calculate occupancy percentage
   const totalRooms = hostel.totalRooms || 0;
@@ -44,18 +62,32 @@ const HostelCard = ({ hostel, onDelete }) => {
   return (
     <div className="group bg-white dark:bg-slate-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-200 dark:border-slate-700">
       {/* Image Section */}
-      <div className="relative h-48 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-slate-700 dark:to-slate-600 overflow-hidden">
+      <div
+        onClick={goToView}
+        className="relative h-48 cursor-pointer bg-gradient-to-br from-blue-100 to-blue-50 dark:from-slate-700 dark:to-slate-600 overflow-hidden"
+      >
         {hostel.images && hostel.images.length > 0 ? (
           <img
-            src={hostel.images[0]}
+            src={getImageUrl(hostel.images[0])}
             alt={hostel.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              // Show the Bed icon fallback instead
+              e.target.style.display = "none";
+              e.target.parentElement
+                .querySelector(".fallback-icon")
+                ?.classList.remove("hidden");
+            }}
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Bed className="w-16 h-16 text-slate-300 dark:text-slate-600" />
-          </div>
-        )}
+        ) : null}
+
+        {/* Fallback Icon - shown when no image or image fails */}
+        <div
+          className={`fallback-icon w-full h-full flex items-center justify-center ${hostel.images && hostel.images.length > 0 ? "hidden" : ""}`}
+        >
+          <Bed className="w-16 h-16 text-slate-300 dark:text-slate-600" />
+        </div>
 
         {/* Category Badge */}
         <div className="absolute top-3 right-3">
@@ -69,7 +101,7 @@ const HostelCard = ({ hostel, onDelete }) => {
         {/* Active Status Badge */}
         {!hostel.isActive && (
           <div className="absolute top-3 left-3">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-500 text-white">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-500 text-white shadow-sm">
               Inactive
             </span>
           </div>
@@ -78,14 +110,17 @@ const HostelCard = ({ hostel, onDelete }) => {
 
       {/* Content Section */}
       <div className="p-5">
-        {/* Hostel Name */}
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 line-clamp-1">
+        {/* Hostel Name - Clickable */}
+        <h3
+          onClick={goToView}
+          className="text-lg font-bold text-slate-800 dark:text-white mb-2 line-clamp-1 cursor-pointer hover:text-blue-500 transition-colors"
+        >
           {hostel.name}
         </h3>
 
         {/* Location */}
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 flex items-center gap-1">
-          <MapPin className="w-4 h-4 flex-shrink-0" />
+          <MapPin className="w-4 h-4 flex-shrink-0 text-red-500" />
           <span className="line-clamp-1">
             {hostel.location || hostel.address || "Location not specified"}
           </span>
@@ -93,18 +128,16 @@ const HostelCard = ({ hostel, onDelete }) => {
 
         {/* Stats Row */}
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
-          {/* Total Rooms */}
           <div className="flex flex-col">
             <span className="text-xs text-slate-500 dark:text-slate-400">
               Total Rooms
             </span>
             <span className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-1">
-              <Bed className="w-4 h-4" />
+              <Bed className="w-4 h-4 text-blue-500" />
               {totalRooms}
             </span>
           </div>
 
-          {/* Occupancy */}
           <div className="flex flex-col items-center">
             <span className="text-xs text-slate-500 dark:text-slate-400">
               Occupancy
@@ -114,7 +147,6 @@ const HostelCard = ({ hostel, onDelete }) => {
             </span>
           </div>
 
-          {/* Available */}
           <div className="flex flex-col items-end">
             <span className="text-xs text-slate-500 dark:text-slate-400">
               Available
@@ -125,31 +157,34 @@ const HostelCard = ({ hostel, onDelete }) => {
           </div>
         </div>
 
-        {/* Price */}
+        {/* Price Section */}
         {hostel.pricePerMonth && (
           <div className="mb-4">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
               Starting from
             </p>
             <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              ₹{hostel.pricePerMonth.toLocaleString()}/month
+              ₹{hostel.pricePerMonth.toLocaleString()}
+              <span className="text-sm font-normal text-slate-500 ml-1">
+                /month
+              </span>
             </p>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-2">
           <button
-            onClick={() => navigate(`/owner/hostel/${hostel._id}/view`)}
-            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-sm font-medium transition-colors"
+            onClick={goToView}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2.5 rounded-lg flex items-center justify-center gap-1 text-sm font-medium transition-all shadow-sm active:scale-95"
           >
             <Eye className="w-4 h-4" />
             <span className="hidden sm:inline">View</span>
           </button>
 
           <button
-            onClick={() => navigate(`/owner/hostel/${hostel._id}/edit`)}
-            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-sm font-medium transition-colors"
+            onClick={goToEdit}
+            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2.5 rounded-lg flex items-center justify-center gap-1 text-sm font-medium transition-all shadow-sm active:scale-95"
           >
             <Pencil className="w-4 h-4" />
             <span className="hidden sm:inline">Edit</span>
@@ -157,7 +192,7 @@ const HostelCard = ({ hostel, onDelete }) => {
 
           <button
             onClick={() => onDelete(hostel._id)}
-            className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1 text-sm font-medium transition-colors"
+            className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2.5 rounded-lg flex items-center justify-center gap-1 text-sm font-medium transition-all shadow-sm active:scale-95"
           >
             <Trash2 className="w-4 h-4" />
             <span className="hidden sm:inline">Delete</span>

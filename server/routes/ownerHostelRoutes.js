@@ -54,4 +54,11 @@ router.get(
   hostelController.getMyHostels,
 );
 
+router.get(
+  "/:id",
+  requireAuth,
+  requireOwner,
+  hostelController.getOwnerHostelById,
+);
+
 module.exports = router;

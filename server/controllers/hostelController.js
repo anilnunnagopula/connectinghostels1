@@ -49,19 +49,42 @@ exports.addHostel = async (req, res) => {
   }
 };
 
-
 // GET OWNER HOSTELS
 exports.getMyHostels = async (req, res) => {
   try {
-     const hostels = await Hostel.find({ ownerId: req.user.id })
-       .select("-video")
-       .sort({ createdAt: -1 });
+    const hostels = await Hostel.find({ ownerId: req.user.id })
+      .select("-video")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({ hostels });
   } catch (err) {
     console.error("Error fetching owner's hostels:", err);
     res.status(500).json({
       message: "Failed to fetch hostels",
+    });
+  }
+};
+
+// GET SINGLE HOSTEL (OWNER)
+exports.getOwnerHostelById = async (req, res) => {
+  try {
+    const hostel = await Hostel.findOne({
+      _id: req.params.id,
+      ownerId: req.user.id,
+    }).select("-video");
+
+    if (!hostel) {
+      return res.status(404).json({
+        message: "Hostel not found or unauthorized",
+      });
+    }
+
+    res.status(200).json({ hostel });
+  } catch (err) {
+    console.error("Error fetching hostel details:", err);
+    res.status(500).json({
+      message: "Failed to fetch hostel details",
+      error: err.message,
     });
   }
 };

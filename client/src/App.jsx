@@ -58,8 +58,11 @@ import DataProtection from "./pages/legal/data-protection";
 import Transparency from "./pages/legal/transparency";
 
 // Student
-import HostelDetails from "./pages/student/HostelDetails";
+import StudentHostelDetails from "./pages/student/HostelDetails";
 import MyHostelPage from "./pages/student/MyHostelPage";
+
+// Owner - Hostel Details (FIXED IMPORT)
+import OwnerHostelDetails from "./pages/owner/HostelDetails";
 
 const App = () => {
   return (
@@ -221,6 +224,23 @@ const App = () => {
               element={
                 <OwnerLayout>
                   <OwnerNotificationsPage />
+                </OwnerLayout>
+              }
+            />
+            {/* Owner Hostel Routes - FIXED TO USE OWNER COMPONENT */}
+            <Route
+              path="/owner/hostel/:id/view"
+              element={
+                <OwnerLayout>
+                  <OwnerHostelDetails /> {/* ✅ NOW USING OWNER VERSION */}
+                </OwnerLayout>
+              }
+            />
+            <Route
+              path="/owner/hostel/:id/edit"
+              element={
+                <OwnerLayout>
+                  <AddHostel /> {/* Reusing AddHostel for editing logic */}
                 </OwnerLayout>
               }
             />
