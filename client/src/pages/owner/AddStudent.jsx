@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { API_BASE_URL } from "../../apiConfig";
 
 const AddStudent = () => {
   const navigate = useNavigate();
@@ -45,10 +46,10 @@ const AddStudent = () => {
         if (!token) throw new Error("Authentication token not found.");
 
         const res = await axios.get(
-          `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
+          `${API_BASE_URL}/api/owner/hostels/my-hostels`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
-        console.log("Target URL:", `${process.env.REACT_APP_API_URL}/api/students/add`);
+        console.log("Target URL:", `${API_BASE_URL}/api/students`);
 
         setHostels(res.data.hostels);
         if (res.data.hostels.length > 0) {
@@ -88,7 +89,7 @@ const AddStudent = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/students/add`,
+        `${API_BASE_URL}/api/students`,
         formData,
         { headers: { Authorization: `Bearer ${token}` } },
       );

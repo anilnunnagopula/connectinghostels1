@@ -8,7 +8,24 @@ router.get(
   "/mine",
   requireAuth,
   requireOwner,
+  requireOwner,
   complaintController.getOwnerComplaints
+);
+
+// Route to get student's complaints
+router.get(
+    "/my-complaints",
+    requireAuth,
+    // requireStudent, // Add back if strict role check needed
+    complaintController.getStudentComplaints
+);
+
+// Route to create a complaint (Students)
+router.post(
+    "/",
+    requireAuth,
+    // requireStudent, 
+    complaintController.createComplaint
 );
 
 // Route to delete a specific complaint

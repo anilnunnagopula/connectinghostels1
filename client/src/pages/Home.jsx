@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import HostelListings from "./HostelListings";
 
 // Define the content for each slide
 const slides = [
@@ -150,6 +151,7 @@ const Home = () => {
           ))}
         </div>
       </div>
+      {/* <HostelListings/> */}
     </div>
   );
 };

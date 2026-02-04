@@ -62,8 +62,12 @@ app.use("/api/students", studentRoutes); // ✅ PLURAL to match ownerService
 // app.use("/api/bookings", bookingRoutes);
 app.use("/api/complaints", complaintRoutes);
 // app.use("/api/alerts", alertRoutes);
+// const paymentRoutes = require("./routes/paymentRoutes");
 // app.use("/api/payments", paymentRoutes);
+// app.js or server.js
+const notificationRoutes = require("./routes/notificationRoutes");
 
+app.use("/api", notificationRoutes);
 
 // ==================== HEALTH CHECK ====================
 app.get("/api/health", (req, res) => {

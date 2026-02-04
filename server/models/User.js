@@ -23,6 +23,15 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    username: {
+      type: String,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    profilePictureUrl: {
+      type: String,
+    },
     role: {
       type: String,
       enum: ["student", "owner"],
@@ -71,6 +80,12 @@ const userSchema = new mongoose.Schema(
       enum: ["local", "google"],
       default: "local",
     },
+
+    // Interested/Saved Hostels
+    interestedHostels: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hostel",
+    }],
 
     // ==================== PHASE 2+ FIELDS (Frozen) ====================
     // Uncomment when needed

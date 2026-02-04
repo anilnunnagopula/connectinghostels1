@@ -1,31 +1,47 @@
 const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/paymentController");
-const { requireAuth, requireStudent } = require("../middleware/authMiddleware");
+const { requireAuth, requireStudent, requireOwner } = require("../middleware/authMiddleware");
 
+// Student Routes
 router.get(
-  "/bill",
+  "/dues",
   requireAuth,
   requireStudent,
-  paymentController.getStudentBill
+  paymentController.getStudentDues
 );
 router.get(
-  "/payments",
+  "/history",
   requireAuth,
   requireStudent,
   paymentController.getStudentPaymentHistory
 );
 router.post(
-  "/payments/create-order",
-  requireAuth,
+  "/create-order",
+  requireAuth, // Could be student or eventually owner initiating? Usually student.
   requireStudent,
   paymentController.createRazorpayOrder
 );
 router.post(
-  "/payments/verify",
+  "/verify",
   requireAuth,
   requireStudent,
   paymentController.verifyPayment
+);
+
+// Owner Routes
+router.post(
+    "/record-cash",
+    requireAuth,
+    requireOwner,
+    paymentController.recordCashPayment
+);
+
+router.post(
+    "/create-due",
+    requireAuth,
+    requireOwner,
+    paymentController.createDue
 );
 
 module.exports = router;

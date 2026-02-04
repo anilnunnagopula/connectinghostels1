@@ -4,6 +4,7 @@ const Booking = require("../models/StudentHostel");
 const mongoose = require("mongoose"); 
 const Complaint = require("../models/Complaint"); 
 const Payment = require("../models/Payment");
+const User = require("../models/User");
 
 exports.addStudent = async (req, res) => {
   try {
@@ -104,32 +105,54 @@ exports.getOwnerStudents = async (req, res) => {
 };
 
 // Search for hostels based on location and query
- exports.searchHostels = async (req, res) => {
-   try {
-     const { location } = req.query;
+// Search for hostels based on location and query
+exports.searchHostels = async (req, res) => {
+  try {
+    const { location, search } = req.query;
 
-     const searchQuery = { available: true };
+    // 1. Start with an empty query (or isActive if you use that field)
+    // If you haven't set 'isActive' to true for your hostels yet, 
+    // comment out the next line and use: const searchQuery = {};
+    const searchQuery = { isActive: true }; 
 
-     if (location && location.trim() && location !== "Others") {
-       searchQuery.location = { $regex: location.trim(), $options: "i" };
-     }
+    // 2. Handle Location Filter
+    if (location && location.trim() && location !== "Others" && location !== "All") {
+      // Use Regex for "like" matching (e.g., "Mangal" will find "Mangalpally")
+      // 'i' makes it case-insensitive
+      searchQuery.locality = { $regex: location.trim(), $options: "i" };
+    }
 
-     // Fetch all hostels matching location
-     const hostels = await Hostel.find(searchQuery).sort({ createdAt: -1 });
+    // 3. Handle Name Search
+    if (search && search.trim()) {
+      searchQuery.name = { $regex: search.trim(), $options: "i" };
+    }
 
-     res.status(200).json({
-       success: true,
-       count: hostels.length,
-       hostels,
-     });
-   } catch (err) {
-     console.error("❌ Error searching hostels:", err);
-     res.status(500).json({
-       success: false,
-       message: "Failed to search for hostels.",
-     });
-   }
- };
+    console.log("Applying Search Query:", searchQuery);
+
+    // 4. Fetch hostels
+    let hostels = await Hostel.find(searchQuery).sort({ createdAt: -1 });
+
+    // 5. Map data for Frontend
+    const hostelsWithAvailability = hostels.map(hostel => {
+      const h = hostel.toObject();
+      h.available = (hostel.availableRooms > 0);
+      h.id = hostel._id;
+      return h;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: hostelsWithAvailability.length,
+      hostels: hostelsWithAvailability,
+    });
+  } catch (err) {
+    console.error("❌ Error searching hostels:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to search for hostels.",
+    });
+  }
+};
 
 
 // Create a new booking request
@@ -249,5 +272,113 @@ exports.getStudentDashboardMetrics = async (req, res) => {
   } catch (err) {
     console.error("Error fetching dashboard metrics:", err);
     res.status(500).json({ message: "Failed to load metrics" });
+  }
+};
+
+// ==================== INTERESTED / WISHLIST ====================
+
+// Get all interested hostels
+exports.getInterestedHostels = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate("interestedHostels");
+    
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    // Map to format expected by frontend (if needed, but populate usually enough)
+    // Frontend expects response.data.data or response.data
+    // And seems to expect an array of hostels with `image` property etc.
+    // Hostel model has `images` array? Need to verify Hostel structure.
+    // Assuming Hostel model has standard fields.
+    // Frontend `Interested.jsx` uses `hostel.image` (singular).
+    // If Hostel has `images` array, we might need to map it.
+    
+    const formattedHostels = user.interestedHostels.map(hostel => {
+        const h = hostel.toObject();
+        h.id = h._id;
+        h.image = h.images && h.images.length > 0 ? h.images[0] : null; // Use first image
+        // Ensure price is formatted or kept as is
+        return h;
+    });
+
+    res.status(200).json({ success: true, count: formattedHostels.length, data: formattedHostels });
+  } catch (err) {
+    console.error("Error fetching interested hostels:", err);
+    res.status(500).json({ message: "Failed to fetch interested hostels." });
+  }
+};
+
+// Toggle interested hostel (Add/Remove)
+exports.toggleInterestedHostel = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { hostelId } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    // Initialize if undefined
+    if (!user.interestedHostels) {
+        user.interestedHostels = [];
+    }
+
+    const index = user.interestedHostels.indexOf(hostelId);
+    let message = "";
+    let added = false;
+
+    if (index === -1) {
+        // Add
+        user.interestedHostels.push(hostelId);
+        message = "Added to interested list";
+        added = true;
+    } else {
+        // Remove
+        user.interestedHostels.splice(index, 1);
+        message = "Removed from interested list";
+        added = false;
+    }
+
+    await user.save();
+    res.status(200).json({ success: true, message, added });
+  } catch (err) {
+    console.error("Error toggling interested hostel:", err);
+    res.status(500).json({ message: "Failed to update interested list." });
+  }
+};
+
+// Remove interested hostel (Explicit Delete)
+exports.removeInterestedHostel = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { hostelId } = req.params;
+
+    await User.findByIdAndUpdate(userId, {
+        $pull: { interestedHostels: hostelId }
+    });
+
+    res.status(200).json({ success: true, message: "Removed from interested list" });
+  } catch (err) {
+    console.error("Error removing interested hostel:", err);
+    res.status(500).json({ message: "Failed to remove from interested list." });
+  }
+};
+
+// Clear all interested hostels
+exports.clearInterestedHostels = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    await User.findByIdAndUpdate(userId, {
+        $set: { interestedHostels: [] }
+    });
+
+    res.status(200).json({ success: true, message: "Cleared all interested hostels" });
+  } catch (err) {
+    console.error("Error clearing interested hostels:", err);
+    res.status(500).json({ message: "Failed to clear interested list." });
   }
 };

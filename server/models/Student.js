@@ -35,6 +35,16 @@ const studentSchema = new mongoose.Schema(
       required: true,
     },
     // You might want to add a `status` field for student's occupancy status
+    status: {
+        type: String,
+        enum: ["Active", "Vacated", "Evicted"],
+        default: "Active"
+    },
+    balance: {
+        type: Number,
+        default: 0, // > 0 means student has advance/credit, < 0 means student owes money (but usually we track dues separately, so this can be 'wallet' or just advance)
+        // Alternatively, strictly track: Positive = Advance, Negative = Dues
+    },
   },
   { timestamps: true }
 );

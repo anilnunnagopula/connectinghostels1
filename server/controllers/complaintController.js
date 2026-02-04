@@ -1,4 +1,61 @@
 const Complaint = require("../models/Complaint");
+const Booking = require("../models/StudentHostel"); // Assuming this is the booking model name
+const Student = require("../models/Student");
+
+exports.createComplaint = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { title, description, type } = req.body;
+
+    // 1. Find the student's active hostel/booking to link the complaint
+    // We need to know WHICH hostel/owner this complaint is for.
+    // Option A: Check active booking
+    const activeBooking = await Booking.findOne({ 
+        student: studentId, 
+        status: "Active" 
+    }).populate("hostel");
+
+    // Option B: Check Student model if it has direct hostel link
+    // const student = await Student.findById(studentId);
+    
+    if (!activeBooking) {
+        return res.status(400).json({ message: "You don't have an active hostel booking to raise a complaint." });
+    }
+
+    const complaint = new Complaint({
+        student: studentId,
+        hostel: activeBooking.hostel._id,
+        owner: activeBooking.owner, // Crucial: Link to the owner
+        title,
+        description,
+        type: type || "General",
+        status: "Pending",
+        date: new Date()
+    });
+
+    await complaint.save();
+
+    res.status(201).json({ message: "Complaint raised successfully", complaint });
+
+  } catch (err) {
+    console.error("Error creating complaint:", err);
+    res.status(500).json({ message: "Failed to raise complaint." });
+  }
+};
+
+exports.getStudentComplaints = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+        const complaints = await Complaint.find({ student: studentId })
+            .populate("hostel", "name")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({ complaints });
+    } catch (err) {
+        console.error("Error fetching student complaints:", err);
+        res.status(500).json({ message: "Failed to fetch complaints." });
+    }
+};
 
 exports.getOwnerComplaints = async (req, res) => {
   try {

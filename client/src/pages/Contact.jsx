@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useEffect, useState } from "react";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 import { Loader2 } from "lucide-react"; // Assuming lucide-react is available for the spinner
 
@@ -49,7 +49,9 @@ const Contact = () => {
       setLoading(false); // Set loading to false when submission finishes (success or error)
     }
   };
-
+useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4 py-6 text-gray-800 dark:text-white font-inter">
       {" "}

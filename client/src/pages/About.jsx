@@ -1,6 +1,9 @@
-import React from "react";
+import React,{useEffect} from "react";
 
 const About = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   return (
     <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 min-h-screen py-2 px-6 font-inter">
       <div className="max-w-5xl mx-auto text-center">

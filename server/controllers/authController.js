@@ -175,7 +175,12 @@ exports.completeProfile = async (req, res) => {
  */
 exports.registerWithEmail = async (req, res) => {
   try {
-    const { name, email, phone, password, role, hostelName } = req.body;
+    let { name, email, phone, phoneNumber, password, role, hostelName } = req.body;
+
+    // Handle phone number alias
+    if (!phone && phoneNumber) {
+        phone = phoneNumber;
+    }
 
     // Validation
     if (!name || !email || !phone || !password || !role) {
@@ -500,7 +505,11 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user);
+    // Convert to object and map phone -> phoneNumber for frontend consistency
+    const userObj = user.toObject();
+    userObj.phoneNumber = user.phone;
+
+    res.status(200).json(userObj);
   } catch (err) {
     console.error("Error fetching profile:", err);
     res.status(500).json({ message: "Failed to fetch profile" });
@@ -514,26 +523,81 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { name, phone, hostelName } = req.body;
+    const {
+      name,
+      phone,
+      phoneNumber,
+      hostelName,
+      username,
+      profilePictureUrl,
+      currentPassword,
+      newPassword,
+    } = req.body;
 
-    const updates = {};
-    if (name) updates.name = name;
-    if (phone) updates.phone = phone;
-    if (hostelName && req.user.role === "owner")
-      updates.hostelName = hostelName;
+    // Find user and include password for verification if needed
+    const user = await User.findById(userId).select("+password");
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
-
-    if (!updatedUser) {
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(updatedUser);
+    // Update basic fields
+    if (name) user.name = name;
+    
+    // Handle phone number (support both 'phone' and 'phoneNumber' from frontend)
+    if (phone) user.phone = phone;
+    if (phoneNumber) user.phone = phoneNumber;
+
+    if (username) user.username = username;
+    if (profilePictureUrl) user.profilePictureUrl = profilePictureUrl;
+
+    if (hostelName && user.role === "owner") {
+      user.hostelName = hostelName;
+    }
+
+    // Handle password update
+    if (newPassword) {
+      if (!currentPassword) {
+        return res
+          .status(400)
+          .json({ message: "Current password is required to change password" });
+      }
+
+      // If user has a password set (local auth), verify it
+      if (user.password) {
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ message: "Incorrect current password" });
+        }
+      }
+
+      // Hash and set new password
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+      user.passwordChangedAt = Date.now() - 1000;
+    }
+
+    // Save changes
+    await user.save();
+
+    // Return updated user without sensitive fields
+    const updatedUser = await User.findById(userId).select("-password -resetPasswordToken -resetPasswordExpires");
+
+    // Convert to object and map phone -> phoneNumber for frontend consistency
+    const userObj = updatedUser.toObject();
+    userObj.phoneNumber = updatedUser.phone;
+
+    res.status(200).json(userObj);
   } catch (err) {
     console.error("Error updating profile:", err);
+    
+    // Handle duplicate key errors (e.g. username taken)
+    if (err.code === 11000) {
+        if (err.keyPattern.username) {
+            return res.status(400).json({ message: "Username already taken" });
+        }
+    }
+    
     res.status(500).json({ message: "Failed to update profile" });
   }
 };

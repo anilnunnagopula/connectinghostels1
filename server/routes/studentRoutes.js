@@ -46,7 +46,7 @@ router.get(
 router.get(
   "/search-hostel",
   requireAuth,
-  requireStudent,
+  // requireStudent, // Allow owners to view hostels too
   studentController.searchHostels
 );
 router.post(
@@ -54,6 +54,32 @@ router.post(
   requireAuth,
   requireStudent,
   studentController.createBookingRequest
+);
+
+// ✅ NEW: Interested / Wishlist Routes
+router.get(
+  "/interested",
+  requireAuth,
+  requireStudent,
+  studentController.getInterestedHostels
+);
+router.post(
+  "/interested/:hostelId",
+  requireAuth,
+  requireStudent,
+  studentController.toggleInterestedHostel
+);
+router.delete(
+  "/interested/all",
+  requireAuth,
+  requireStudent,
+  studentController.clearInterestedHostels
+);
+router.delete(
+  "/interested/:hostelId",
+  requireAuth,
+  requireStudent,
+  studentController.removeInterestedHostel
 );
 
 module.exports = router;

@@ -75,6 +75,22 @@ const hostelSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    paymentSettings: {
+        lateFeePolicy: {
+            enabled: { type: Boolean, default: false },
+            type: { type: String, enum: ["FIXED", "PERCENTAGE"], default: "FIXED" },
+            value: { type: Number, default: 0 },
+            gracePeriodDays: { type: Number, default: 5 }
+        },
+        bankDetails: {
+            accountName: String,
+            accountNumber: String,
+            ifscCode: String,
+            bankName: String,
+            upiId: String
+        },
+        gatewayEnabled: { type: Boolean, default: true }
+    },
 
     // ==================== PHASE 2+ FIELDS (Frozen) ====================
     // Uncomment when needed
