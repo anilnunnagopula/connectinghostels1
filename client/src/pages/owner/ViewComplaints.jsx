@@ -142,18 +142,27 @@ const ViewComplaints = () => {
                     <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
-
                 <div className="space-y-2">
                   <p className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                     <BedDouble className="w-4 h-4 text-purple-500" />
                     Room: <strong>{complaint.room}</strong>
                   </p>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    <strong className="text-gray-800 dark:text-white">
-                      Issue:
-                    </strong>{" "}
-                    {complaint.issue}
+
+                  {/* ✅ NEW: Show type */}
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Type:</strong> {complaint.type}
                   </p>
+
+                  {/* ✅ NEW: Show subject */}
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <strong>Subject:</strong> {complaint.subject}
+                  </p>
+
+                  {/* ✅ NEW: Show message */}
+                  <p className="text-gray-700 dark:text-gray-300">
+                    {complaint.message}
+                  </p>
+
                   <p className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                     <Calendar className="w-4 h-4" />
                     Date: {new Date(complaint.createdAt).toLocaleDateString()}

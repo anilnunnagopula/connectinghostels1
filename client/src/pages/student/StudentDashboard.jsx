@@ -301,6 +301,12 @@ const StudentDashboard = () => {
       description: "Your recently hostels.",
       route: "/student/recently-viewed",
     },
+    {
+      icon: <FaBuilding className="text-indigo-600" />,
+      title: "Hostel Request Status",
+      description: "Status of you hostel requests.",
+      route: "/student/my-requests",
+    },
   ];
 
   // Combine all cards

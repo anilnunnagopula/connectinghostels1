@@ -1,10 +1,11 @@
 /**
- * Booking Controller - FIXED VERSION
+ * Booking Controller - COMPLETE WITH DEBUG LOGGING
  *
- * FIXES:
- * 1. Changed const to let in getStudentRequests
- * 2. Simplified error handling
- * 3. Better response for missing student profiles
+ * FEATURES:
+ * 1. Auto-creates student profile if missing
+ * 2. Comprehensive logging for debugging
+ * 3. Transaction safety
+ * 4. Handles duplicate student profiles
  */
 
 const BookingRequest = require("../models/BookingRequest");
@@ -17,13 +18,9 @@ const mongoose = require("mongoose");
 // ============================================================================
 
 /**
- * Create Booking Request (Student)
- */
-/**
  * Create Booking Request (Student) - WITH AUTO-PROFILE CREATION
  *
- * This version automatically creates a basic Student profile if it doesn't exist
- * Uses data from the authenticated User model (req.user)
+ * @route POST /api/students/booking-request
  */
 exports.createBookingRequest = async (req, res) => {
   const session = await mongoose.startSession();
@@ -40,42 +37,63 @@ exports.createBookingRequest = async (req, res) => {
       roomNumber,
     });
 
-    // VALIDATION 1: Find or create student profile
+    // VALIDATION 1: Find or handle student profile
     let student = await Student.findOne({ user: userId }).session(session);
-    
-    if (!student) {
-      // ✅ AUTO-CREATE: Create basic profile from User data
-      console.log("📝 Auto-creating student profile from User data");
-      
-      // Validate required fields from User model
-      if (!req.user.name || !req.user.email) {
-        await session.abortTransaction();
-        return res.status(400).json({
-          error: "Your account is missing required information. Please complete your profile first.",
-          missingFields: {
-            name: !req.user.name,
-            email: !req.user.email,
-          }
-        });
-      }
 
-      // Get phone from User model or use a default
-      const phone = req.user.phone || "0000000000"; // Fallback if phone not required
-      
-      student = new Student({
-        user: userId,
-        name: req.user.name,
+    if (!student) {
+      console.log(
+        "📝 No student profile linked to user, checking for orphaned profile...",
+      );
+
+      // Check if there's an orphaned student profile with this email
+      const orphanedStudent = await Student.findOne({
         email: req.user.email,
-        phone: phone,
-        status: "Searching",
-      });
-      
-      await student.save({ session });
-      console.log("✅ Student profile auto-created:", student._id);
+        user: { $exists: false }, // No user link OR different user
+      }).session(session);
+
+      if (orphanedStudent) {
+        console.log("🔗 Found orphaned profile, linking to user...");
+        // Link the orphaned profile to this user
+        orphanedStudent.user = userId;
+        await orphanedStudent.save({ session });
+        student = orphanedStudent;
+        console.log("✅ Orphaned profile linked:", student._id);
+      } else {
+        // No orphaned profile, try to create new one
+        console.log("📝 Creating new student profile from User data");
+
+        if (!req.user.name || !req.user.email) {
+          await session.abortTransaction();
+          return res.status(400).json({
+            error:
+              "Your account is missing required information. Please complete your profile first.",
+            missingFields: {
+              name: !req.user.name,
+              email: !req.user.email,
+            },
+          });
+        }
+
+        const phone = req.user.phone || "0000000000";
+
+        student = new Student({
+          user: userId,
+          name: req.user.name,
+          email: req.user.email,
+          phone: phone,
+          status: "Searching",
+        });
+
+        await student.save({ session });
+        console.log("✅ Student profile created:", student._id);
+      }
+    } else {
+      console.log("✅ Student found:", student._id);
     }
 
     // VALIDATION 2: Check if student already admitted
     if (student.currentHostel) {
+      console.log("⚠️ Student already admitted to:", student.currentHostel);
       await session.abortTransaction();
       return res.status(400).json({
         error: "You are already admitted to a hostel. Please vacate first.",
@@ -86,15 +104,22 @@ exports.createBookingRequest = async (req, res) => {
     const existingRequest = await BookingRequest.findOne({
       student: student._id,
       status: "Pending",
-    }).session(session);
+    })
+      .session(session)
+      .populate("hostel", "name");
 
     if (existingRequest) {
+      console.log("⚠️ Existing pending request found:", {
+        requestId: existingRequest._id,
+        hostel: existingRequest.hostel?.name,
+      });
       await session.abortTransaction();
       return res.status(400).json({
         error:
           "You already have a pending request. Please wait for owner's response.",
         existingRequest: {
           hostelId: existingRequest.hostel,
+          hostelName: existingRequest.hostel?.name,
           floor: existingRequest.floor,
           roomNumber: existingRequest.roomNumber,
           requestedAt: existingRequest.createdAt,
@@ -105,12 +130,20 @@ exports.createBookingRequest = async (req, res) => {
     // VALIDATION 4: Verify hostel exists
     const hostel = await Hostel.findById(hostelId).session(session);
     if (!hostel) {
+      console.log("❌ Hostel not found:", hostelId);
       await session.abortTransaction();
       return res.status(404).json({ error: "Hostel not found." });
     }
 
+    console.log("✅ Hostel found:", {
+      hostelId: hostel._id,
+      ownerId: hostel.ownerId,
+      name: hostel.name,
+    });
+
     // VALIDATION 5: Validate floor number
     if (floor < 1 || floor > hostel.floors) {
+      console.log("❌ Invalid floor:", floor, "Max:", hostel.floors);
       await session.abortTransaction();
       return res.status(400).json({
         error: `Invalid floor number. This hostel has ${hostel.floors} floor(s).`,
@@ -119,6 +152,7 @@ exports.createBookingRequest = async (req, res) => {
 
     // VALIDATION 6: Basic room number validation
     if (!roomNumber || roomNumber < 1) {
+      console.log("❌ Invalid room number:", roomNumber);
       await session.abortTransaction();
       return res.status(400).json({
         error: "Please provide a valid room number.",
@@ -135,6 +169,14 @@ exports.createBookingRequest = async (req, res) => {
       status: "Pending",
     });
 
+    console.log("💾 Saving new request:", {
+      student: newRequest.student,
+      hostel: newRequest.hostel,
+      owner: newRequest.owner,
+      floor: newRequest.floor,
+      roomNumber: newRequest.roomNumber,
+    });
+
     // UPDATE STUDENT STATUS
     student.status = "Pending Approval";
 
@@ -144,7 +186,12 @@ exports.createBookingRequest = async (req, res) => {
 
     await session.commitTransaction();
 
-    console.log("✅ Booking request created:", newRequest._id);
+    console.log("✅ Booking request created successfully:", {
+      requestId: newRequest._id,
+      studentId: student._id,
+      hostelId: newRequest.hostel,
+      ownerId: newRequest.owner,
+    });
 
     res.status(201).json({
       message: "Request sent successfully! The owner will review it soon.",
@@ -160,10 +207,12 @@ exports.createBookingRequest = async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     console.error("❌ Error creating booking request:", err);
+    console.error("❌ Error stack:", err.stack);
 
     if (err.code === 11000) {
       return res.status(400).json({
-        error: "You already have a pending request for this hostel.",
+        error:
+          "A student profile with this email already exists. Please contact support.",
       });
     }
 
@@ -177,7 +226,7 @@ exports.createBookingRequest = async (req, res) => {
 };
 
 /**
- * Get Student's Own Requests - FIXED
+ * Get Student's Own Requests
  *
  * @route GET /api/students/my-requests
  */
@@ -185,11 +234,15 @@ exports.getStudentRequests = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // ✅ FIXED: Use let instead of const
-    let student = await Student.findOne({ user: userId });
+    console.log("📋 Fetching requests for user:", userId);
 
-    if (!student) {
-      // ✅ FIXED: Return 200 with empty data instead of 404
+    // Find ALL student profiles for this user (handles potential duplicates)
+    const students = await Student.find({ user: userId }).sort({
+      createdAt: -1,
+    });
+
+    if (!students || students.length === 0) {
+      console.log("⚠️ No student profile found for user:", userId);
       return res.status(200).json({
         requests: [],
         studentStatus: "No Profile",
@@ -197,27 +250,47 @@ exports.getStudentRequests = async (req, res) => {
       });
     }
 
-    // Get all requests
-    const requests = await BookingRequest.find({ student: student._id })
+    console.log(
+      "✅ Found student profiles:",
+      students.map((s) => s._id),
+    );
+
+    // Use the most recent profile as the "primary" one
+    const primaryStudent = students[0];
+    const studentIds = students.map((s) => s._id);
+
+    // Find requests for ANY of the student's profiles
+    const requests = await BookingRequest.find({ student: { $in: studentIds } })
       .populate("hostel", "name location type price")
       .sort({ createdAt: -1 });
 
+    console.log("📦 Found requests:", {
+      count: requests.length,
+      requests: requests.map((r) => ({
+        id: r._id,
+        status: r.status,
+        hostel: r.hostel?.name,
+        floor: r.floor,
+        roomNumber: r.roomNumber,
+        createdAt: r.createdAt,
+      })),
+    });
+
     res.status(200).json({
       requests,
-      studentStatus: student.status,
-      currentHostel: student.currentHostel,
+      studentStatus: primaryStudent.status,
+      currentHostel: primaryStudent.currentHostel,
     });
   } catch (err) {
     console.error("❌ Error fetching student requests:", err);
-    res.status(500).json({
-      error: "Failed to fetch requests.",
-      details: process.env.NODE_ENV === "development" ? err.message : undefined,
-    });
+    res.status(500).json({ error: "Failed to fetch requests." });
   }
 };
 
 /**
  * Cancel Pending Request (Student)
+ *
+ * @route DELETE /api/students/booking-request/:requestId
  */
 exports.cancelBookingRequest = async (req, res) => {
   const session = await mongoose.startSession();
@@ -226,6 +299,8 @@ exports.cancelBookingRequest = async (req, res) => {
   try {
     const { requestId } = req.params;
     const userId = req.user.id;
+
+    console.log("🗑️ Cancelling request:", { requestId, userId });
 
     const student = await Student.findOne({ user: userId }).session(session);
     if (!student) {
@@ -253,12 +328,14 @@ exports.cancelBookingRequest = async (req, res) => {
 
     await session.commitTransaction();
 
+    console.log("✅ Request cancelled successfully");
+
     res.status(200).json({
       message: "Request cancelled successfully.",
     });
   } catch (err) {
     await session.abortTransaction();
-    console.error("Error cancelling request:", err);
+    console.error("❌ Error cancelling request:", err);
     res.status(500).json({ error: "Failed to cancel request." });
   } finally {
     session.endSession();
@@ -269,9 +346,16 @@ exports.cancelBookingRequest = async (req, res) => {
 // OWNER ACTIONS
 // ============================================================================
 
+/**
+ * Get All Pending Requests for Owner
+ *
+ * @route GET /api/owner/booking-requests/mine
+ */
 exports.getOwnerBookingRequests = async (req, res) => {
   try {
     const ownerId = req.user.id;
+
+    console.log("📋 Fetching booking requests for owner:", ownerId);
 
     const requests = await BookingRequest.find({
       owner: ownerId,
@@ -281,16 +365,33 @@ exports.getOwnerBookingRequests = async (req, res) => {
       .populate("hostel", "name location")
       .sort({ createdAt: -1 });
 
+    console.log("📦 Found owner requests:", {
+      count: requests.length,
+      requests: requests.map((r) => ({
+        id: r._id,
+        student: r.student?.name,
+        hostel: r.hostel?.name,
+        status: r.status,
+        floor: r.floor,
+        roomNumber: r.roomNumber,
+      })),
+    });
+
     res.status(200).json({
       requests,
       count: requests.length,
     });
   } catch (err) {
-    console.error("Error fetching owner requests:", err);
+    console.error("❌ Error fetching owner requests:", err);
     res.status(500).json({ error: "Failed to fetch booking requests." });
   }
 };
 
+/**
+ * Approve Booking Request (Owner)
+ *
+ * @route POST /api/owner/booking-requests/:requestId/approve
+ */
 exports.approveBookingRequest = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -344,7 +445,11 @@ exports.approveBookingRequest = async (req, res) => {
 
     await session.commitTransaction();
 
-    console.log("✅ Request approved successfully");
+    console.log("✅ Request approved successfully:", {
+      requestId,
+      studentId: student._id,
+      hostelId: request.hostel,
+    });
 
     res.status(200).json({
       message: "Student successfully admitted to hostel.",
@@ -368,6 +473,11 @@ exports.approveBookingRequest = async (req, res) => {
   }
 };
 
+/**
+ * Reject Booking Request (Owner)
+ *
+ * @route POST /api/owner/booking-requests/:requestId/reject
+ */
 exports.rejectBookingRequest = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -416,7 +526,7 @@ exports.rejectBookingRequest = async (req, res) => {
     });
   } catch (err) {
     await session.abortTransaction();
-    console.error("Error rejecting request:", err);
+    console.error("❌ Error rejecting request:", err);
     res.status(500).json({ error: "Failed to reject request." });
   } finally {
     session.endSession();

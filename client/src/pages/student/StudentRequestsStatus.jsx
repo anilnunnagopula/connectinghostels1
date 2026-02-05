@@ -217,7 +217,7 @@ const StudentRequestsStatus = () => {
         You haven't sent any booking requests yet.
       </p>
       <button
-        onClick={() => navigate("/hostels")}
+        onClick={() => navigate("/student/hostels")}
         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition"
       >
         Browse Hostels

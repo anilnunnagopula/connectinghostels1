@@ -99,6 +99,9 @@ const RaiseComplaint = () => {
   /**
    * Checks if student is assigned to a hostel
    */
+  /**
+   * Checks if student is assigned to a hostel
+   */
   const checkHostelAssignment = useCallback(async () => {
     const token = getToken();
 
@@ -110,27 +113,38 @@ const RaiseComplaint = () => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Fetch student's current booking/hostel
-      const response = await axios.get(`${API_BASE_URL}/api/student/bookings`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      console.log("🔍 Checking student hostel assignment...");
 
-      const bookings = response.data.bookings || [];
-      const activeBooking = bookings.find((b) => b.status === "Active");
+      // ✅ FIXED: Use the correct endpoint
+      const response = await axios.get(
+        `${API_BASE_URL}/api/students/my-requests`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
-      if (activeBooking) {
+      console.log("📦 Response:", response.data);
+
+      const { currentHostel } = response.data;
+
+      if (currentHostel) {
+        // Student is admitted - fetch hostel details
+        console.log("✅ Student is admitted to hostel:", currentHostel);
+
+        const hostelResponse = await axios.get(
+          `${API_BASE_URL}/api/hostels/${currentHostel}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        const hostelData = hostelResponse.data.data || hostelResponse.data;
+
         setState({
-          currentHostel: activeBooking.hostel,
+          currentHostel: hostelData,
           loading: false,
           error: null,
         });
 
-        // Pre-fill room number if available
-        setFormData((prev) => ({
-          ...prev,
-          room: activeBooking.roomNumber || "",
-        }));
+        console.log("✅ Hostel data loaded:", hostelData.name);
       } else {
+        console.log("⚠️ Student not assigned to any hostel");
         setState({
           currentHostel: null,
           loading: false,
@@ -138,7 +152,7 @@ const RaiseComplaint = () => {
         });
       }
     } catch (err) {
-      console.error("Error checking hostel assignment:", err);
+      console.error("❌ Error checking hostel assignment:", err);
       setState({
         currentHostel: null,
         loading: false,
@@ -322,7 +336,7 @@ const RaiseComplaint = () => {
         });
 
         // Submit complaint
-        await axios.post(`${API_BASE_URL}/api/complaints/raise`, submitData, {
+        await axios.post(`${API_BASE_URL}/api/complaints`, submitData, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
@@ -688,7 +702,7 @@ const RaiseComplaint = () => {
       </div>
     </div>
   );
-};
+};;
 
 export default RaiseComplaint;
 
