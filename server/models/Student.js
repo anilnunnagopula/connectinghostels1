@@ -2,51 +2,35 @@ const mongoose = require("mongoose");
 
 const studentSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    phone: {
-      type: String,
-      required: true,
-    },
-    address: String,
-    hostel: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Hostel",
-      required: true,
-    },
-    floor: {
-      type: Number,
-      required: true,
-    },
-    room: {
-      type: Number,
-      required: true,
-    },
-    owner: {
+    user: {
+      // Link to the main Auth User
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    // You might want to add a `status` field for student's occupancy status
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    phone: { type: String, required: true },
+    // THE STATE CONTROLLERS
+    currentHostel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hostel",
+      default: null, // Null means they are "Searching"
+    },
+    roomNumber: { type: Number, default: null },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     status: {
-        type: String,
-        enum: ["Active", "Vacated", "Evicted"],
-        default: "Active"
+      type: String,
+      enum: ["Searching", "Pending Approval", "Active", "Vacated"],
+      default: "Searching",
     },
-    balance: {
-        type: Number,
-        default: 0, // > 0 means student has advance/credit, < 0 means student owes money (but usually we track dues separately, so this can be 'wallet' or just advance)
-        // Alternatively, strictly track: Positive = Advance, Negative = Dues
-    },
+    balance: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Student", studentSchema);

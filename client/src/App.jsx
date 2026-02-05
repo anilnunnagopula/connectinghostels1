@@ -60,7 +60,8 @@ import Transparency from "./pages/legal/transparency";
 // Student
 import StudentHostelDetails from "./pages/student/HostelDetails";
 import MyHostelPage from "./pages/student/MyHostelPage";
-
+import BookingRequestPage from "./pages/student/BookingRequestPage";
+import StudentRequestsStatus from "./pages/student/StudentRequestsStatus";
 // Owner - Hostel Details (FIXED IMPORT)
 import OwnerHostelDetails from "./pages/owner/HostelDetails";
 
@@ -102,9 +103,18 @@ const App = () => {
               element={<RecentlyViewed />}
             />
             <Route
+              path="/booking-request/:hostelId"
+              element={<BookingRequestPage />}
+            />
+            <Route
               path="/student/raise-complaint"
               element={<RaiseComplaint />}
             />
+            <Route
+              path="/student/my-requests"
+              element={<StudentRequestsStatus />}
+            />
+
             <Route path="/student/payments" element={<StudentPaymentsPage />} />
             <Route path="/student/my-bookings" element={<MyBookingsPage />} />
             <Route path="/student/my-hostel" element={<MyHostelPage />} />

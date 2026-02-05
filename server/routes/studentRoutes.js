@@ -30,6 +30,8 @@ router.get(
   studentController.getStudentDashboardMetrics
 );
 
+const bookingController = require("../controllers/bookingController");
+
 // ✅ NEW: Student routes
 router.get(
   "/my-hostel",
@@ -49,11 +51,25 @@ router.get(
   // requireStudent, // Allow owners to view hostels too
   studentController.searchHostels
 );
+
+// ✅ NEW: Student Booking Request Routes
 router.post(
   "/booking-request",
   requireAuth,
   requireStudent,
-  studentController.createBookingRequest
+  bookingController.createBookingRequest
+);
+router.get(
+  "/my-requests",
+  requireAuth,
+  requireStudent,
+  bookingController.getStudentRequests
+);
+router.delete(
+  "/booking-request/:requestId",
+  requireAuth,
+  requireStudent,
+  bookingController.cancelBookingRequest
 );
 
 // ✅ NEW: Interested / Wishlist Routes
@@ -80,6 +96,32 @@ router.delete(
   requireAuth,
   requireStudent,
   studentController.removeInterestedHostel
+);
+
+// ✅ NEW: Recently Viewed Routes
+router.get(
+  "/recently-viewed",
+  requireAuth,
+  requireStudent,
+  studentController.getRecentlyViewed
+);
+router.post(
+  "/recently-viewed",
+  requireAuth,
+  requireStudent,
+  studentController.addToRecentlyViewed
+);
+router.delete(
+  "/recently-viewed/all",
+  requireAuth,
+  requireStudent,
+  studentController.clearRecentlyViewed
+);
+router.delete(
+  "/recently-viewed/:hostelId",
+  requireAuth,
+  requireStudent,
+  studentController.removeFromRecentlyViewed
 );
 
 module.exports = router;

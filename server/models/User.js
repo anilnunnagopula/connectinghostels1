@@ -87,6 +87,18 @@ const userSchema = new mongoose.Schema(
       ref: "Hostel",
     }],
 
+    // Recently Viewed Hostels
+    recentlyViewed: [{
+      hostel: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Hostel"
+      },
+      viewedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+
     // ==================== PHASE 2+ FIELDS (Frozen) ====================
     // Uncomment when needed
     /*

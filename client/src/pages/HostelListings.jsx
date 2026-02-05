@@ -629,9 +629,9 @@ const HostelListings = () => {
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div
-                        className={`absolute top-2 right-2 px-2 py-1 text-xs font-semibold rounded-full text-white ${hostel.available ? "bg-green-500" : "bg-red-500"}`}
+                        className={`absolute top-2 right-2 px-2 py-1 text-xs font-semibold rounded-full text-white ${hostel.availableRooms > 0 ? "bg-green-500" : "bg-red-500"}`}
                       >
-                        {hostel.available ? "Available" : "Full"}
+                        {hostel.availableRooms > 0 ? "Available" : "Full"}
                       </div>
                     </div>
                     <div className="p-4">
@@ -657,6 +657,9 @@ const HostelListings = () => {
                           /month
                         </span>
                       </p>
+                      <button className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                        View & Request
+                      </button>
                     </div>
                   </div>
                 </Link>

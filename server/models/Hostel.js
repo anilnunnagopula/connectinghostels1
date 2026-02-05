@@ -30,10 +30,18 @@ const hostelSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    floors: {
+      // ✅ ADD THIS
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1
+    },
     totalRooms: {
       type: Number,
       required: true,
       min: 1,
+    
     },
     availableRooms: {
       type: Number,
@@ -76,20 +84,20 @@ const hostelSchema = new mongoose.Schema(
       index: true,
     },
     paymentSettings: {
-        lateFeePolicy: {
-            enabled: { type: Boolean, default: false },
-            type: { type: String, enum: ["FIXED", "PERCENTAGE"], default: "FIXED" },
-            value: { type: Number, default: 0 },
-            gracePeriodDays: { type: Number, default: 5 }
-        },
-        bankDetails: {
-            accountName: String,
-            accountNumber: String,
-            ifscCode: String,
-            bankName: String,
-            upiId: String
-        },
-        gatewayEnabled: { type: Boolean, default: true }
+      lateFeePolicy: {
+        enabled: { type: Boolean, default: false },
+        type: { type: String, enum: ["FIXED", "PERCENTAGE"], default: "FIXED" },
+        value: { type: Number, default: 0 },
+        gracePeriodDays: { type: Number, default: 5 },
+      },
+      bankDetails: {
+        accountName: String,
+        accountNumber: String,
+        ifscCode: String,
+        bankName: String,
+        upiId: String,
+      },
+      gatewayEnabled: { type: Boolean, default: true },
     },
 
     // ==================== PHASE 2+ FIELDS (Frozen) ====================
@@ -109,7 +117,7 @@ const hostelSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Compound index for common queries (type + locality + active)

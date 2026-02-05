@@ -69,11 +69,15 @@ const requireProfileComplete = (req, res, next) => {
  */
 const requireOwner = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ error: "Authentication required" });
+    return res.status(401).json({
+      error: "Authentication required.",
+    });
   }
 
   if (req.user.role !== "owner") {
-    return res.status(403).json({ error: "Access denied. Owners only." });
+    return res.status(403).json({
+      error: "Access denied. Owner privileges required.",
+    });
   }
 
   next();
@@ -85,11 +89,15 @@ const requireOwner = (req, res, next) => {
  */
 const requireStudent = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ error: "Authentication required" });
+    return res.status(401).json({
+      error: "Authentication required.",
+    });
   }
 
   if (req.user.role !== "student") {
-    return res.status(403).json({ error: "Access denied. Students only." });
+    return res.status(403).json({
+      error: "Access denied. Student account required.",
+    });
   }
 
   next();

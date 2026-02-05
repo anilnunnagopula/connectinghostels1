@@ -1,20 +1,13 @@
 /**
- * HostelDetails.jsx - Detailed Hostel View
+ * HostelDetails.jsx - Updated Version
  *
- * Features:
- * - Comprehensive hostel information display
- * - Image gallery with lightbox
- * - Save to interested/wishlist
- * - Booking integration
- * - Reviews and ratings
- * - Share functionality
- * - Amenities breakdown
+ * CHANGES FROM ORIGINAL:
+ * 1. Removed booking modal (replaced with dedicated page)
+ * 2. "Request Room" button now navigates to /booking-request/:hostelId
+ * 3. Added check for existing requests and admission status
+ * 4. Button shows appropriate states: Available / Already Requested / Already Admitted / Not Available
  *
- * Performance Optimizations:
- * - Lazy loading images
- * - Memoized event handlers
- * - Proper error and loading states
- * - API cleanup
+ * This is a MINIMAL CHANGE version - only the booking flow is modified
  */
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -38,9 +31,7 @@ import {
   XCircle,
   Users,
   Bed,
-  Calendar,
-  Phone,
-  Mail,
+  AlertCircle,
 } from "lucide-react";
 
 // ============================================================================
@@ -87,6 +78,13 @@ const HostelDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
 
+  // NEW: Request status checking
+  const [requestStatus, setRequestStatus] = useState({
+    hasRequest: false,
+    isAdmitted: false,
+    checking: true,
+  });
+
   // ==========================================================================
   // DATA FETCHING
   // ==========================================================================
@@ -98,7 +96,6 @@ const HostelDetails = () => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
-      // Try API first (if endpoint exists)
       const token = getToken();
 
       try {
@@ -115,7 +112,6 @@ const HostelDetails = () => {
         }));
         return;
       } catch (apiError) {
-        // If API fails, fallback to localStorage
         console.log("API fetch failed, trying localStorage...");
       }
 
@@ -160,16 +156,69 @@ const HostelDetails = () => {
     }
   }, [id]);
 
+  /**
+   * NEW: Check if student has existing request or is admitted
+   */
+  const checkRequestStatus = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setRequestStatus({
+        hasRequest: false,
+        isAdmitted: false,
+        checking: false,
+      });
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/students/my-requests`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const { requests = [], currentHostel = null } = response.data || {};
+
+      setRequestStatus({
+        hasRequest: requests.some((req) => req.status === "Pending"),
+        isAdmitted: Boolean(currentHostel),
+        checking: false,
+      });
+    } catch (err) {
+      // 🎯 IMPORTANT PART
+      if (
+        err.response?.status === 404 &&
+        err.response?.data?.error === "Student profile not found."
+      ) {
+        // Treat as valid state, not failure
+        setRequestStatus({
+          hasRequest: false,
+          isAdmitted: false,
+          checking: false,
+        });
+        return;
+      }
+
+      console.error("Error checking request status:", err);
+      setRequestStatus({
+        hasRequest: false,
+        isAdmitted: false,
+        checking: false,
+      });
+    }
+  }, []);
+
+
   useEffect(() => {
     fetchHostelDetails();
-  }, [fetchHostelDetails]);
+    checkRequestStatus();
+  }, [fetchHostelDetails, checkRequestStatus]);
 
-//adds to recently viewed page
-useEffect(() => {
-  if (state.hostel) {
-    addToRecentlyViewed(state.hostel);
-  }
-}, [state.hostel]);
+  // Adds to recently viewed page
+  useEffect(() => {
+    if (state.hostel) {
+      addToRecentlyViewed(state.hostel);
+    }
+  }, [state.hostel]);
 
   // ==========================================================================
   // EVENT HANDLERS
@@ -195,7 +244,6 @@ useEffect(() => {
     setState((prev) => ({ ...prev, savingInterest: true }));
 
     try {
-      // API call to save/remove interest
       await axios.post(
         `${API_BASE_URL}/api/student/interested/${state.hostel.id}`,
         {},
@@ -231,11 +279,18 @@ useEffect(() => {
   }, [state.hostel, navigate]);
 
   /**
-   * Handles booking action
+   * UPDATED: Navigate to booking request page
    */
-  const handleBookNow = useCallback(() => {
-    navigate(`/student/book/${id}`);
-  }, [navigate, id]);
+  const handleRequestRoom = useCallback(() => {
+    const token = getToken();
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    // Navigate to dedicated booking page
+    navigate(`/booking-request/${id}`);
+  }, [id, navigate]);
 
   /**
    * Handles share functionality
@@ -248,7 +303,6 @@ useEffect(() => {
         url: window.location.href,
       });
     } else {
-      // Fallback: Copy to clipboard
       navigator.clipboard.writeText(window.location.href);
       alert("Link copied to clipboard!");
     }
@@ -279,12 +333,10 @@ useEffect(() => {
   const images = useMemo(() => {
     if (!state.hostel) return [];
 
-    // If hostel has images array, use it
     if (state.hostel.images && state.hostel.images.length > 0) {
       return state.hostel.images;
     }
 
-    // Otherwise, generate placeholder images
     return [
       "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?fit=crop&w=1200&q=80",
@@ -448,44 +500,81 @@ useEffect(() => {
   );
 
   /**
-   * Renders price and booking section
+   * UPDATED: Renders price and booking section with request status
    */
-  const renderPriceSection = () => (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Price per month
-          </p>
-          <div className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
-            <IndianRupee size={28} />
-            <span>
-              {state.hostel.price?.replace("₹", "").replace("/mo", "")}
-            </span>
+  const renderPriceSection = () => {
+    // Determine button state
+    let buttonText = "Request Room";
+    let buttonDisabled = false;
+    let buttonClass = "bg-blue-600 hover:bg-blue-700 text-white";
+    let buttonIcon = null;
+
+    if (requestStatus.checking) {
+      buttonText = "Checking...";
+      buttonDisabled = true;
+      buttonClass = "bg-gray-400 cursor-not-allowed text-white";
+      buttonIcon = <Loader2 size={20} className="animate-spin" />;
+    } else if (requestStatus.isAdmitted) {
+      buttonText = "Already Admitted";
+      buttonDisabled = true;
+      buttonClass = "bg-green-500 cursor-not-allowed text-white";
+      buttonIcon = <CheckCircle size={20} />;
+    } else if (requestStatus.hasRequest) {
+      buttonText = "Request Pending";
+      buttonDisabled = true;
+      buttonClass = "bg-yellow-500 cursor-not-allowed text-white";
+      buttonIcon = <AlertCircle size={20} />;
+    } else if (state.hostel.availableRooms <= 0) {
+      buttonText = "Not Available";
+      buttonDisabled = true;
+      buttonClass =
+        "bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed";
+      buttonIcon = <XCircle size={20} />;
+    }
+
+    return (
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
+              Price per month
+            </p>
+            <div className="flex items-center gap-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <IndianRupee size={28} />
+              <span>
+                {state.hostel.price?.replace("₹", "").replace("/mo", "")}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleRequestRoom}
+              disabled={buttonDisabled}
+              className={`px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 ${buttonClass}`}
+            >
+              {buttonIcon}
+              {buttonText}
+            </button>
+            {!requestStatus.isAdmitted &&
+              !requestStatus.hasRequest &&
+              state.hostel.availableRooms > 0 && (
+                <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
+                  <CheckCircle size={16} />
+                  <span>
+                    Available ({state.hostel.availableRooms} rooms left)
+                  </span>
+                </div>
+              )}
+            {requestStatus.hasRequest && (
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 text-center">
+                View status in dashboard
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={handleBookNow}
-            disabled={!state.hostel.available}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
-              state.hostel.available
-                ? "bg-blue-600 hover:bg-blue-700 text-white"
-                : "bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            {state.hostel.available ? "Book Now" : "Not Available"}
-          </button>
-          {state.hostel.available && (
-            <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
-              <CheckCircle size={16} />
-              <span>Available</span>
-            </div>
-          )}
-        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   /**
    * Renders hostel details section
@@ -571,38 +660,25 @@ export default HostelDetails;
 
 /**
  * ============================================================================
- * REFACTORING IMPROVEMENTS
+ * CHANGES SUMMARY
  * ============================================================================
  *
- * 1. ERROR HANDLING
- *    ✅ Proper error states with user-friendly messages
- *    ✅ API + localStorage fallback
- *    ✅ Not found handling
+ * REMOVED:
+ * ❌ Booking modal (showBookingModal, bookingRoom, isSubmittingBooking states)
+ * ❌ handleSubmitRequest function
+ * ❌ renderBookingModal function
  *
- * 2. PERFORMANCE
- *    ✅ useCallback for all event handlers
- *    ✅ useMemo for computed values (images)
- *    ✅ Lazy loading images
+ * ADDED:
+ * ✅ requestStatus state (hasRequest, isAdmitted, checking)
+ * ✅ checkRequestStatus function
+ * ✅ Button state logic based on request/admission status
+ * ✅ Navigate to /booking-request/:hostelId on button click
+ * ✅ Visual feedback for different button states
  *
- * 3. UX IMPROVEMENTS
- *    ✅ Image gallery with modal lightbox
- *    ✅ Back button navigation
- *    ✅ Save to interested/wishlist
- *    ✅ Share functionality
- *    ✅ Booking integration
- *    ✅ Availability status
- *    ✅ Loading states
- *
- * 4. CODE QUALITY
- *    ✅ Clear section organization
- *    ✅ Separated render functions
- *    ✅ Comprehensive documentation
- *    ✅ Accessible buttons with aria-labels
- *
- * OPTIONAL ENHANCEMENTS:
- * - Add reviews/ratings section
- * - Add map integration
- * - Add virtual tour
- * - Add contact owner button
- * - Add similar hostels section
+ * BENEFITS:
+ * 1. Cleaner separation of concerns (details vs booking)
+ * 2. Dedicated page for complex booking form
+ * 3. Better UX with proper request status visibility
+ * 4. Prevents duplicate requests at UI level
+ * 5. Shows appropriate messaging for each state
  */

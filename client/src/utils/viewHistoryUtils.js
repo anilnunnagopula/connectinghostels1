@@ -49,7 +49,7 @@ export const addToRecentlyViewed = async (hostel) => {
     if (token) {
       try {
         await axios.post(
-          `${API_BASE_URL}/api/student/recently-viewed`,
+          `${API_BASE_URL}/api/students/recently-viewed`,
           { hostelId: viewedHostel.id, hostel: viewedHostel },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -128,7 +128,7 @@ export const removeFromRecentlyViewed = async (hostelId) => {
     if (token) {
       try {
         await axios.delete(
-          `${API_BASE_URL}/api/student/recently-viewed/${hostelId}`,
+          `${API_BASE_URL}/api/students/recently-viewed/${hostelId}`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
       } catch (apiError) {
@@ -157,7 +157,7 @@ export const clearRecentlyViewed = async () => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        await axios.delete(`${API_BASE_URL}/api/student/recently-viewed/all`, {
+        await axios.delete(`${API_BASE_URL}/api/students/recently-viewed/all`, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } catch (apiError) {
