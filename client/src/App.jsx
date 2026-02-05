@@ -62,6 +62,7 @@ import StudentHostelDetails from "./pages/student/HostelDetails";
 import MyHostelPage from "./pages/student/MyHostelPage";
 import BookingRequestPage from "./pages/student/BookingRequestPage";
 import StudentRequestsStatus from "./pages/student/StudentRequestsStatus";
+import MyHostelRules from "./pages/student/MyHostelRules";
 // Owner - Hostel Details (FIXED IMPORT)
 import OwnerHostelDetails from "./pages/owner/HostelDetails";
 
@@ -113,6 +114,10 @@ const App = () => {
             <Route
               path="/student/my-requests"
               element={<StudentRequestsStatus />}
+            />
+            <Route
+              path="/student/rules-and-regulations"
+              element={<MyHostelRules />}
             />
 
             <Route path="/student/payments" element={<StudentPaymentsPage />} />

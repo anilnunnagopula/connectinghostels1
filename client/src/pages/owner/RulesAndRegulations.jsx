@@ -56,7 +56,7 @@ const RulesAndRegulations = () => {
     }
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/rules/mine`,
+        `${process.env.REACT_APP_API_URL}/api/rules/mine`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRules(response.data.rules);
@@ -90,7 +90,7 @@ const RulesAndRegulations = () => {
     try {
       setLoading(true);
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/owner/rules`,
+        `${process.env.REACT_APP_API_URL}/api/rules`,
         { text: newRuleText.trim(), hostelId: selectedHostel.value },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -118,7 +118,7 @@ const RulesAndRegulations = () => {
     try {
       setLoading(true);
       await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/owner/rules/bulk`,
+        `${process.env.REACT_APP_API_URL}/api/rules/bulk`,
         { text: newRuleText.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -151,7 +151,7 @@ const RulesAndRegulations = () => {
     try {
       setLoading(true);
       await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/owner/rules/${editingRuleId}`,
+        `${process.env.REACT_APP_API_URL}/api/rules/${editingRuleId}`,
         { text: editingRuleText.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -184,7 +184,7 @@ const RulesAndRegulations = () => {
     try {
       setLoading(true);
       await axios.delete(
-        `${process.env.REACT_APP_API_URL}/api/owner/rules/${id}`,
+        `${process.env.REACT_APP_API_URL}/api/rules/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Rule deleted successfully!");

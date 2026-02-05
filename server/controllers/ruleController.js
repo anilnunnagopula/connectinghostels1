@@ -100,3 +100,19 @@ exports.bulkAddRule = async (req, res) => {
     res.status(500).json({ message: "Failed to add bulk rules." });
   }
 };
+// ✅ NEW: Get rules for a specific hostel (Accessible by Students)
+exports.getHostelRules = async (req, res) => {
+  try {
+    const { hostelId } = req.params;
+    
+    if (!hostelId) {
+      return res.status(400).json({ message: "Hostel ID is required." });
+    }
+
+    const rules = await Rule.find({ hostelId });
+    res.status(200).json({ rules });
+  } catch (err) {
+    console.error("Error fetching hostel rules:", err);
+    res.status(500).json({ message: "Failed to fetch rules for this hostel." });
+  }
+};

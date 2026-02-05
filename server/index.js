@@ -49,7 +49,7 @@ try {
 
   app.use("/api/owner/hostels", ownerHostelRoutes);
   app.use("/api/owner/rooms", roomRoutes);
-  app.use("/api/owner/rules", ruleRoutes);
+  app.use("/api/rules", ruleRoutes);
   app.use("/api/owner/payments", ownerPaymentRoutes);
   app.use("/api/owner", ownerRoutes);
   console.log("✅ Phase 2A routes loaded");
