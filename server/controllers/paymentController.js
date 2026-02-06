@@ -320,3 +320,175 @@
 //         res.status(500).json({ message: "Failed to create due" });
 //     }
 // };
+/**
+ * Payment Controller - SIMPLE VERSION
+ * Only 2 endpoints: create order + verify payment
+ */
+
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
+const Payment = require("../models/Payment");
+const Student = require("../models/Student");
+
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// ============================================================================
+// CREATE ORDER
+// ============================================================================
+
+/**
+ * Create Razorpay Order
+ * @route POST /api/payments/create-order
+ */
+exports.createOrder = async (req, res) => {
+  try {
+    const { amount, hostelId } = req.body;
+    const userId = req.user.id;
+
+    // Basic validation
+    if (!amount || amount < 1) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    // Find student
+    const student = await Student.findOne({ user: userId });
+    if (!student) {
+      return res.status(404).json({ error: "Student profile not found" });
+    }
+
+    // Create Razorpay order
+    const options = {
+      amount: amount * 100, // Convert to paise (₹100 = 10000 paise)
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+      notes: {
+        studentId: student._id.toString(),
+        hostelId: hostelId || "",
+        description: "Hostel Fee Payment",
+      },
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    console.log("✅ Razorpay order created:", order.id);
+
+    res.status(200).json({
+      success: true,
+      order: {
+        id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+      },
+      key_id: process.env.RAZORPAY_KEY_ID, // Frontend needs this
+    });
+  } catch (err) {
+    console.error("❌ Error creating order:", err);
+    res.status(500).json({ error: "Failed to create payment order" });
+  }
+};
+
+// ============================================================================
+// VERIFY PAYMENT
+// ============================================================================
+
+/**
+ * Verify Payment Signature
+ * @route POST /api/payments/verify
+ */
+exports.verifyPayment = async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      amount,
+      hostelId,
+    } = req.body;
+
+    const userId = req.user.id;
+
+    // Find student
+    const student = await Student.findOne({ user: userId });
+    if (!student) {
+      return res.status(404).json({ error: "Student profile not found" });
+    }
+
+    // Verify signature
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      console.log("❌ Payment signature verification failed");
+      return res.status(400).json({ error: "Invalid payment signature" });
+    }
+
+    // Signature is valid - Save payment to database
+    const payment = new Payment({
+      student: student._id,
+      hostel: hostelId,
+      amount: amount / 100, // Convert paise back to rupees
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      status: "success",
+    });
+
+    await payment.save();
+
+    console.log("✅ Payment verified and saved:", payment._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Payment successful",
+      payment: {
+        id: payment._id,
+        amount: payment.amount,
+        status: payment.status,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Error verifying payment:", err);
+    res.status(500).json({ error: "Payment verification failed" });
+  }
+};
+
+// ============================================================================
+// GET PAYMENT HISTORY (BONUS - Optional)
+// ============================================================================
+
+/**
+ * Get student's payment history
+ * @route GET /api/payments/my-payments
+ */
+exports.getMyPayments = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const student = await Student.findOne({ user: userId });
+    if (!student) {
+      return res.status(404).json({ error: "Student profile not found" });
+    }
+
+    const payments = await Payment.find({ student: student._id })
+      .populate("hostel", "name")
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.status(200).json({
+      success: true,
+      payments,
+    });
+  } catch (err) {
+    console.error("Error fetching payments:", err);
+    res.status(500).json({ error: "Failed to fetch payment history" });
+  }
+};
+
+module.exports = exports;

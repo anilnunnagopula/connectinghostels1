@@ -1,35 +1,17 @@
+/**
+ * Owner Payment Routes
+ */
+
 const express = require("express");
 const router = express.Router();
-const ownerPaymentController = require("../controllers/ownerPaymentController"); // ✅ Corrected file name
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
-
-// All top-level owner payment routes go here
-router.get(
-  "/payment-settings",
-  requireAuth,
-  requireOwner,
-  ownerPaymentController.getPaymentSettings
-);
-
-router.post(
-  "/payment-settings",
-  requireAuth,
-  requireOwner,
-  ownerPaymentController.savePaymentSettings
-);
+const ownerPaymentController = require("../controllers/ownerPaymentController");
 
 router.get(
-  "/payout-methods",
+  "/payments",
   requireAuth,
   requireOwner,
-  ownerPaymentController.getPayoutMethods
-);
-
-router.get(
-  "/payout-history",
-  requireAuth,
-  requireOwner,
-  ownerPaymentController.getPayoutHistory
+  ownerPaymentController.getOwnerPayments,
 );
 
 module.exports = router;

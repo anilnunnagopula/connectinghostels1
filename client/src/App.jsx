@@ -19,7 +19,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ViewProfile from "./pages/ViewProfile";
 import EditProfile from "./pages/EditProfile";
 import StudentSettingsPage from "./pages/student/SettingsPage";
-import StudentPaymentsPage from "./pages/student/PaymentsPage";
+// import StudentPaymentsPage from "./pages/student/PaymentsPage";
 import MyBookingsPage from "./pages/student/MyBookingsPage";
 import CompleteProfile from "./pages/CompleteProfile";
 
@@ -42,7 +42,7 @@ import Notifications from "./pages/student/Notifications";
 import RecentlyViewed from "./pages/student/RecentlyViewed";
 import RaiseComplaint from "./pages/student/RaiseComplaint";
 import Support from "./pages/Support";
-import PaymentsPage from "./pages/owner/PaymentsPage";
+import OwnerPaymentsPage from "./pages/owner/PaymentsPage";
 import OwnerSettingsPage from "./pages/owner/SettingsPage";
 import OwnerNotificationsPage from "./pages/owner/OwnerNotificationsPage";
 import ManageRooms from "./pages/owner/ManageRooms";
@@ -64,6 +64,7 @@ import BookingRequestPage from "./pages/student/BookingRequestPage";
 import StudentRequestsStatus from "./pages/student/StudentRequestsStatus";
 import MyHostelRules from "./pages/student/MyHostelRules";
 import MyRoomDetails from "./pages/student/MyRoomDetails"
+import PayHostelFee from "./pages/student/PaymentsPage";
 // Owner - Hostel Details (FIXED IMPORT)
 import OwnerHostelDetails from "./pages/owner/HostelDetails";
 
@@ -116,16 +117,13 @@ const App = () => {
               path="/student/my-requests"
               element={<StudentRequestsStatus />}
             />
-            <Route
-              path="/student/my-room"
-              element={<MyRoomDetails />}
-            />
+            <Route path="/student/my-room" element={<MyRoomDetails />} />
             <Route
               path="/student/rules-and-regulations"
               element={<MyHostelRules />}
             />
 
-            <Route path="/student/payments" element={<StudentPaymentsPage />} />
+            <Route path="/student/payments" element={<PayHostelFee />} />
             <Route path="/student/my-bookings" element={<MyBookingsPage />} />
             <Route path="/student/my-hostel" element={<MyHostelPage />} />
 
@@ -230,7 +228,7 @@ const App = () => {
               path="/owner/payment-settings"
               element={
                 <OwnerLayout>
-                  <PaymentsPage />
+                  <OwnerPaymentsPage />
                 </OwnerLayout>
               }
             />

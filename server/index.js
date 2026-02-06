@@ -96,6 +96,12 @@ try {
   console.error(error.stack);
 }
 
+// Add this with your other routes
+const paymentRoutes = require("./routes/paymentRoutes");
+
+// Mount it
+app.use("/api/payments", paymentRoutes);
+console.log("✅ Payment routes mounted at /api/payments");
 // ==================== NOTIFICATIONS ====================
 console.log("🔔 Loading notification routes...");
 try {

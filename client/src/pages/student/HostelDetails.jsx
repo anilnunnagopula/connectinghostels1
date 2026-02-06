@@ -14,6 +14,8 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { addToRecentlyViewed } from "../../utils/viewHistoryUtils";
+import LoginPrompt from "../../components/LoginPrompt";
+
 import {
   MapPin,
   Building2,
@@ -77,6 +79,7 @@ const HostelDetails = () => {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // ADD THIS
 
   // NEW: Request status checking
   const [requestStatus, setRequestStatus] = useState({
@@ -88,7 +91,20 @@ const HostelDetails = () => {
   // ==========================================================================
   // DATA FETCHING
   // ==========================================================================
-
+const isAuthenticated = () => {
+  const token = localStorage.getItem("token");
+  const userObj = localStorage.getItem("user");
+  if (token) return true;
+  if (userObj) {
+    try {
+      const parsed = JSON.parse(userObj);
+      return !!parsed.token;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+};
   /**
    * Fetches hostel details from API or localStorage
    */
@@ -297,8 +313,12 @@ const HostelDetails = () => {
    */
   const handleRequestRoom = useCallback(() => {
     const token = getToken();
+    // if (!token) {
+    //   navigate("/login");
+    //   return;
+    // }
     if (!token) {
-      navigate("/login");
+      setShowLoginPrompt(true);
       return;
     }
 
@@ -669,7 +689,10 @@ const HostelDetails = () => {
     </div>
   );
 };;
-
+<LoginPrompt
+  isOpen={LoginPrompt}
+  onClose={() => setShowLoginPrompt(false)}
+/>;
 export default HostelDetails;
 
 /**

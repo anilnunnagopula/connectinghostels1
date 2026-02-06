@@ -1,31 +1,29 @@
+// Home.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import HostelListings from "./HostelListings";
 
-// Define the content for each slide
 const slides = [
-  // Slide 1: Your original home page content
   {
     background: `url(${process.env.PUBLIC_URL}/Hostel.jpg)`,
     isImage: true,
     content: (
       <>
-        <h1 className="text-4xl font-bold mb-4 drop-shadow-lg">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">
           Welcome!
           <br />
           <strong>the one-stop platform for hostels in Mangalpally</strong>
         </h1>
-        <p className="text-lg mb-6 drop-shadow-sm">
+        <p className="text-lg md:text-xl mb-6 drop-shadow-sm">
           Searching for Hostel (in Mangalpally).
           <br />
-          Let’s do it together.
+          Let's do it together.
         </p>
       </>
     ),
   },
-  // Slide 2: Ad with a colored background
   {
-    background: "bg-indigo-900",
+    background:
+      "bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900",
     isImage: false,
     content: (
       <>
@@ -38,9 +36,8 @@ const slides = [
       </>
     ),
   },
-  // Slide 3: Ad with a colored background
   {
-    background: "bg-teal-900",
+    background: "bg-gradient-to-br from-teal-900 via-teal-800 to-cyan-900",
     isImage: false,
     content: (
       <>
@@ -48,15 +45,14 @@ const slides = [
           Want to Advertise Your Hostel Here?
         </h1>
         <p className="text-lg md:text-xl drop-shadow-sm">
-          Reach thousands of students and fill your rooms faster. Please contact
-          us.
+          Reach thousands of students and fill your rooms faster. Contact us
+          today.
         </p>
       </>
     ),
   },
-  // Slide 4: Ad with a colored background
   {
-    background: "bg-slate-800",
+    background: "bg-gradient-to-br from-slate-900 via-slate-800 to-gray-900",
     isImage: false,
     content: (
       <>
@@ -75,44 +71,71 @@ const Home = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showProgressPopup, setShowProgressPopup] = useState(true);
 
-  // Auto-play slider logic
+  // Auto-play slider
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 6000); // Change slide every 6 seconds
+    }, 6000);
     return () => clearInterval(slideInterval);
   }, []);
 
-  // Progress popup logic
+  // Progress popup (only show once per session)
   useEffect(() => {
-    const timer = setTimeout(() => setShowProgressPopup(false), 3000);
-    return () => clearTimeout(timer);
+    const hasSeenPopup = sessionStorage.getItem("hasSeenProgressPopup");
+    if (hasSeenPopup) {
+      setShowProgressPopup(false);
+    } else {
+      const timer = setTimeout(() => {
+        setShowProgressPopup(false);
+        sessionStorage.setItem("hasSeenProgressPopup", "true");
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   return (
     <div>
       {/* Project in Progress Popup */}
       {showProgressPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
-          <div className="bg-yellow-100 text-black p-6 rounded-lg shadow-xl max-w-sm w-full text-center space-y-4">
-            <h2 className="text-xl font-bold">🚧 Project in Progress</h2>
-            <p className="text-sm">
-              This website is still under development. Please use the test
-              credentials to log in and explore.
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 text-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full space-y-4 transform transition-all">
+            <div className="flex items-center justify-center mb-2">
+              <div className="bg-yellow-400 rounded-full p-3">
+                <svg
+                  className="w-8 h-8 text-yellow-900"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-center">🚧 Beta Version</h2>
+            <p className="text-sm text-center leading-relaxed">
+              This platform is currently in development. Browse hostels freely,
+              or use test credentials to explore booking features.
             </p>
             <button
-              onClick={() => setShowProgressPopup(false)}
-              className="mt-2 px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition"
+              onClick={() => {
+                setShowProgressPopup(false);
+                sessionStorage.setItem("hasSeenProgressPopup", "true");
+              }}
+              className="w-full px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-md"
             >
-              Okay, got it!
+              Got it, let's explore!
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Page Slider */}
+      {/* Hero Slider - Fully Public */}
       <div className="relative w-full h-screen overflow-hidden">
-        {/* Sliding container */}
         <div
           className="flex h-full transition-transform duration-700 ease-in-out"
           style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -128,7 +151,7 @@ const Home = () => {
               {slide.isImage && (
                 <div className="absolute inset-0 bg-black bg-opacity-50"></div>
               )}
-              <div className="relative z-10 text-white max-w-3xl">
+              <div className="relative z-10 text-white max-w-4xl px-4">
                 {slide.content}
               </div>
             </div>
@@ -136,22 +159,41 @@ const Home = () => {
         </div>
 
         {/* Navigation Dots */}
-        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex space-x-3 z-20">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-3 z-20">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full transition-colors ${
+              className={`w-3 h-3 rounded-full transition-all ${
                 currentSlide === index
-                  ? "bg-white"
-                  : "bg-white/50 hover:bg-white"
+                  ? "bg-white scale-125"
+                  : "bg-white/50 hover:bg-white/80"
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 animate-bounce">
+          <svg
+            className="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
+          </svg>
+        </div>
       </div>
-      {/* <HostelListings/> */}
+
+      {/* Hostel Listings - Fully Public */}
+      <HostelListings />
     </div>
   );
 };

@@ -1,47 +1,47 @@
+/**
+ * Payment Routes - SIMPLE VERSION
+ * Only 3 routes: create order, verify payment, get history
+ */
+
 const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/paymentController");
-const { requireAuth, requireStudent, requireOwner } = require("../middleware/authMiddleware");
+const { requireAuth, requireStudent } = require("../middleware/authMiddleware");
 
-// Student Routes
-router.get(
-  "/dues",
-  requireAuth,
-  requireStudent,
-  paymentController.getStudentDues
-);
-router.get(
-  "/history",
-  requireAuth,
-  requireStudent,
-  paymentController.getStudentPaymentHistory
-);
+/**
+ * @route   POST /api/payments/create-order
+ * @desc    Create Razorpay order for payment
+ * @access  Private (Student only)
+ */
 router.post(
   "/create-order",
-  requireAuth, // Could be student or eventually owner initiating? Usually student.
+  requireAuth,
   requireStudent,
-  paymentController.createRazorpayOrder
+  paymentController.createOrder,
 );
+
+/**
+ * @route   POST /api/payments/verify
+ * @desc    Verify payment signature and save to DB
+ * @access  Private (Student only)
+ */
 router.post(
   "/verify",
   requireAuth,
   requireStudent,
-  paymentController.verifyPayment
+  paymentController.verifyPayment,
 );
 
-// Owner Routes
-router.post(
-    "/record-cash",
-    requireAuth,
-    requireOwner,
-    paymentController.recordCashPayment
-);
-
-router.post(
-    "/create-due",
-    requireAuth,
-    requireOwner,
-    paymentController.createDue
+/**
+ * @route   GET /api/payments/my-payments
+ * @desc    Get student's payment history
+ * @access  Private (Student only)
+ */
+router.get(
+  "/my-payments",
+  requireAuth,
+  requireStudent,
+  paymentController.getMyPayments,
 );
 
 module.exports = router;

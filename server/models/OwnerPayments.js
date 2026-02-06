@@ -1,30 +1,50 @@
+/**
+ * OwnerPayment Model
+ * Stores payments received by hostel owners
+ */
+
 const mongoose = require("mongoose");
 
-const payoutMethodSchema = new mongoose.Schema(
+const ownerPaymentSchema = new mongoose.Schema(
   {
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Owner",
       required: true,
     },
-    type: {
+    hostel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hostel",
+      required: true,
+    },
+    student: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    currency: {
       type: String,
-      enum: ["BANK_TRANSFER", "UPI"],
+      default: "INR",
+    },
+    paymentId: {
+      type: String, // razorpay_payment_id
       required: true,
     },
-    details: {
-      accountNumber: String,
-      ifscCode: String,
-      bankName: String,
-      accountHolderName: String,
-      upiId: String,
+    orderId: {
+      type: String, // razorpay_order_id
+      required: true,
     },
-    isDefault: {
-      type: Boolean,
-      default: false,
+    status: {
+      type: String,
+      enum: ["success"],
+      default: "success",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model("PayoutMethod", payoutMethodSchema);
+module.exports = mongoose.model("OwnerPayment", ownerPaymentSchema);

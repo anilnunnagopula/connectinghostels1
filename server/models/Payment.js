@@ -1,3 +1,8 @@
+/**
+ * Payment Model - SIMPLE VERSION
+ * Just stores successful student payments
+ */
+
 const mongoose = require("mongoose");
 
 const paymentSchema = new mongoose.Schema(
@@ -12,33 +17,39 @@ const paymentSchema = new mongoose.Schema(
       ref: "Hostel",
       required: true,
     },
-    owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    billId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Bill", // Assuming you'll have a Bill model
-    },
     amount: {
       type: Number,
       required: true,
     },
+    currency: {
+      type: String,
+      default: "INR",
+    },
+    // Razorpay IDs
+    razorpay_order_id: {
+      type: String,
+      required: true,
+    },
+    razorpay_payment_id: {
+      type: String,
+      required: true,
+    },
+    razorpay_signature: {
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
-      enum: ["Pending", "Success", "Failed"],
-      default: "Pending",
+      enum: ["success", "failed"],
+      default: "success",
     },
-    razorpayOrderId: String,
-    razorpayPaymentId: String,
-    razorpaySignature: String,
-    paidAt: {
-      type: Date,
-      default: Date.now,
+    // Optional: What is this payment for?
+    description: {
+      type: String,
+      default: "Hostel Fee Payment",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Payment", paymentSchema);
