@@ -1,19 +1,7 @@
 /**
- * notificationController.js - Student Notification Management
+ * FIXED notificationController.js - Replace ALL exports in your existing file
  *
- * Features:
- * - Get all notifications for student
- * - Mark single notification as read
- * - Mark all notifications as read
- * - Clear all notifications
- * - Get unread count
- *
- * Routes:
- * GET    /api/student/notifications          - Get all notifications
- * PATCH  /api/student/notifications/:id/read - Mark as read
- * PATCH  /api/student/notifications/mark-all-read - Mark all as read
- * DELETE /api/student/notifications/clear-all - Clear all
- * GET    /api/student/notifications/unread-count - Get unread count
+ * KEY FIX: All functions now properly convert User._id → Student._id
  */
 
 const Notification = require("../models/Notification");
@@ -26,12 +14,29 @@ const Student = require("../models/Student");
  */
 exports.getStudentNotifications = async (req, res) => {
   try {
-    const studentId = req.user.id; // Assuming student ID from auth token
+    const userId = req.user.id; // This is User._id from auth token
+
+    console.log(`📍 Fetching notifications for user: ${userId}`);
+
+    // ✅ CRITICAL FIX: Find the Student document first
+    const student = await Student.findOne({ user: userId });
+
+    if (!student) {
+      console.log("❌ No student profile found for user:", userId);
+      return res.status(404).json({
+        success: false,
+        message:
+          "Student profile not found. Please complete your profile first.",
+      });
+    }
+
+    const studentId = student._id; // ✅ NOW we have the correct Student._id
+    console.log(`✅ Found student: ${studentId} (${student.name})`);
 
     // Optional query parameters for filtering
     const { type, isRead, limit = 50, page = 1 } = req.query;
 
-    // Build query
+    // Build query using Student._id
     const query = { recipientStudent: studentId };
 
     if (type && type !== "all") {
@@ -56,6 +61,10 @@ exports.getStudentNotifications = async (req, res) => {
     // Get total count for pagination
     const total = await Notification.countDocuments(query);
 
+    console.log(
+      `✅ Found ${notifications.length} notifications (${total} total)`,
+    );
+
     res.status(200).json({
       success: true,
       count: notifications.length,
@@ -66,6 +75,7 @@ exports.getStudentNotifications = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error fetching notifications:", err);
+    console.error("Full error:", err.stack);
     res.status(500).json({
       success: false,
       message: "Failed to fetch notifications.",
@@ -81,13 +91,25 @@ exports.getStudentNotifications = async (req, res) => {
  */
 exports.markAsRead = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
     const notificationId = req.params.id;
+
+    // ✅ FIX: Get Student._id first
+    const student = await Student.findOne({ user: userId });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found.",
+      });
+    }
+
+    const studentId = student._id;
 
     // Find notification and verify it belongs to this student
     const notification = await Notification.findOne({
       _id: notificationId,
-      recipientStudent: studentId,
+      recipientStudent: studentId, // ✅ Now using correct Student._id
     });
 
     if (!notification) {
@@ -124,12 +146,24 @@ exports.markAsRead = async (req, res) => {
  */
 exports.markAllAsRead = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
+
+    // ✅ FIX: Get Student._id first
+    const student = await Student.findOne({ user: userId });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found.",
+      });
+    }
+
+    const studentId = student._id;
 
     // Update all unread notifications for this student
     const result = await Notification.updateMany(
       {
-        recipientStudent: studentId,
+        recipientStudent: studentId, // ✅ Now using correct Student._id
         isRead: false,
       },
       {
@@ -164,11 +198,23 @@ exports.markAllAsRead = async (req, res) => {
  */
 exports.clearAll = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
+
+    // ✅ FIX: Get Student._id first
+    const student = await Student.findOne({ user: userId });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found.",
+      });
+    }
+
+    const studentId = student._id;
 
     // Delete all notifications for this student
     const result = await Notification.deleteMany({
-      recipientStudent: studentId,
+      recipientStudent: studentId, // ✅ Now using correct Student._id
     });
 
     res.status(200).json({
@@ -195,10 +241,22 @@ exports.clearAll = async (req, res) => {
  */
 exports.getUnreadCount = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
+
+    // ✅ FIX: Get Student._id first
+    const student = await Student.findOne({ user: userId });
+
+    if (!student) {
+      return res.status(200).json({
+        success: true,
+        count: 0, // Return 0 if no student profile
+      });
+    }
+
+    const studentId = student._id;
 
     const count = await Notification.countDocuments({
-      recipientStudent: studentId,
+      recipientStudent: studentId, // ✅ Now using correct Student._id
       isRead: false,
     });
 
@@ -223,13 +281,25 @@ exports.getUnreadCount = async (req, res) => {
  */
 exports.deleteNotification = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
     const notificationId = req.params.id;
+
+    // ✅ FIX: Get Student._id first
+    const student = await Student.findOne({ user: userId });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found.",
+      });
+    }
+
+    const studentId = student._id;
 
     // Find and delete notification
     const notification = await Notification.findOneAndDelete({
       _id: notificationId,
-      recipientStudent: studentId,
+      recipientStudent: studentId, // ✅ Now using correct Student._id
     });
 
     if (!notification) {
@@ -254,78 +324,3 @@ exports.deleteNotification = async (req, res) => {
 };
 
 module.exports = exports;
-
-/**
- * ============================================================================
- * USAGE IN ROUTES FILE
- * ============================================================================
- *
- * // routes/studentRoutes.js or routes/notificationRoutes.js
- *
- * const express = require("express");
- * const router = express.Router();
- * const { protect, authorizeStudent } = require("../middleware/auth");
- * const notificationController = require("../controllers/notificationController");
- *
- * // All routes require authentication and student role
- * router.use(protect);
- * router.use(authorizeStudent);
- *
- * // Student notification routes
- * router.get("/notifications", notificationController.getStudentNotifications);
- * router.get("/notifications/unread-count", notificationController.getUnreadCount);
- * router.patch("/notifications/:id/read", notificationController.markAsRead);
- * router.patch("/notifications/mark-all-read", notificationController.markAllAsRead);
- * router.delete("/notifications/:id", notificationController.deleteNotification);
- * router.delete("/notifications/clear-all", notificationController.clearAll);
- *
- * module.exports = router;
- *
- * ============================================================================
- */
-
-/**
- * ============================================================================
- * TESTING CHECKLIST
- * ============================================================================
- *
- * GET /api/student/notifications
- * [ ] Returns all notifications for student
- * [ ] Sorted by most recent first
- * [ ] Pagination works
- * [ ] Filtering by type works
- * [ ] Filtering by isRead works
- * [ ] Populates hostel and sender info
- *
- * PATCH /api/student/notifications/:id/read
- * [ ] Marks notification as read
- * [ ] Sets readAt timestamp
- * [ ] Returns 404 if not found
- * [ ] Verifies notification belongs to student
- *
- * PATCH /api/student/notifications/mark-all-read
- * [ ] Marks all unread as read
- * [ ] Returns count of marked notifications
- * [ ] Only affects current student's notifications
- *
- * DELETE /api/student/notifications/clear-all
- * [ ] Deletes all student's notifications
- * [ ] Returns count of deleted notifications
- * [ ] Only affects current student's notifications
- *
- * GET /api/student/notifications/unread-count
- * [ ] Returns accurate unread count
- * [ ] Only counts current student's notifications
- *
- * DELETE /api/student/notifications/:id
- * [ ] Deletes single notification
- * [ ] Returns 404 if not found
- * [ ] Verifies notification belongs to student
- *
- * AUTHORIZATION:
- * [ ] Requires authentication token
- * [ ] Only students can access
- * [ ] Student can only see their own notifications
- *
- * ============================================================================
- */

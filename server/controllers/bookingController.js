@@ -436,6 +436,27 @@ exports.approveBookingRequest = async (req, res) => {
 
     request.status = "Approved";
     await request.save({ session });
+    // Around line 270 in bookingController.js, AFTER student.save()
+
+    // ✅ AUTO-NOTIFICATION: Send welcome notification
+    try {
+      const Notification = require("../models/Notification");
+
+      await Notification.create({
+        recipientStudent: student._id,
+        recipientHostel: request.hostel,
+        sender: ownerId,
+        senderRole: "owner",
+        message: `🎉 Congratulations! Your booking request has been approved. Welcome to ${hostel.name}! Your room number is ${request.roomNumber} on floor ${request.floor}.`,
+        type: "welcome",
+        isRead: false,
+      });
+
+      console.log("✅ Welcome notification sent to student");
+    } catch (notifErr) {
+      console.error("⚠️ Failed to send welcome notification:", notifErr);
+      // Don't fail the approval if notification fails
+    }
 
     student.currentHostel = request.hostel;
     student.roomNumber = request.roomNumber;
@@ -509,6 +530,26 @@ exports.rejectBookingRequest = async (req, res) => {
     request.status = "Rejected";
     if (reason) request.rejectionReason = reason;
     await request.save({ session });
+    // Around line 320, AFTER request.save()
+
+    // ✅ AUTO-NOTIFICATION: Send rejection notification
+    try {
+      const Notification = require("../models/Notification");
+
+      await Notification.create({
+        recipientStudent: request.student,
+        recipientHostel: request.hostel,
+        sender: ownerId,
+        senderRole: "owner",
+        message: `Your booking request has been declined. ${reason ? `Reason: ${reason}` : "Please contact the hostel for more information."}`,
+        type: "alert",
+        isRead: false,
+      });
+
+      console.log("✅ Rejection notification sent to student");
+    } catch (notifErr) {
+      console.error("⚠️ Failed to send rejection notification:", notifErr);
+    }
 
     await Student.findByIdAndUpdate(
       request.student,

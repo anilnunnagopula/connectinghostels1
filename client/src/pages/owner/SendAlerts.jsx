@@ -46,7 +46,7 @@ const SendAlerts = () => {
       // Fetch hostels to populate the dropdown
       const hostelsRes = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       const hostelOptions = hostelsRes.data.hostels.map((hostel) => ({
         value: hostel._id,
@@ -54,17 +54,24 @@ const SendAlerts = () => {
       }));
       setHostels(hostelOptions);
 
-      // Fetch students to populate the dropdown
+      // ✅ FIXED: Fetch students and use Student._id as value
       const studentsRes = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/students/mine`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      const studentOptions = studentsRes.data.students.map((student) => ({
-        value: student.phone,
-        label: `${student.name} (Room ${student.room})`,
-        hostelId: student.hostel._id, // Add hostelId for filtering
-      }));
+
+      const studentOptions = studentsRes.data.students
+        .filter((student) => student.status === "Active") // ✅ Only active students
+        .map((student) => ({
+          value: student._id, // ✅ Use _id instead of phone
+          label: `${student.name} (Room ${student.roomNumber || "N/A"})`,
+          hostelId: student.currentHostel?._id || student.currentHostel, // Handle both formats
+          phone: student.phone, // Keep for display if needed
+        }));
+
       setAllStudents(studentOptions);
+
+      console.log(`✅ Loaded ${studentOptions.length} active students`);
     } catch (err) {
       console.error("❌ Error fetching data:", err.message);
       toast.error("Failed to fetch data.");
@@ -81,7 +88,7 @@ const SendAlerts = () => {
   const filteredStudents =
     selectedHostel && selectedHostel.value !== "all-hostels"
       ? allStudents.filter(
-          (student) => student.hostelId === selectedHostel.value
+          (student) => student.hostelId === selectedHostel.value,
         )
       : allStudents;
 
@@ -178,7 +185,7 @@ const SendAlerts = () => {
     setSelectedStudents(
       selectedOptions
         ? selectedOptions.filter((option) => option.value !== "all-students")
-        : []
+        : [],
     );
   };
 
@@ -188,29 +195,77 @@ const SendAlerts = () => {
     setSelectedStudents([]); // Clear student selection when hostel changes
   };
 
-  // Logic for sending message
+  // ✅ IMPROVED: Logic for sending message with better validation and error handling
   const handleSend = async () => {
-    if (!message || selectedStudents.length === 0) {
-      toast.error("Please enter a message and select at least one student.");
+    // ✅ ADDED: Debug logging
+    console.log("🔍 handleSend called with:", {
+      message,
+      messageLength: message?.length,
+      selectedStudents: selectedStudents.length,
+      selectedType: selectedType?.value,
+    });
+
+    // ✅ IMPROVED: Better validation with specific error messages
+    if (!message || message.trim().length === 0) {
+      toast.error("⚠️ Please enter a message!");
       return;
     }
 
-    const phoneNumbers = selectedStudents.map((s) => s.value);
+    if (message.trim().length < 5) {
+      toast.error("⚠️ Message must be at least 5 characters long!");
+      return;
+    }
+
+    if (selectedStudents.length === 0) {
+      toast.error("⚠️ Please select at least one student!");
+      return;
+    }
+
+    // ✅ CHANGED: Send student IDs instead of phone numbers
+    const studentIds = selectedStudents.map((s) => s.value); // Now these are _id values
+
+    // ✅ ADDED: More debug logging
+    console.log("📤 Sending alert:", {
+      studentIds,
+      studentCount: studentIds.length,
+      message: message.substring(0, 50) + "...",
+      messageLength: message.length,
+      type: selectedType?.value || "info",
+    });
+
     setAiGenerating(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
+      const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/api/alerts/send`,
-        { phoneNumbers, message },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          studentIds, // ✅ CHANGED: was phoneNumbers
+          message,
+          type: selectedType?.value || "info", // ✅ ADDED: Send type
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      toast.success("Alerts sent successfully ✅");
+
+      // ✅ ADDED: Log success response
+      console.log("✅ Success response:", response.data);
+
+      toast.success(
+        `✅ Alerts sent successfully to ${studentIds.length} student(s)!`,
+      );
       setMessage("");
       setSelectedStudents([]);
       setSelectedType(null);
     } catch (err) {
-      console.error("Error sending alerts:", err);
-      toast.error(err.response?.data?.message || "Failed to send alerts.");
+      // ✅ IMPROVED: Better error logging
+      console.error("❌ Error sending alerts:", err);
+      console.error("❌ Error response:", err.response);
+      console.error("❌ Error data:", err.response?.data);
+      console.error("❌ Error message:", err.response?.data?.message);
+
+      // ✅ IMPROVED: Show the actual backend error message
+      const errorMessage =
+        err.response?.data?.message || "Failed to send alerts.";
+      toast.error(`❌ ${errorMessage}`);
     } finally {
       setAiGenerating(false);
     }
@@ -228,10 +283,7 @@ const SendAlerts = () => {
 
   // We need to re-generate the student options with select all every time
   // filteredStudents changes. This is the correct way to handle it.
-  const studentOptionsWithSelectAll = [
-    allStudentsOption,
-    ...filteredStudents,
-  ];
+  const studentOptionsWithSelectAll = [allStudentsOption, ...filteredStudents];
 
   const hostelOptionsWithSelectAll = [allHostelsOption, ...hostels];
 
@@ -253,21 +305,20 @@ const SendAlerts = () => {
             placeholder="Select a hostel..."
             isDisabled={loading}
             styles={{
-              // ✅ Corrected: Set the menu background to a light gray
               control: (baseStyles) => ({
                 ...baseStyles,
-                backgroundColor: '#f3f4f6', // Light gray background
+                backgroundColor: "#f3f4f6",
                 borderRadius: "0.375rem",
               }),
               menu: (baseStyles) => ({
                 ...baseStyles,
-                backgroundColor: '#f3f4f6', // Light gray background
+                backgroundColor: "#f3f4f6",
                 borderRadius: "0.375rem",
               }),
               option: (baseStyles, state) => ({
                 ...baseStyles,
-                backgroundColor: state.isFocused ? '#dbeafe' : '#f3f4f6',
-                color: '#1f2937',
+                backgroundColor: state.isFocused ? "#dbeafe" : "#f3f4f6",
+                color: "#1f2937",
                 "&:active": {
                   backgroundColor: "#bfdbfe",
                 },
@@ -288,21 +339,20 @@ const SendAlerts = () => {
             placeholder="Choose type (Holiday, Fee, Welcome...)"
             isDisabled={loading}
             styles={{
-              // ✅ Corrected: Set the menu background to a light gray
               control: (baseStyles) => ({
                 ...baseStyles,
-                backgroundColor: '#f3f4f6', // Light gray background
+                backgroundColor: "#f3f4f6",
                 borderRadius: "0.375rem",
               }),
               menu: (baseStyles) => ({
                 ...baseStyles,
-                backgroundColor: '#f3f4f6', // Light gray background
+                backgroundColor: "#f3f4f6",
                 borderRadius: "0.375rem",
               }),
               option: (baseStyles, state) => ({
                 ...baseStyles,
-                backgroundColor: state.isFocused ? '#dbeafe' : '#f3f4f6',
-                color: '#1f2937',
+                backgroundColor: state.isFocused ? "#dbeafe" : "#f3f4f6",
+                color: "#1f2937",
                 "&:active": {
                   backgroundColor: "#bfdbfe",
                 },
@@ -324,21 +374,20 @@ const SendAlerts = () => {
             placeholder="Search and select students..."
             isDisabled={loading || filteredStudents.length === 0}
             styles={{
-              // ✅ Corrected: Set the menu background to a light gray
               control: (baseStyles) => ({
                 ...baseStyles,
-                backgroundColor: '#f3f4f6', // Light gray background
+                backgroundColor: "#f3f4f6",
                 borderRadius: "0.375rem",
               }),
               menu: (baseStyles) => ({
                 ...baseStyles,
-                backgroundColor: '#f3f4f6', // Light gray background
+                backgroundColor: "#f3f4f6",
                 borderRadius: "0.375rem",
               }),
               option: (baseStyles, state) => ({
                 ...baseStyles,
-                backgroundColor: state.isFocused ? '#dbeafe' : '#f3f4f6',
-                color: '#1f2937',
+                backgroundColor: state.isFocused ? "#dbeafe" : "#f3f4f6",
+                color: "#1f2937",
                 "&:active": {
                   backgroundColor: "#bfdbfe",
                 },
@@ -369,13 +418,23 @@ const SendAlerts = () => {
           </button>
         </div>
         <textarea
-          className="w-full p-4 rounded-md bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white mb-4 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+          className="w-full p-4 rounded-md bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white mb-2 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
           rows="5"
-          placeholder="Type your message here or use AI to generate"
+          placeholder="Type your message here or use AI to generate (minimum 5 characters)"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           disabled={aiGenerating}
         />
+        {/* ✅ ADDED: Character counter */}
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Characters: {message.length}
+          {message.length > 0 && message.length < 5 && (
+            <span className="text-red-500 ml-2">
+              ⚠️ Minimum 5 characters required
+            </span>
+          )}
+        </div>
+
         {message && (
           <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md shadow mb-4">
             <h3 className="text-lg font-semibold mb-2 text-blue-700 dark:text-blue-300">
@@ -389,7 +448,12 @@ const SendAlerts = () => {
         <button
           onClick={handleSend}
           className="bg-blue-600 hover:bg-blue-700 transition px-6 py-3 rounded-md flex items-center gap-2 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed w-full"
-          disabled={aiGenerating}
+          disabled={
+            aiGenerating ||
+            !message ||
+            message.trim().length < 5 ||
+            selectedStudents.length === 0
+          }
         >
           {aiGenerating ? (
             <Loader2 className="w-5 h-5 animate-spin" />

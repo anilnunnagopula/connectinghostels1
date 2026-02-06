@@ -8,18 +8,23 @@ const {
 } = require("../middleware/authMiddleware");
 
 // Route to add a new student
-// Route to add a new student
 router.post("/", requireAuth, requireOwner, studentController.addStudent);
 
 // Route to delete a student
-router.delete("/:id", requireAuth, requireOwner, studentController.deleteStudent);
+router.delete(
+  "/:id",
+  requireAuth,
+  requireOwner,
+  studentController.deleteStudent,
+);
 
-// Route to get all students for a specific owner
+// ✅ FIX: Changed route name to avoid confusion - this gets students owned by owner
+// This is what your alerts page needs!
 router.get(
   "/mine",
   requireAuth,
   requireOwner,
-  studentController.getOwnerStudents
+  studentController.getOwnerStudents,
 );
 
 // ✅ UPDATED: Route to get student dashboard metrics
@@ -27,7 +32,7 @@ router.get(
   "/dashboard/metrics",
   requireAuth,
   requireStudent,
-  studentController.getStudentDashboardMetrics
+  studentController.getStudentDashboardMetrics,
 );
 
 const bookingController = require("../controllers/bookingController");
@@ -37,19 +42,19 @@ router.get(
   "/my-hostel",
   requireAuth,
   requireStudent,
-  studentController.getStudentHostel
+  studentController.getStudentHostel,
 );
 router.get(
   "/bookings",
   requireAuth,
   requireStudent,
-  studentController.getStudentBookings
+  studentController.getStudentBookings,
 );
 router.get(
   "/search-hostel",
   requireAuth,
   // requireStudent, // Allow owners to view hostels too
-  studentController.searchHostels
+  studentController.searchHostels,
 );
 
 // ✅ NEW: Student Booking Request Routes
@@ -57,19 +62,19 @@ router.post(
   "/booking-request",
   requireAuth,
   requireStudent,
-  bookingController.createBookingRequest
+  bookingController.createBookingRequest,
 );
 router.get(
   "/my-requests",
   requireAuth,
   requireStudent,
-  bookingController.getStudentRequests
+  bookingController.getStudentRequests,
 );
 router.delete(
   "/booking-request/:requestId",
   requireAuth,
   requireStudent,
-  bookingController.cancelBookingRequest
+  bookingController.cancelBookingRequest,
 );
 
 // ✅ NEW: Interested / Wishlist Routes
@@ -77,25 +82,25 @@ router.get(
   "/interested",
   requireAuth,
   requireStudent,
-  studentController.getInterestedHostels
+  studentController.getInterestedHostels,
 );
 router.post(
   "/interested/:hostelId",
   requireAuth,
   requireStudent,
-  studentController.toggleInterestedHostel
+  studentController.toggleInterestedHostel,
 );
 router.delete(
   "/interested/all",
   requireAuth,
   requireStudent,
-  studentController.clearInterestedHostels
+  studentController.clearInterestedHostels,
 );
 router.delete(
   "/interested/:hostelId",
   requireAuth,
   requireStudent,
-  studentController.removeInterestedHostel
+  studentController.removeInterestedHostel,
 );
 
 // ✅ NEW: Recently Viewed Routes
@@ -103,25 +108,30 @@ router.get(
   "/recently-viewed",
   requireAuth,
   requireStudent,
-  studentController.getRecentlyViewed
+  studentController.getRecentlyViewed,
 );
 router.post(
   "/recently-viewed",
   requireAuth,
   requireStudent,
-  studentController.addToRecentlyViewed
+  studentController.addToRecentlyViewed,
 );
 router.delete(
   "/recently-viewed/all",
   requireAuth,
   requireStudent,
-  studentController.clearRecentlyViewed
+  studentController.clearRecentlyViewed,
 );
 router.delete(
   "/recently-viewed/:hostelId",
   requireAuth,
   requireStudent,
-  studentController.removeFromRecentlyViewed
+  studentController.removeFromRecentlyViewed,
 );
-
+router.get(
+  "/my-roommates",
+  requireAuth,
+  requireStudent,
+  studentController.getMyRoommates,
+);
 module.exports = router;

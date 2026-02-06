@@ -12,82 +12,103 @@
  * POST /api/alerts/send - Send alerts to students
  */
 
-const Notification = require("../models/Notification"); // You need to create this model
-const Student = require("../models/Student"); // Assuming you have a Student model
+/**
+ * alertController.js - SECURE Owner Alert System
+ *
+ * SECURITY FIXES:
+ * - Uses Student._id instead of phone numbers
+ * - Verifies ownership (student.owner === ownerId)
+ * - Only sends to "Active" students
+ * - Prevents cross-owner alerts
+ *
+ * Features:
+ * - Send alerts to selected students
+ * - Save notifications to database
+ * - Support for different notification types
+ * - Bulk notification creation
+ */
+
+const Notification = require("../models/Notification");
+const Student = require("../models/Student");
 const User = require("../models/User");
 
 /**
- * @desc    Send alerts to selected students
+ * @desc    Send alerts to selected students (SECURE VERSION)
  * @route   POST /api/alerts/send
  * @access  Private (Owner only)
  */
 exports.sendAlerts = async (req, res) => {
   try {
-    const { phoneNumbers, message, type, hostelId } = req.body;
+    const { studentIds, message, type } = req.body;
     const ownerId = req.user.id; // Get owner from auth token
+
+    console.log("📨 Alert request:", {
+      ownerId,
+      studentCount: studentIds?.length,
+      type,
+    });
 
     // ========================================================================
     // VALIDATION
     // ========================================================================
-    if (!phoneNumbers || phoneNumbers.length === 0 || !message) {
+    if (!studentIds || studentIds.length === 0 || !message) {
       return res.status(400).json({
         success: false,
-        message: "Phone numbers and message are required.",
+        message: "Student IDs and message are required.",
+      });
+    }
+
+    if (message.trim().length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Message must be at least 5 characters long.",
       });
     }
 
     // ========================================================================
-    // FIND STUDENTS BY PHONE NUMBERS
+    // SECURITY: FIND STUDENTS BY ID AND VERIFY OWNERSHIP
     // ========================================================================
     const students = await Student.find({
-      phone: { $in: phoneNumbers },
-    }).select("_id name phone hostel");
+      _id: { $in: studentIds },
+      owner: ownerId, // ✅ CRITICAL: Only owner's students
+      status: "Active", // ✅ CRITICAL: Only active students
+    }).select("_id name email currentHostel");
 
     if (students.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "No students found with the provided phone numbers.",
+        message: "No active students found. Students must be admitted first.",
       });
     }
+
+    console.log(`✅ Verified ${students.length} students belong to owner`);
 
     // ========================================================================
     // DETERMINE NOTIFICATION TYPE
     // ========================================================================
-    // Map message types from frontend to notification types
-    const notificationType = type || "info"; // Default to 'info'
-    // Possible types: 'alert', 'info', 'success', 'fee', 'holiday', 'welcome'
+    const validTypes = ["alert", "info", "success", "fee", "holiday", "welcome", "others"];
+    const notificationType = validTypes.includes(type) ? type : "info";
 
     // ========================================================================
     // CREATE NOTIFICATIONS IN DATABASE
     // ========================================================================
     const notifications = students.map((student) => ({
       recipientStudent: student._id,
-      recipientHostel: hostelId || student.hostel, // Use provided hostelId or student's current hostel
+      recipientHostel: student.currentHostel,
       sender: ownerId,
       senderRole: "owner",
       message: message.trim(),
       type: notificationType,
       isRead: false,
-      createdAt: new Date(),
     }));
 
     // Bulk insert notifications
     const createdNotifications = await Notification.insertMany(notifications);
 
     console.log(`✅ Alert sent from Owner: ${ownerId}`);
-    console.log(`📱 Recipients: ${phoneNumbers.length} student(s)`);
+    console.log(`📱 Recipients: ${students.length} student(s)`);
     console.log(`💬 Message: ${message.substring(0, 50)}...`);
     console.log(`📊 Notifications created: ${createdNotifications.length}`);
-
-    // ========================================================================
-    // OPTIONAL: SEND SMS/WHATSAPP (Using Twilio or other service)
-    // ========================================================================
-    // Uncomment and configure when ready to use SMS/WhatsApp
-    /*
-    if (process.env.ENABLE_SMS === "true") {
-      await sendSMSAlerts(phoneNumbers, message);
-    }
-    */
 
     // ========================================================================
     // RESPONSE
@@ -98,6 +119,7 @@ exports.sendAlerts = async (req, res) => {
       data: {
         sentTo: students.length,
         notificationsCreated: createdNotifications.length,
+        recipients: students.map(s => ({ id: s._id, name: s.name })),
       },
     });
   } catch (err) {
@@ -105,29 +127,38 @@ exports.sendAlerts = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to send alerts.",
-      error: err.message,
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   }
 };
 
 /**
- * @desc    Get all alerts sent by owner (optional - for owner's history)
+ * @desc    Get all alerts sent by owner
  * @route   GET /api/alerts/history
  * @access  Private (Owner only)
  */
 exports.getAlertHistory = async (req, res) => {
   try {
     const ownerId = req.user.id;
+    const { limit = 50, page = 1 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const alerts = await Notification.find({ sender: ownerId })
-      .populate("recipientStudent", "name phone")
+      .populate("recipientStudent", "name email")
       .populate("recipientHostel", "name")
       .sort({ createdAt: -1 })
-      .limit(50); // Last 50 alerts
+      .limit(parseInt(limit))
+      .skip(skip);
+
+    const total = await Notification.countDocuments({ sender: ownerId });
 
     res.status(200).json({
       success: true,
       count: alerts.length,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit)),
       data: alerts,
     });
   } catch (err) {
@@ -140,6 +171,7 @@ exports.getAlertHistory = async (req, res) => {
   }
 };
 
+module.exports = exports;
 // ============================================================================
 // OPTIONAL: SMS/WHATSAPP INTEGRATION
 // ============================================================================

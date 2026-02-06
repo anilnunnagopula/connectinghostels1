@@ -207,7 +207,6 @@ const HostelDetails = () => {
     }
   }, []);
 
-
   useEffect(() => {
     fetchHostelDetails();
     checkRequestStatus();
@@ -234,6 +233,12 @@ const HostelDetails = () => {
   /**
    * Toggles interested/wishlist status
    */
+  /**
+   * FIXED handleToggleInterested function for HostelDetails.jsx
+   *
+   * Replace your existing handleToggleInterested function with this one
+   */
+
   const handleToggleInterested = useCallback(async () => {
     const token = getToken();
     if (!token) {
@@ -244,8 +249,15 @@ const HostelDetails = () => {
     setState((prev) => ({ ...prev, savingInterest: true }));
 
     try {
+      // ✅ FIX: Use _id instead of id (MongoDB uses _id)
+      const hostelId = state.hostel._id || state.hostel.id;
+
+      if (!hostelId) {
+        throw new Error("Hostel ID not found");
+      }
+
       await axios.post(
-        `${API_BASE_URL}/api/student/interested/${state.hostel.id}`,
+        `${API_BASE_URL}/api/students/interested/${hostelId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -263,7 +275,9 @@ const HostelDetails = () => {
       const interested = JSON.parse(
         localStorage.getItem("interestedHostels") || "[]",
       );
-      const index = interested.findIndex((h) => h.id === state.hostel.id);
+      // ✅ FIX: Check both _id and id
+      const hostelId = state.hostel._id || state.hostel.id;
+      const index = interested.findIndex((h) => (h._id || h.id) === hostelId);
 
       if (index > -1) {
         interested.splice(index, 1);
@@ -654,7 +668,7 @@ const HostelDetails = () => {
       {renderImageModal()}
     </div>
   );
-};
+};;
 
 export default HostelDetails;
 

@@ -6,6 +6,14 @@
  * - Student routes (view, mark as read, clear)
  */
 
+/**
+ * notificationRoutes.js - Complete Notification Routes
+ *
+ * Routes:
+ * - Owner routes (send alerts)
+ * - Student routes (view, mark as read, clear)
+ */
+
 const express = require("express");
 const router = express.Router();
 
@@ -126,7 +134,6 @@ router.delete(
 );
 
 module.exports = router;
-
 /**
  * ============================================================================
  * ADD TO YOUR MAIN APP.JS / SERVER.JS

@@ -92,20 +92,160 @@ exports.deleteStudent = async (req, res) => {
   }
 };
 
+// ✅ FIXED VERSION - Add this to your studentController.js
+
+/**
+ * Get all students owned by the logged-in owner
+ * ✅ FIXED: Returns students with proper formatting for alerts page
+ */
+/**
+ * Get all students owned by the logged-in owner
+ * ✅ FIXED: Only populate 'currentHostel' (hostel field doesn't exist in schema)
+ */
 exports.getOwnerStudents = async (req, res) => {
   try {
     const ownerId = req.user.id;
-    const students = await Student.find({ owner: ownerId }).populate(
-      "hostel",
-      "name",
-    );
-    res.status(200).json({ students });
+    
+    console.log(`📍 Fetching students for owner: ${ownerId}`);
+    
+    // ✅ FIX: Only populate 'currentHostel' since 'hostel' doesn't exist in schema
+    const students = await Student.find({ owner: ownerId })
+      .populate("currentHostel", "name")
+      .select("_id name email phone roomNumber status currentHostel")
+      .sort({ createdAt: -1 });
+    
+    console.log(`✅ Found ${students.length} students for owner ${ownerId}`);
+    
+    res.status(200).json({ 
+      success: true,
+      count: students.length,
+      students 
+    });
   } catch (err) {
-    console.error("Error fetching owner's students:", err);
-    res.status(500).json({ message: "Failed to fetch students." });
+    console.error("❌ Error fetching owner's students:", err);
+    console.error("Full error:", err.stack);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to fetch students.",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined
+    });
+  }
+};
+/**
+ * ADD THIS TO YOUR studentController.js
+ * 
+ * This function fetches roommates (students in the same room)
+ */
+
+/**
+ * @desc    Get roommates (students sharing the same room)
+ * @route   GET /api/students/my-roommates
+ * @access  Private (Student only)
+ */
+exports.getMyRoommates = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    console.log(`📍 Fetching roommates for user: ${userId}`);
+
+    // Find current student's document
+    const currentStudent = await Student.findOne({ user: userId });
+
+    if (!currentStudent) {
+      return res.status(404).json({
+        success: false,
+        message: "Student profile not found.",
+      });
+    }
+
+    // Check if student has an active room
+    if (
+      !currentStudent.currentHostel ||
+      !currentStudent.roomNumber ||
+      currentStudent.status !== "Active"
+    ) {
+      return res.status(200).json({
+        success: true,
+        message: "You are not currently assigned to a room.",
+        roommates: [],
+      });
+    }
+
+    console.log(
+      `✅ Student in hostel: ${currentStudent.currentHostel}, room: ${currentStudent.roomNumber}`
+    );
+
+    // Find other students in the same hostel and room
+    const roommates = await Student.find({
+      currentHostel: currentStudent.currentHostel,
+      roomNumber: currentStudent.roomNumber,
+      _id: { $ne: currentStudent._id }, // Exclude the current student
+      status: "Active", // Only active students
+    }).select("name email phone");
+
+    console.log(`✅ Found ${roommates.length} roommate(s)`);
+
+    res.status(200).json({
+      success: true,
+      count: roommates.length,
+      roommates,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching roommates:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch roommates.",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
   }
 };
 
+/**
+ * ============================================================================
+ * ADD THIS ROUTE TO routes/studentRoutes.js:
+ * ============================================================================
+ * 
+ * router.get(
+ *   "/my-roommates",
+ *   requireAuth,
+ *   requireStudent,
+ *   studentController.getMyRoommates
+ * );
+ * 
+ * ============================================================================
+ */
+
+/**
+ * ============================================================================
+ * TESTING
+ * ============================================================================
+ * 
+ * Test with:
+ * curl -H "Authorization: Bearer YOUR_STUDENT_TOKEN" \
+ *   http://localhost:5000/api/students/my-roommates
+ * 
+ * Expected Response:
+ * {
+ *   "success": true,
+ *   "count": 2,
+ *   "roommates": [
+ *     {
+ *       "_id": "...",
+ *       "name": "John Doe",
+ *       "email": "john@example.com",
+ *       "phone": "1234567890"
+ *     },
+ *     {
+ *       "_id": "...",
+ *       "name": "Jane Smith",
+ *       "email": "jane@example.com",
+ *       "phone": "0987654321"
+ *     }
+ *   ]
+ * }
+ * 
+ * ============================================================================
+ */
 // Search for hostels based on location and query
 exports.searchHostels = async (req, res) => {
   try {

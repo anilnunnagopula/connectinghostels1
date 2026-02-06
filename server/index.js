@@ -100,7 +100,10 @@ try {
 console.log("🔔 Loading notification routes...");
 try {
   const notificationRoutes = require("./routes/notificationRoutes");
-  app.use("/api", notificationRoutes);
+  const alertRoutes = require("./routes/alertRoutes");
+
+  app.use("/api", notificationRoutes); // Student notification routes
+  app.use("/api/alerts", alertRoutes); // Owner alert routes
   console.log("✅ Notification routes loaded");
 } catch (error) {
   console.error("❌ Error loading notification routes:", error.message);
