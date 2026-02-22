@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const logger = require("../middleware/logger");
 
 /**
  * Create email transporter based on environment
@@ -47,15 +48,14 @@ const sendEmail = async (options) => {
 
     const info = await transporter.sendMail(mailOptions);
 
-    // Log preview URL in development
     if (process.env.NODE_ENV !== "production") {
-      console.log("📧 Email Preview URL:", nodemailer.getTestMessageUrl(info));
+      logger.debug("Email preview URL: " + nodemailer.getTestMessageUrl(info));
     }
 
-    console.log("✅ Email sent successfully to:", options.email);
+    logger.info("Email sent to: " + options.email);
     return info;
   } catch (error) {
-    console.error("❌ Email sending error:", error);
+    logger.error("Email sending error: " + error.message);
     throw new Error("Failed to send email");
   }
 };

@@ -1,34 +1,42 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-
-// ==================== PHASE 1 MIDDLEWARE ====================
+const logger = require("./logger");
 
 /**
- * Verify JWT token and attach user to req.user
- * ✅ UPDATED: Now checks if password was changed after token issue
+ * Verify JWT token and attach user to req.user.
+ * Checks httpOnly cookie first, falls back to Authorization header.
  */
 const requireAuth = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  let token;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "No token provided" });
+  // 1. Prefer httpOnly cookie (XSS-safe)
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+  // 2. Fallback: Authorization header (supports legacy clients during transition)
+  else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
   }
 
-  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach full user object to request
-    const user = await User.findById(decoded.id).select(
-      "-password +passwordChangedAt",
-    ); // ✅ Include passwordChangedAt
+    const user = await User.findById(decoded.id).select("-password +passwordChangedAt");
 
     if (!user) {
-      return res.status(401).json({ error: "User not found" });
+      return res.status(401).json({ error: "User no longer exists" });
     }
 
-    // ✅ NEW: Check if password was changed after token was issued
+    // Reject banned accounts
+    if (user.isBanned) {
+      return res.status(403).json({ error: "Your account has been suspended. Contact support." });
+    }
+
+    // Invalidate tokens issued before a password change
     if (user.changedPasswordAfter && user.changedPasswordAfter(decoded.iat)) {
       return res.status(401).json({
         error: "Password was recently changed. Please log in again.",
@@ -38,20 +46,18 @@ const requireAuth = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
-    console.error("Auth middleware error:", err);
+    logger.warn(`Auth failed for ${req.method} ${req.path}: ${err.message}`);
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 };
 
 /**
- * Check if user profile is complete
- * Must be used AFTER requireAuth
+ * Check if user profile is complete. Must be used AFTER requireAuth.
  */
 const requireProfileComplete = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ error: "Authentication required" });
   }
-
   if (!req.user.profileCompleted) {
     return res.status(403).json({
       error: "Profile incomplete",
@@ -59,117 +65,52 @@ const requireProfileComplete = (req, res, next) => {
       profileCompleted: false,
     });
   }
-
   next();
 };
 
 /**
- * Check if user is an owner
- * Must be used AFTER requireAuth
+ * Check if user is an owner. Must be used AFTER requireAuth.
  */
 const requireOwner = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({
-      error: "Authentication required.",
-    });
+    return res.status(401).json({ error: "Authentication required" });
   }
-
   if (req.user.role !== "owner") {
-    return res.status(403).json({
-      error: "Access denied. Owner privileges required.",
-    });
+    return res.status(403).json({ error: "Access denied. Owner privileges required." });
   }
-
   next();
 };
 
 /**
- * Check if user is a student
- * Must be used AFTER requireAuth
+ * Check if user is a student. Must be used AFTER requireAuth.
  */
 const requireStudent = (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({
-      error: "Authentication required.",
-    });
+    return res.status(401).json({ error: "Authentication required" });
   }
-
   if (req.user.role !== "student") {
-    return res.status(403).json({
-      error: "Access denied. Student account required.",
-    });
+    return res.status(403).json({ error: "Access denied. Student account required." });
   }
-
   next();
 };
-
-// ==================== 🆕 OPTIONAL: RATE LIMITING MIDDLEWARE ====================
 
 /**
- * Rate limiter for password reset endpoints
- * Prevents abuse of forgot password feature
- * Usage: router.post('/forgot-password', passwordResetRateLimiter, forgotPassword)
+ * Check if user is an admin. Must be used AFTER requireAuth.
  */
-const passwordResetRateLimiter = (req, res, next) => {
-  // This is a simple in-memory rate limiter
-  // For production, use express-rate-limit or Redis
-
-  const { email } = req.body;
-
-  if (!email) {
-    return next();
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Authentication required" });
   }
-
-  // Store attempts in memory (will reset on server restart)
-  if (!global.passwordResetAttempts) {
-    global.passwordResetAttempts = new Map();
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Access denied. Admin privileges required." });
   }
-
-  const now = Date.now();
-  const attempts = global.passwordResetAttempts.get(email) || [];
-
-  // Filter attempts within last 15 minutes
-  const recentAttempts = attempts.filter(
-    (timestamp) => now - timestamp < 15 * 60 * 1000,
-  );
-
-  // Allow max 3 attempts per 15 minutes
-  if (recentAttempts.length >= 3) {
-    return res.status(429).json({
-      error: "Too many password reset attempts",
-      message: "Please try again in 15 minutes",
-    });
-  }
-
-  // Add current attempt
-  recentAttempts.push(now);
-  global.passwordResetAttempts.set(email, recentAttempts);
-
   next();
 };
-
-// ==================== USAGE EXAMPLES ====================
-/*
-// Route requires authentication only
-router.get('/profile', requireAuth, getProfile);
-
-// Route requires authentication + complete profile
-router.get('/dashboard', requireAuth, requireProfileComplete, getDashboard);
-
-// Route requires authentication + complete profile + owner role
-router.post('/hostels', requireAuth, requireProfileComplete, requireOwner, createHostel);
-
-// Route requires authentication + complete profile + student role
-router.post('/bookings', requireAuth, requireProfileComplete, requireStudent, createBooking);
-
-// ✅ NEW: Password reset with rate limiting
-router.post('/forgot-password', passwordResetRateLimiter, forgotPassword);
-*/
 
 module.exports = {
   requireAuth,
   requireProfileComplete,
   requireOwner,
   requireStudent,
-  passwordResetRateLimiter, // ✅ NEW
+  requireAdmin,
 };

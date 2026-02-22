@@ -432,54 +432,54 @@ const HostelListings = () => {
   }, []);
 
   // --- API FETCHING (MADE PUBLIC) ---
-const fetchHostels = useCallback(async () => {
-  try {
-    setLoading(true);
-    setError(null);
+  const fetchHostels = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const API_BASE_URL =
-      process.env.REACT_APP_API_URL || "http://localhost:5000";
-    const storedUser = localStorage.getItem("user");
-    const userObj = storedUser ? JSON.parse(storedUser) : null;
-    const token = userObj?.token || localStorage.getItem("token");
+      const API_BASE_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:5000";
+      const storedUser = localStorage.getItem("user");
+      const userObj = storedUser ? JSON.parse(storedUser) : null;
+      const token = userObj?.token || localStorage.getItem("token");
 
-    // ========== UPDATED: Make auth optional ==========
-    const config = {
-      params: { location: locationFilter },
-    };
+      // ========== UPDATED: Make auth optional ==========
+      const config = {
+        params: { location: locationFilter },
+      };
 
-    // Only add auth header if token exists
-    if (token) {
-      config.headers = { Authorization: `Bearer ${token}` };
-    }
-    // ================================================
+      // Only add auth header if token exists
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
+      // ================================================
 
-    const response = await axios.get(
-      `${API_BASE_URL}/api/students/search-hostel`,
-      config,
-    );
-
-    const data = response.data?.hostels || response.data || [];
-    setHostels(Array.isArray(data) ? data : []);
-  } catch (err) {
-    console.error("Error fetching hostels:", err);
-
-    // ========== UPDATED: Handle 401/403 gracefully ==========
-    if (err.response?.status === 401 || err.response?.status === 403) {
-      // User not authenticated - this is OK, just show empty state
-      setError("Please login to view hostels in this area.");
-      setHostels([]);
-    } else {
-      setError(
-        err.response?.data?.error ||
-          "Failed to fetch hostels. Check your connection.",
+      const response = await axios.get(
+        `${API_BASE_URL}/api/students/search-hostel`,
+        config,
       );
+
+      const data = response.data?.hostels || response.data || [];
+      setHostels(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching hostels:", err);
+
+      // ========== UPDATED: Handle 401/403 gracefully ==========
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        // User not authenticated - this is OK, just show empty state
+        setError("Please login to view hostels in this area.");
+        setHostels([]);
+      } else {
+        setError(
+          err.response?.data?.error ||
+            "Failed to fetch hostels. Check your connection.",
+        );
+      }
+      // =======================================================
+    } finally {
+      setLoading(false);
     }
-    // =======================================================
-  } finally {
-    setLoading(false);
-  }
-}, [locationFilter]);
+  }, [locationFilter]);
 
   useEffect(() => {
     fetchHostels();
@@ -536,11 +536,24 @@ const fetchHostels = useCallback(async () => {
   };
 
   // --- FILTERING & SORTING LOGIC ---
-  const filteredHostels = (hostels || [])
-    .filter((item) =>
-      item?.name?.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-    .filter((item) => typeFilter === "All" || item.type === typeFilter);
+  // ✅ CORRECT - Add location filter
+ const filteredHostels = (hostels || [])
+   .filter((item) =>
+     item?.name?.toLowerCase().includes(searchTerm.toLowerCase()),
+   )
+   .filter((item) => typeFilter === "All" || item.type === typeFilter)
+   .filter((item) => {
+     if (locationFilter === "Others") return true;
+
+     // Get the location from the API data (check multiple possible fields)
+     const rawLocation = item.locality || item.location || "";
+
+     // Normalize both strings for a fair comparison
+     const normalizedHostelLoc = rawLocation.trim().toLowerCase();
+     const normalizedFilterLoc = locationFilter.trim().toLowerCase();
+
+     return normalizedHostelLoc === normalizedFilterLoc;
+   });
 
   const sortedHostels = [...filteredHostels];
   if (sortOrder === "asc") sortedHostels.sort((a, b) => a.price - b.price);
@@ -802,6 +815,6 @@ const fetchHostels = useCallback(async () => {
       />
     </>
   );
-};
+};;
 
 export default HostelListings;

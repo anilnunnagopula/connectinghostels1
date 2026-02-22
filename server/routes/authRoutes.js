@@ -1,9 +1,16 @@
 const express = require("express");
 const router = express.Router();
+const { requireAuth } = require("../middleware/authMiddleware");
+const { passwordResetLimiter, loginLimiter } = require("../middleware/rateLimiter");
 const {
-  requireAuth,
-  passwordResetRateLimiter,
-} = require("../middleware/authMiddleware");
+  validate,
+  registerRules,
+  loginRules,
+  forgotPasswordRules,
+  resetPasswordRules,
+  completeProfileRules,
+  updateProfileRules,
+} = require("../middleware/validators/authValidators");
 const {
   googleAuth,
   completeProfile,
@@ -12,93 +19,27 @@ const {
   getProfile,
   updateProfile,
   logout,
-  forgotPassword, 
-  resetPassword, 
-  verifyResetToken, 
+  forgotPassword,
+  resetPassword,
+  verifyResetToken,
 } = require("../controllers/authController");
 
-// ==================== GOOGLE OAUTH ROUTES ====================
-
-/**
- * POST /api/auth/google
- * Handle Google OAuth login/signup
- * Body: { credential: "google_access_token" }
- */
+// Google OAuth
 router.post("/google", googleAuth);
+router.post("/complete-profile", requireAuth, completeProfileRules, validate, completeProfile);
 
-/**
- * POST /api/auth/complete-profile
- * Complete user profile after OAuth (add role, phone, etc.)
- * Requires: Authentication
- * Body: { role, phone, hostelName? }
- */
-router.post("/complete-profile", requireAuth, completeProfile);
+// Email/password auth
+router.post("/register", registerRules, validate, registerWithEmail);
+router.post("/login", loginLimiter, loginRules, validate, loginWithEmail);
 
-// ==================== EMAIL/PASSWORD AUTH ROUTES ====================
-
-/**
- * POST /api/auth/register
- * Register with email/password
- * Body: { name, email, phone, password, role, hostelName? }
- */
-router.post("/register", registerWithEmail);
-
-/**
- * POST /api/auth/login
- * Login with email/password
- * Body: { email, password, role? }
- */
-router.post("/login", loginWithEmail);
-
-// ==================== 🆕 PASSWORD RESET ROUTES ====================
-
-/**
- * POST /api/auth/forgot-password
- * Request password reset email
- * Public route
- * Body: { email }
- */
-router.post("/forgot-password", forgotPassword);
-
-/**
- * POST /api/auth/reset-password/:token
- * Reset password using token from email
- * Public route
- * Body: { password, confirmPassword }
- */
-router.post("/reset-password/:token", resetPassword);
-
-/**
- * GET /api/auth/verify-reset-token/:token
- * Verify if reset token is valid (optional - for frontend validation)
- * Public route
- */
+// Password reset
+router.post("/forgot-password", passwordResetLimiter, forgotPasswordRules, validate, forgotPassword);
+router.post("/reset-password/:token", resetPasswordRules, validate, resetPassword);
 router.get("/verify-reset-token/:token", verifyResetToken);
 
-// Apply rate limiter to forgot password
-router.post("/forgot-password", passwordResetRateLimiter, forgotPassword);
-// ==================== PROFILE MANAGEMENT ROUTES ====================
-
-/**
- * GET /api/auth/profile
- * Get current user profile
- * Requires: Authentication
- */
+// Profile
 router.get("/profile", requireAuth, getProfile);
-
-/**
- * PUT /api/auth/profile
- * Update user profile
- * Requires: Authentication
- * Body: { name?, phone?, hostelName? }
- */
-router.put("/profile", requireAuth, updateProfile);
-
-/**
- * POST /api/auth/logout
- * Logout (token removal happens on frontend)
- * Requires: Authentication
- */
+router.put("/profile", requireAuth, updateProfileRules, validate, updateProfile);
 router.post("/logout", requireAuth, logout);
 
 module.exports = router;

@@ -1,6 +1,6 @@
-// backend/routes/contact.js
 const express = require("express");
 const router = express.Router();
+const logger = require("../middleware/logger");
 
 router.post("/", async (req, res) => {
   const { name, email, message } = req.body;
@@ -10,13 +10,10 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    // Save to DB (MongoDB, Firebase, etc)
-    // OR send via email (e.g. using nodemailer)
-    console.log("📩 Contact form submitted:", { name, email, message });
-
+    logger.info(`Contact form: ${name} <${email}>`);
     return res.status(200).json({ message: "Message received" });
   } catch (err) {
-    console.error("Contact error:", err);
+    logger.error("Contact route error: " + err.message);
     return res.status(500).json({ message: "Server error" });
   }
 });

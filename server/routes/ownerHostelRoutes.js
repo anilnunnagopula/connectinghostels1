@@ -3,14 +3,24 @@ const router = express.Router();
 const hostelController = require("../controllers/hostelController");
 const ownerController = require("../controllers/ownerController");
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
+const { getStorage } = require("../storage/storageAdapter");
 const multer = require("multer");
+const path = require("path");
+
+const ALLOWED_IMAGE_TYPES = /jpeg|jpg|png|webp/;
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: "uploads/",
-    filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-  }),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  storage: getStorage("uploads/", "hostel-images/"),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max per file
+  fileFilter: (req, file, cb) => {
+    const extOk = ALLOWED_IMAGE_TYPES.test(path.extname(file.originalname).toLowerCase());
+    const mimeOk = ALLOWED_IMAGE_TYPES.test(file.mimetype);
+    if (extOk && mimeOk) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only JPEG, PNG, and WebP images are allowed"));
+    }
+  },
 });
 
 // ========== DASHBOARD ROUTES ==========

@@ -24,7 +24,7 @@ const MyStudents = () => {
       // Fetch hostels for the dropdown filter
       const hostelsRes = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setHostels(hostelsRes.data.hostels);
 
@@ -36,9 +36,11 @@ const MyStudents = () => {
       // Fetch all students for the owner
       const studentsRes = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/students/mine`, // New endpoint
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setStudents(studentsRes.data.students);
+      // setStudents(studentsRes.data.students);
+      console.log("📊 Students data:", studentsRes.data); // ADD THIS
     } catch (err) {
       console.error("❌ Error fetching data:", err.message);
     } finally {
@@ -52,7 +54,9 @@ const MyStudents = () => {
 
   // Filter students based on the selected hostel
   const filteredStudents = selectedHostel
-    ? students.filter((student) => student.hostel._id === selectedHostel)
+    ? students.filter(
+        (student) => student.currentHostel?._id === selectedHostel,
+      )
     : students;
 
   return (
@@ -109,10 +113,10 @@ const MyStudents = () => {
                 <h2 className="text-xl font-semibold">{student.name}</h2>
               </div>
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                <Home size={16} /> Hostel: {student.hostel.name}
+                <Home size={16} /> Hostel: {student.currentHostel.name}
               </p>
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                <GraduationCap size={16} /> Room: {student.room}
+                <GraduationCap size={16} /> Room: {student.roomNumber}
               </p>
               <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300 mt-1">
                 <Phone size={16} /> {student.phone}

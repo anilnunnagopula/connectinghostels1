@@ -3,7 +3,7 @@ import Select from "react-select";
 import { FaPaperPlane } from "react-icons/fa";
 import { Sparkles, Loader2 } from "lucide-react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import toast from 'react-hot-toast';
 import { useNavigate } from "react-router-dom";
 
 // Constants for select-all options

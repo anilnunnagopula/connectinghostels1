@@ -16,7 +16,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import toast from 'react-hot-toast';
 import { API_BASE_URL } from "../../apiConfig";
 
 const AddStudent = () => {

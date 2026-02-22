@@ -19,7 +19,6 @@ import ResetPassword from "./pages/ResetPassword";
 import ViewProfile from "./pages/ViewProfile";
 import EditProfile from "./pages/EditProfile";
 import StudentSettingsPage from "./pages/student/SettingsPage";
-// import StudentPaymentsPage from "./pages/student/PaymentsPage";
 import MyBookingsPage from "./pages/student/MyBookingsPage";
 import CompleteProfile from "./pages/CompleteProfile";
 
@@ -63,10 +62,15 @@ import MyHostelPage from "./pages/student/MyHostelPage";
 import BookingRequestPage from "./pages/student/BookingRequestPage";
 import StudentRequestsStatus from "./pages/student/StudentRequestsStatus";
 import MyHostelRules from "./pages/student/MyHostelRules";
-import MyRoomDetails from "./pages/student/MyRoomDetails"
+import MyRoomDetails from "./pages/student/MyRoomDetails";
 import PayHostelFee from "./pages/student/PaymentsPage";
-// Owner - Hostel Details (FIXED IMPORT)
+import StudentLayout from "./components/layout/StudentLayout";
+
+// Owner - Hostel Details
 import OwnerHostelDetails from "./pages/owner/HostelDetails";
+
+// Admin
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const App = () => {
   return (
@@ -88,44 +92,127 @@ const App = () => {
             <Route path="/edit-profile" element={<EditProfile />} />
             <Route path="/support" element={<Support />} />
 
-            {/* Student Routes (No Layout Wrapper Yet) */}
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
+            {/* Student Routes - All Wrapped in StudentLayout */}
+            <Route
+              path="/student-dashboard"
+              element={
+                <StudentLayout>
+                  <StudentDashboard />
+                </StudentLayout>
+              }
+            />
             <Route
               path="/student/profile-settings"
-              element={<StudentSettingsPage />}
+              element={
+                <StudentLayout>
+                  <StudentSettingsPage />
+                </StudentLayout>
+              }
             />
-            <Route path="/student/hostels" element={<HostelListings />} />
+            <Route
+              path="/student/hostels"
+              element={
+                <StudentLayout>
+                  <HostelListings />
+                </StudentLayout>
+              }
+            />
             <Route
               path="/student/hostels/:id"
-              element={<StudentHostelDetails />}
+              element={
+                <StudentLayout>
+                  <StudentHostelDetails />
+                </StudentLayout>
+              }
             />
-            <Route path="/student/interested" element={<Interested />} />
-            <Route path="/student/notifications" element={<Notifications />} />
+            <Route
+              path="/student/interested"
+              element={
+                <StudentLayout>
+                  <Interested />
+                </StudentLayout>
+              }
+            />
+            <Route
+              path="/student/notifications"
+              element={
+                <StudentLayout>
+                  <Notifications />
+                </StudentLayout>
+              }
+            />
             <Route
               path="/student/recently-viewed"
-              element={<RecentlyViewed />}
+              element={
+                <StudentLayout>
+                  <RecentlyViewed />
+                </StudentLayout>
+              }
             />
             <Route
               path="/booking-request/:hostelId"
-              element={<BookingRequestPage />}
+              element={
+                <StudentLayout>
+                  <BookingRequestPage />
+                </StudentLayout>
+              }
             />
             <Route
               path="/student/raise-complaint"
-              element={<RaiseComplaint />}
+              element={
+                <StudentLayout>
+                  <RaiseComplaint />
+                </StudentLayout>
+              }
             />
             <Route
               path="/student/my-requests"
-              element={<StudentRequestsStatus />}
+              element={
+                <StudentLayout>
+                  <StudentRequestsStatus />
+                </StudentLayout>
+              }
             />
-            <Route path="/student/my-room" element={<MyRoomDetails />} />
+            <Route
+              path="/student/my-room"
+              element={
+                <StudentLayout>
+                  <MyRoomDetails />
+                </StudentLayout>
+              }
+            />
             <Route
               path="/student/rules-and-regulations"
-              element={<MyHostelRules />}
+              element={
+                <StudentLayout>
+                  <MyHostelRules />
+                </StudentLayout>
+              }
             />
-
-            <Route path="/student/payments" element={<PayHostelFee />} />
-            <Route path="/student/my-bookings" element={<MyBookingsPage />} />
-            <Route path="/student/my-hostel" element={<MyHostelPage />} />
+            <Route
+              path="/student/payments"
+              element={
+                <StudentLayout>
+                  <PayHostelFee />
+                </StudentLayout>
+              }
+            />
+            <Route
+              path="/student/my-bookings"
+              element={
+                <StudentLayout>
+                  <MyBookingsPage />
+                </StudentLayout>
+              }
+            />
+            <Route
+              path="/student/my-hostel"
+              element={
+                <StudentLayout>
+                  <MyHostelPage />
+                </StudentLayout>
+              }
+            />
 
             {/* Owner Routes - Wrapped in OwnerLayout */}
             <Route
@@ -248,12 +335,11 @@ const App = () => {
                 </OwnerLayout>
               }
             />
-            {/* Owner Hostel Routes - FIXED TO USE OWNER COMPONENT */}
             <Route
               path="/owner/hostel/:id/view"
               element={
                 <OwnerLayout>
-                  <OwnerHostelDetails /> {/* ✅ NOW USING OWNER VERSION */}
+                  <OwnerHostelDetails />
                 </OwnerLayout>
               }
             />
@@ -261,7 +347,7 @@ const App = () => {
               path="/owner/hostel/:id/edit"
               element={
                 <OwnerLayout>
-                  <AddHostel /> {/* Reusing AddHostel for editing logic */}
+                  <AddHostel />
                 </OwnerLayout>
               }
             />
@@ -281,6 +367,9 @@ const App = () => {
             <Route path="/legal/partner-terms" element={<PartnerTerms />} />
             <Route path="/legal/data-protection" element={<DataProtection />} />
             <Route path="/legal/transparency" element={<Transparency />} />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminDashboard />} />
 
             {/* 404 Page */}
             <Route path="*" element={<PageNotFound />} />

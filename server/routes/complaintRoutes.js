@@ -6,6 +6,8 @@ const {
   requireOwner,
   requireStudent,
 } = require("../middleware/authMiddleware");
+const { validate, createComplaintRules } = require("../middleware/validators/bookingValidators");
+const { getStorage } = require("../storage/storageAdapter");
 const multer = require("multer");
 const path = require("path");
 
@@ -13,18 +15,8 @@ const path = require("path");
 // FILE UPLOAD CONFIGURATION
 // ============================================================================
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/complaints/");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: getStorage("uploads/complaints/", "complaint-attachments/"),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|pdf/;
@@ -50,7 +42,9 @@ router.post(
   "/",
   requireAuth,
   requireStudent,
-  upload.array("files", 5), // Max 5 files
+  upload.array("files", 5),
+  createComplaintRules,
+  validate,
   complaintController.createComplaint,
 );
 

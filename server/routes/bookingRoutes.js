@@ -16,6 +16,12 @@ const {
   requireOwner,
   requireStudent,
 } = require("../middleware/authMiddleware");
+const {
+  validate,
+  createBookingRules,
+  requestIdRules,
+  rejectRules,
+} = require("../middleware/validators/bookingValidators");
 
 // ============================================================================
 // STUDENT ROUTER
@@ -32,6 +38,8 @@ studentRouter.post(
   "/booking-request",
   requireAuth,
   requireStudent,
+  createBookingRules,
+  validate,
   bookingController.createBookingRequest,
 );
 
@@ -86,6 +94,8 @@ ownerRouter.post(
   "/:requestId/approve",
   requireAuth,
   requireOwner,
+  requestIdRules,
+  validate,
   bookingController.approveBookingRequest,
 );
 
@@ -98,6 +108,8 @@ ownerRouter.post(
   "/:requestId/reject",
   requireAuth,
   requireOwner,
+  rejectRules,
+  validate,
   bookingController.rejectBookingRequest,
 );
 

@@ -4,18 +4,37 @@ const axios = require("axios");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { sendPasswordResetEmail } = require("../services/emailService");
+const { addEmailJob } = require("../queues/emailQueue");
+const logger = require("../middleware/logger");
 
-// ==================== HELPER FUNCTION ====================
+// ==================== HELPERS ====================
 
-/**
- * Generate JWT token
- */
 const generateToken = (userId, role = null) => {
   return jwt.sign(
     role ? { id: userId, role } : { id: userId },
     process.env.JWT_SECRET,
     { expiresIn: "30d" },
   );
+};
+
+/**
+ * Set JWT as httpOnly cookie on the response.
+ *
+ * SameSite=None + Secure is required in production because the frontend
+ * (Netlify) and backend are on different domains. Without None, the browser
+ * will not send the cookie on cross-site XHR/fetch requests.
+ * CSRF risk from None is mitigated by strict CORS + JSON content-type checks.
+ *
+ * In development both run on localhost so Lax is sufficient.
+ */
+const setAuthCookie = (res, token) => {
+  const isProd = process.env.NODE_ENV === "production";
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: isProd,             // HTTPS only in production
+    sameSite: isProd ? "none" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
+  });
 };
 
 // ==================== GOOGLE OAUTH ====================
@@ -25,61 +44,46 @@ const generateToken = (userId, role = null) => {
  * Frontend sends Google access token, we fetch user info and create/login user
  */
 exports.googleAuth = async (req, res) => {
-  console.log("🔥 GOOGLE AUTH HIT");
-  console.log("REQ BODY:", req.body);
-
   try {
-    const { credential } = req.body; // Google access token from frontend
+    const { credential } = req.body;
 
     if (!credential) {
       return res.status(400).json({ message: "Google credential required" });
     }
 
-    // Fetch user info from Google using the access token
     const googleResponse = await axios.get(
       "https://www.googleapis.com/oauth2/v3/userinfo",
-      {
-        headers: {
-          Authorization: `Bearer ${credential}`,
-        },
-      },
+      { headers: { Authorization: `Bearer ${credential}` } },
     );
 
-    const { sub: googleId, email, name, picture } = googleResponse.data;
+    const { sub: googleId, email, name } = googleResponse.data;
 
     if (!email) {
-      return res
-        .status(400)
-        .json({ message: "Failed to get email from Google" });
+      return res.status(400).json({ message: "Failed to get email from Google" });
     }
 
-    // Check if user exists
     let user = await User.findOne({ $or: [{ googleId }, { email }] });
 
     if (user) {
-      // Existing user - login
-      // Update googleId if it was an email/password account
       if (!user.googleId) {
         user.googleId = googleId;
-        user.authProvider = "google"; // ✅ NEW: Mark as Google user
+        user.authProvider = "google";
         await user.save();
       }
     } else {
-      // New user - create account
       user = new User({
         googleId,
         email,
         name,
-        authProvider: "google", // ✅ NEW: Mark as Google user
-        profileCompleted: false, // Will be false until role & phone added
+        authProvider: "google",
+        profileCompleted: false,
       });
       await user.save();
     }
 
-    // Generate token
     const token = generateToken(user._id, user.role || null);
+    setAuthCookie(res, token);
 
-    // Send response with user data
     const userPayload = {
       _id: user._id,
       name: user.name,
@@ -91,16 +95,12 @@ exports.googleAuth = async (req, res) => {
     };
 
     res.status(200).json({
-      message: user.profileCompleted
-        ? "Login successful"
-        : "Profile incomplete",
-      token,
+      message: user.profileCompleted ? "Login successful" : "Profile incomplete",
       user: userPayload,
       requiresProfileCompletion: !user.profileCompleted,
     });
   } catch (err) {
-    console.error("🚨 GOOGLE AUTH FULL ERROR ↓↓↓");
-    console.error(err);
+    logger.error("Google auth error: " + err.message);
     res.status(500).json({
       message: "Google authentication failed",
       error: err.response?.data?.error || err.message,
@@ -144,8 +144,8 @@ exports.completeProfile = async (req, res) => {
     // profileCompleted will be auto-set to true by pre-save hook
     await user.save();
 
-    // Generate new token with role
     const token = generateToken(user._id, user.role);
+    setAuthCookie(res, token);
 
     const userPayload = {
       _id: user._id,
@@ -159,11 +159,10 @@ exports.completeProfile = async (req, res) => {
 
     res.status(200).json({
       message: "Profile completed successfully",
-      token,
       user: userPayload,
     });
   } catch (err) {
-    console.error("🚨 Profile Completion Error:", err);
+    logger.error("Profile completion error: " + err.message);
     res.status(500).json({ message: "Failed to complete profile" });
   }
 };
@@ -216,10 +215,9 @@ exports.registerWithEmail = async (req, res) => {
 
     await user.save();
 
-    // Generate token
     const token = generateToken(user._id, user.role);
+    setAuthCookie(res, token);
 
-    // User payload
     const userPayload = {
       _id: user._id,
       name: user.name,
@@ -232,11 +230,10 @@ exports.registerWithEmail = async (req, res) => {
 
     res.status(201).json({
       message: "Registered successfully",
-      token,
       user: userPayload,
     });
   } catch (err) {
-    console.error("🚨 Register Error:", err);
+    logger.error("Register error: " + err.message);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -281,10 +278,9 @@ exports.loginWithEmail = async (req, res) => {
         .json({ message: `This account is registered as ${user.role}` });
     }
 
-    // Generate token
     const token = generateToken(user._id, user.role);
+    setAuthCookie(res, token);
 
-    // User payload
     const userPayload = {
       _id: user._id,
       name: user.name,
@@ -297,11 +293,10 @@ exports.loginWithEmail = async (req, res) => {
 
     res.status(200).json({
       message: "Login successful",
-      token,
       user: userPayload,
     });
   } catch (err) {
-    console.error("🚨 Login Error:", err);
+    logger.error("Login error: " + err.message);
     res.status(500).json({ message: "Login failed" });
   }
 };
@@ -349,36 +344,42 @@ exports.forgotPassword = async (req, res) => {
     // Save token to database (skip validation)
     await user.save({ validateBeforeSave: false });
 
-    // Send email (you'll need to create the email service)
+    // Send password reset email — async via queue if Redis is configured,
+    // otherwise synchronous (blocks until SMTP responds)
     try {
-      await sendPasswordResetEmail(user, resetToken);
-
-      // For development: also log to console
       if (process.env.NODE_ENV === "development") {
         const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-        console.log("🔗 PASSWORD RESET URL:", resetURL);
+        logger.debug("Password reset URL: " + resetURL);
+      }
+
+      if (addEmailJob) {
+        // Non-blocking: queued via BullMQ — retried automatically on failure
+        await addEmailJob("password-reset", {
+          user: { email: user.email, name: user.name },
+          token: resetToken,
+        });
+      } else {
+        // Synchronous fallback when Redis is not configured
+        await sendPasswordResetEmail(user, resetToken);
       }
 
       res.status(200).json({
         message: "Password reset link has been sent to your email",
       });
     } catch (emailError) {
-      // If email fails, clear the reset token
+      // If synchronous email fails, clear the reset token
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save({ validateBeforeSave: false });
 
-      console.error("❌ Email sending failed:", emailError);
-
+      logger.error("Email sending failed: " + emailError.message);
       return res.status(500).json({
         message: "Failed to send reset email. Please try again later.",
       });
     }
   } catch (error) {
-    console.error("❌ Forgot password error:", error);
-    res.status(500).json({
-      message: "Something went wrong. Please try again.",
-    });
+    logger.error("Forgot password error: " + error.message);
+    res.status(500).json({ message: "Something went wrong. Please try again." });
   }
 };
 
@@ -441,17 +442,14 @@ exports.resetPassword = async (req, res) => {
     // Optional: Send confirmation email
     // await sendPasswordChangedEmail(user);
 
-    console.log("✅ Password reset successful for:", user.email);
+    logger.info("Password reset successful for: " + user.email);
 
     res.status(200).json({
-      message:
-        "Password has been reset successfully. You can now log in with your new password.",
+      message: "Password has been reset successfully. You can now log in with your new password.",
     });
   } catch (error) {
-    console.error("❌ Reset password error:", error);
-    res.status(500).json({
-      message: "Something went wrong. Please try again.",
-    });
+    logger.error("Reset password error: " + error.message);
+    res.status(500).json({ message: "Something went wrong. Please try again." });
   }
 };
 
@@ -484,10 +482,8 @@ exports.verifyResetToken = async (req, res) => {
       email: user.email, // Optional: show email on reset page
     });
   } catch (error) {
-    console.error("❌ Verify token error:", error);
-    res.status(500).json({
-      message: "Something went wrong",
-    });
+    logger.error("Verify token error: " + error.message);
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
 
@@ -511,7 +507,7 @@ exports.getProfile = async (req, res) => {
 
     res.status(200).json(userObj);
   } catch (err) {
-    console.error("Error fetching profile:", err);
+    logger.error("Get profile error: " + err.message);
     res.status(500).json({ message: "Failed to fetch profile" });
   }
 };
@@ -589,23 +585,23 @@ exports.updateProfile = async (req, res) => {
 
     res.status(200).json(userObj);
   } catch (err) {
-    console.error("Error updating profile:", err);
-    
-    // Handle duplicate key errors (e.g. username taken)
-    if (err.code === 11000) {
-        if (err.keyPattern.username) {
-            return res.status(400).json({ message: "Username already taken" });
-        }
+    logger.error("Update profile error: " + err.message);
+    if (err.code === 11000 && err.keyPattern?.username) {
+      return res.status(400).json({ message: "Username already taken" });
     }
-    
     res.status(500).json({ message: "Failed to update profile" });
   }
 };
 
 /**
- * Logout (client-side token removal)
- * Just for consistency - actual logout happens on frontend
+ * Logout — clears the httpOnly auth cookie server-side.
  */
 exports.logout = (req, res) => {
+  const isProd = process.env.NODE_ENV === "production";
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+  });
   res.status(200).json({ message: "Logged out successfully" });
 };

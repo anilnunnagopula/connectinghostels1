@@ -7,6 +7,7 @@ const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/paymentController");
 const { requireAuth, requireStudent } = require("../middleware/authMiddleware");
+const { validate, createPaymentOrderRules } = require("../middleware/validators/bookingValidators");
 
 /**
  * @route   POST /api/payments/create-order
@@ -17,6 +18,8 @@ router.post(
   "/create-order",
   requireAuth,
   requireStudent,
+  createPaymentOrderRules,
+  validate,
   paymentController.createOrder,
 );
 

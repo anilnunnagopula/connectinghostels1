@@ -147,7 +147,7 @@ const RecentlyViewed = () => {
       if (token) {
         try {
           const response = await axios.get(
-            `${API_BASE_URL}/api/student/recently-viewed`,
+            `${API_BASE_URL}/api/students/recently-viewed`,
             { headers: { Authorization: `Bearer ${token}` } },
           );
 

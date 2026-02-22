@@ -34,8 +34,14 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "owner"],
+      enum: ["student", "owner", "admin"],
       index: true, // Fast role-based queries
+    },
+
+    // Platform ban (admin action)
+    isBanned: {
+      type: Boolean,
+      default: false,
     },
     phone: {
       type: String,
