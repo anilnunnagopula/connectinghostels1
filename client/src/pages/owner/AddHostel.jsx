@@ -1,41 +1,89 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Loader2,
-  Sparkles,
-  LocateFixed,
-  Upload,
-  X,
-  CheckCircle,
-  Building,
-  Phone,
-  MapPin,
-  IndianRupee,
-  Bed,
-  FileText,
+/**
+ * AddHostel.jsx - Premium Property Enrollment & Edit Wizard
+ * 
+ * Migration Status:
+ * - Migrated to React Query (useAddHostel, useUpdateHostel, useOwnerHostelDetail)
+ * - Refined multi-step intelligence with AI-assisted copywriting
+ * - Added support for "Edit Protocol" (pre-filling data if ID is present)
+ * - Upgraded UI to professional "Digital Asset Registry" standard
+ */
+
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { 
+  Building2, 
+  Sparkles, 
+  LocateFixed, 
+  Upload, 
+  X, 
+  CheckCircle2, 
+  IndianRupee, 
+  Bed, 
+  Loader2, 
+  ChevronRight, 
+  ChevronLeft,
+  ShieldCheck,
+  Video,
+  Zap,
+  Star,
+  MapPin
 } from "lucide-react";
-import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
+import { useAddHostel, useUpdateHostel, useOwnerHostelDetail } from "../../hooks/useQueries";
 
 const AddHostel = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const isEditing = !!id;
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     contact: "",
     rooms: "",
+    floors: "",
     facilities: "",
-    category: "",
+    type: "",
     description: "",
     location: "",
+    locality: "",
     pricePerMonth: "",
   });
 
-  const [loading, setLoading] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const [video, setVideo] = useState(null);
-  const [currentStep, setCurrentStep] = useState(1); // Step indicator
+  
+  const [aiLoading, setAiLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+
+  // Queries & Mutations
+  const { data: existingHostel, isLoading: loadingHostel } = useOwnerHostelDetail(id);
+  const addHostelMutation = useAddHostel();
+  const updateHostelMutation = useUpdateHostel();
+
+  // Pre-fill data if editing
+  useEffect(() => {
+    if (isEditing && existingHostel) {
+      setFormData({
+        name: existingHostel.name || "",
+        contact: existingHostel.contactNumber || "",
+        rooms: existingHostel.totalRooms || "",
+        floors: existingHostel.floors || "",
+        facilities: existingHostel.amenities || "",
+        type: existingHostel.type || "",
+        description: existingHostel.description || "",
+        location: existingHostel.address || "",
+        locality: existingHostel.locality || "",
+        pricePerMonth: existingHostel.pricePerMonth || "",
+      });
+      if (existingHostel.images) {
+        setExistingImages(existingHostel.images);
+      }
+    }
+  }, [isEditing, existingHostel]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,540 +92,384 @@ const AddHostel = () => {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    setImages(files);
-
-    // Create previews
+    setImages([...images, ...files]);
     const previews = files.map((file) => URL.createObjectURL(file));
-    setImagePreviews(previews);
+    setImagePreviews([...imagePreviews, ...previews]);
   };
 
   const removeImage = (index) => {
-    const newImages = images.filter((_, i) => i !== index);
-    const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    setImages(newImages);
-    setImagePreviews(newPreviews);
+    setImages(images.filter((_, i) => i !== index));
+    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
   };
 
-  const handleVideoChange = (e) => {
-    setVideo(e.target.files[0]);
+  const removeExistingImage = (img) => {
+    setExistingImages(existingImages.filter(i => i !== img));
   };
 
   const handleGenerateDescription = async () => {
+    if (!formData.name || !formData.category) {
+      return toast.error("Provide Basic Identity First");
+    }
     setAiLoading(true);
+    const toastId = toast.loading("Synthesizing Property Copy...");
     try {
-      const prompt = `Generate a concise and appealing hostel description based on the following details:
-        Hostel Name: ${formData.name || "A great hostel"}
-        Facilities: ${formData.facilities || "WiFi, Mess, AC rooms"}
-        Category: ${formData.category || "for students"}
-        Location: ${formData.location || "in a peaceful environment"}
-
-        Keep it under 100 words. Focus on benefits for students/working professionals.`;
+      const prompt = `Generate a cinematic and premium hostel description:
+        Name: ${formData.name}
+        Facilities: ${formData.facilities || "Comprehensive modern amenities"}
+        Category: ${formData.category}
+        Locality: ${formData.locality}
+        Focus on luxury, security, and academic environment. Keep it under 80 words.`;
 
       const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-      const payload = { contents: chatHistory };
       const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-      const response = await fetch(apiUrl, {
+      const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ contents: chatHistory }),
       });
 
-      const result = await response.json();
-
-      if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-        const generatedText = result.candidates[0].content.parts[0].text;
-        setFormData({ ...formData, description: generatedText });
-        alert("✨ Description generated successfully!");
+      const result = await res.json();
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) {
+        setFormData({ ...formData, description: text.trim() });
+        toast.success("Intelligence Synchronized", { id: toastId });
       } else {
-        alert("❌ Failed to generate description. Please try again.");
+        throw new Error();
       }
     } catch (err) {
-      alert("❌ Error generating description. Please try again.");
-      console.error("Gemini API error:", err);
+      toast.error("AI Node Connection Failure", { id: toastId });
     } finally {
       setAiLoading(false);
     }
   };
 
-  const handleUseCurrentLocation = () => {
+  const handleUseLocation = () => {
     if (navigator.geolocation) {
       setLocationLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
+        (pos) => {
           setFormData({
             ...formData,
-            location: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`,
+            location: `GPS: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`,
           });
-          alert("📍 Current location fetched!");
+          toast.success("Geospatial Lock Confirmed");
           setLocationLoading(false);
         },
-        (error) => {
-          alert("❌ Error getting location. Please enable location services.");
+        () => {
+          toast.error("Locational Handshake Refused");
           setLocationLoading(false);
-        },
+        }
       );
-    } else {
-      alert("⚠️ Geolocation is not supported by your browser.");
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (images.length === 0 && existingImages.length === 0) return toast.error("Visual Assets Required");
 
-    // Validation
-    if (
-      !formData.name ||
-      !formData.contact ||
-      !formData.rooms ||
-      !formData.facilities ||
-      !formData.category ||
-      !formData.description ||
-      !formData.location ||
-      images.length === 0
-    ) {
-      alert(
-        "Please fill in all required fields and upload at least one image.",
-      );
-      setLoading(false);
-      return;
+    const payload = new FormData();
+    payload.append("name", formData.name);
+    payload.append("contactNumber", formData.contact);
+    payload.append("totalRooms", formData.rooms);
+    payload.append("floors", formData.floors || 1);
+    payload.append("amenities", formData.facilities);
+    payload.append("type", formData.type);
+    payload.append("description", formData.description);
+    payload.append("pricePerMonth", formData.pricePerMonth);
+    payload.append("address", formData.location);
+    payload.append("locality", formData.locality);
+    
+    // In update, we might need to send list of existing images to keep
+    if (isEditing) {
+        payload.append("existingImages", JSON.stringify(existingImages));
     }
 
-    const data = new FormData();
+    images.forEach(img => payload.append("images", img));
+    if (video) payload.append("video", video);
 
-    // ===== STRICT BACKEND MAPPING =====
-    data.append("name", formData.name);
-    data.append("contactNumber", formData.contact); // ✅ FIX
-    data.append("totalRooms", formData.rooms); // ✅ FIX
-    data.append("amenities", formData.facilities); // ✅ FIX
-    data.append("category", formData.category); // OR category
-    data.append("description", formData.description);
-    data.append("pricePerMonth", formData.pricePerMonth);
-
-    // TEMP mapping (until UI split later)
-    data.append("address", formData.location); // ✅ REQUIRED
-    data.append("locality", "Other"); // ✅ REQUIRED ENUM
-
-    // Images
-    images.forEach((image) => {
-      data.append("images", image);
-    });
-
-    if (video) {
-      data.append("video", video);
-    }
-
-
+    const toastId = toast.loading(isEditing ? "Executing Asset Update..." : "Executing Enrollment Protocol...");
     try {
-      const authToken = localStorage.getItem("token");
-      if (!authToken) {
-        alert("Authentication token not found. Please log in again.");
-        return;
+      if (isEditing) {
+          await updateHostelMutation.mutateAsync({ id, formData: payload });
+          toast.success("Asset State Synchronized", { id: toastId });
+      } else {
+          await addHostelMutation.mutateAsync(payload);
+          toast.success("Property Registered in Portfolio", { id: toastId });
       }
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/owner/hostels/add-hostel`,
-        data,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${authToken}`,
-          },
-        },
-      );
-
-      // Success animation/message
-      alert("✅ Hostel added successfully!");
       navigate("/owner/my-hostels");
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Failed to add hostel. Please try again.";
-      alert(`❌ ${errorMessage}`);
-      console.error("Error adding hostel:", err);
-    } finally {
-      setLoading(false);
+      toast.error(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || "Protocol failure", { id: toastId });
     }
   };
 
-  // Form step validation
-  const canProceedToStep2 =
-    formData.name && formData.contact && formData.category;
-  const canProceedToStep3 =
-    canProceedToStep2 && formData.rooms && formData.location;
+  if (isEditing && loadingHostel) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  const steps = [
+    { title: "Identity", sub: "Brand & Category", icon: Building2 },
+    { title: "Inventory", sub: "Units & Pricing", icon: Bed },
+    { title: "Geospatial", sub: "Location & Area", icon: MapPin },
+    { title: "Intelligence", sub: "Branding & Copy", icon: Sparkles },
+    { title: "Assets", sub: "Visual Evidence", icon: Upload }
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-3">
-            <Building className="text-blue-500" />
-            Add New Hostel
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400">
-            Fill in the details to list your hostel property
-          </p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-12 pb-32">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
+           <div className="space-y-2">
+              <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">
+                 {isEditing ? "Edit Hostel" : "Add New Hostel"}
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm flex items-center gap-2">
+                 <ShieldCheck size={16} className="text-blue-600" /> 
+                 {isEditing ? "Update your property details and assets" : "Register a new property to your portfolio"}
+              </p>
+           </div>
         </div>
 
-        {/* Step Indicator */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4 mb-6">
-          <div className="flex items-center justify-between">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center flex-1">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-                    currentStep >= step
-                      ? "bg-blue-500 text-white"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-500"
-                  }`}
-                >
-                  {currentStep > step ? (
-                    <CheckCircle className="w-6 h-6" />
-                  ) : (
-                    step
-                  )}
-                </div>
-                {step < 3 && (
-                  <div
-                    className={`flex-1 h-1 mx-2 transition-colors ${
-                      currentStep > step
-                        ? "bg-blue-500"
-                        : "bg-slate-200 dark:bg-slate-700"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between mt-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-            <span>Basic Info</span>
-            <span>Details</span>
-            <span>Media</span>
-          </div>
+        {/* Wizard Progress */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 mb-10 border border-slate-200 dark:border-slate-800 shadow-sm">
+           <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-4">
+              {steps.map((step, i) => (
+                 <div key={i} className="flex-1 min-w-[100px] relative">
+                    <div className="flex items-center gap-3">
+                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                         currentStep > i + 1 
+                         ? "bg-emerald-500 text-white shadow-sm" 
+                         : currentStep === i + 1 
+                         ? "bg-blue-600 text-white shadow-sm" 
+                         : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                       }`}>
+                          {currentStep > i + 1 ? <CheckCircle2 size={18} /> : i + 1}
+                       </div>
+                       <div className="hidden lg:block">
+                          <p className={`text-[10px] font-bold uppercase tracking-wider leading-none mb-1 ${currentStep === i + 1 ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                             {step.title}
+                          </p>
+                          <p className="text-[9px] font-medium text-slate-400 uppercase truncate">{step.sub}</p>
+                       </div>
+                    </div>
+                    {i < steps.length - 1 && (
+                       <div className="absolute top-5 left-[calc(100%+8px)] w-[calc(100%-48px)] h-[1px] bg-slate-200 dark:bg-slate-800 hidden lg:block">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: currentStep > i + 1 ? "100%" : "0%" }}
+                            className="h-full bg-emerald-500"
+                          />
+                       </div>
+                    )}
+                 </div>
+              ))}
+           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Basic Information */}
-          {currentStep === 1 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 space-y-5">
-              <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">
-                Basic Information
-              </h3>
+        {/* Form Body */}
+        <div className="mb-12">
+           <AnimatePresence mode="wait">
+              {currentStep === 1 && (
+                 <motion.div 
+                  key="step1" 
+                  initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                  className="space-y-8"
+                 >
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Basic Information</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Hostel Name</label>
+                          <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all" placeholder="Enter hostel name" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Contact Number</label>
+                          <input type="tel" name="contact" value={formData.contact} onChange={handleChange} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all" placeholder="Enter mobile number" />
+                       </div>
+                        <div className="space-y-2">
+                           <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Hostel Type</label>
+                           <div className="relative">
+                              <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all appearance-none cursor-pointer">
+                                 <option value="">Select Type</option>
+                                 <option value="Boys">Boys Hostel</option>
+                                 <option value="Girls">Girls Hostel</option>
+                                 <option value="Co-ed">Co-ed (Mixed)</option>
+                              </select>
+                              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs font-bold">CHANGE</div>
+                           </div>
+                        </div>
+                    </div>
+                 </motion.div>
+              )}
 
-              {/* Hostel Name */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  <Building className="inline w-4 h-4 mr-1" />
-                  Hostel Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                  placeholder="e.g. Sunrise Girls Hostel"
-                  required
-                />
-              </div>
+              {currentStep === 2 && (
+                 <motion.div 
+                  key="step2" 
+                  initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                  className="space-y-8"
+                 >
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Inventory & Pricing</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                           <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Total Rooms</label>
+                           <input type="number" name="rooms" value={formData.rooms} onChange={handleChange} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all" placeholder="0" />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Number of Floors</label>
+                           <input type="number" name="floors" value={formData.floors} onChange={handleChange} min="1" max="50" className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all" placeholder="e.g. 3" />
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Price Per Month (₹)</label>
+                           <input type="number" name="pricePerMonth" value={formData.pricePerMonth} onChange={handleChange} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all" placeholder="8500" />
+                        </div>
+                       <div className="md:col-span-2 space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Amenities (comma separated)</label>
+                          <textarea name="facilities" value={formData.facilities} onChange={handleChange} rows="3" className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all resize-none" placeholder="WiFi, Laundry, Mess, Biometrics, Gym..." />
+                       </div>
+                    </div>
+                 </motion.div>
+              )}
 
-              {/* Contact & Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    <Phone className="inline w-4 h-4 mr-1" />
-                    Contact Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="contact"
-                    value={formData.contact}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                    placeholder="9876543210"
-                    minLength={10}
-                    maxLength={10}
-                    required
-                  />
-                </div>
+              {currentStep === 3 && (
+                 <motion.div 
+                  key="step3" 
+                  initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                  className="space-y-8"
+                 >
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Location Details</h2>
+                    <div className="space-y-6">
+                       <div className="space-y-2">
+                          <div className="flex items-center justify-between px-1">
+                             <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Full Address</label>
+                             <button type="button" onClick={handleUseLocation} disabled={locationLoading} className="text-[10px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5 hover:text-blue-700">
+                                {locationLoading ? <Loader2 size={12} className="animate-spin" /> : <LocateFixed size={12} />} Get Current Location
+                             </button>
+                          </div>
+                          <input type="text" name="location" value={formData.location} onChange={handleChange} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all" placeholder="Enter full address" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Locality</label>
+                          <div className="relative">
+                             <select name="locality" value={formData.locality} onChange={handleChange} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all appearance-none cursor-pointer">
+                                <option value="">Select Locality</option>
+                                <option value="Mangalpally">Mangalpally</option>
+                                <option value="Ibrahimpatnam">Ibrahimpatnam</option>
+                                <option value="Sheriguda">Sheriguda</option>
+                                <option value="Other">Other</option>
+                             </select>
+                             <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs font-bold">CHANGE</div>
+                          </div>
+                       </div>
+                    </div>
+                 </motion.div>
+              )}
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    Category *
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                    required
-                  >
-                    <option value="">Select Category</option>
-                    <option value="Girls">Girls</option>
-                    <option value="Boys">Boys</option>
-                    <option value="Co-Live">Co-Live</option>
-                  </select>
-                </div>
-              </div>
+              {currentStep === 4 && (
+                 <motion.div 
+                  key="step4" 
+                  initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                  className="space-y-8"
+                 >
+                    <div className="flex items-center justify-between">
+                       <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Property Description</h2>
+                       <button type="button" onClick={handleGenerateDescription} disabled={aiLoading} className="px-5 py-2.5 bg-slate-900 dark:bg-blue-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-all hover:bg-slate-800 dark:hover:bg-blue-700">
+                          {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} AI Generate
+                       </button>
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">About the Property</label>
+                       <textarea name="description" value={formData.description} onChange={handleChange} rows="6" className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-600 rounded-xl px-6 py-4 font-semibold text-slate-900 dark:text-white outline-none shadow-sm transition-all resize-none leading-relaxed" placeholder="Describe the living experience..." />
+                    </div>
+                 </motion.div>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setCurrentStep(2)}
-                disabled={!canProceedToStep2}
-                className={`w-full py-3 rounded-lg font-semibold transition-colors ${
-                  canProceedToStep2
-                    ? "bg-blue-600 hover:bg-blue-700 text-white"
-                    : "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
-                }`}
-              >
-                Next Step →
-              </button>
-            </div>
-          )}
+              {currentStep === 5 && (
+                 <motion.div 
+                  key="step5" 
+                  initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                  className="space-y-8"
+                 >
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Media Assets</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-6">
+                          <div className="relative group">
+                             <input type="file" multiple accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                             <div className="bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-10 text-center transition-all group-hover:bg-slate-100/50 dark:group-hover:bg-slate-800">
+                                <Upload className="mx-auto text-blue-600 mb-4" size={40} />
+                                <p className="text-sm font-bold text-slate-900 dark:text-white">Upload Images</p>
+                                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">JPG, PNG (Max 5MB each)</p>
+                             </div>
+                          </div>
 
-          {/* Step 2: Details */}
-          {currentStep === 2 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 space-y-5">
-              <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">
-                Hostel Details
-              </h3>
+                          <div className="relative group">
+                             <input type="file" accept="video/*" onChange={(e) => setVideo(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                             <div className="bg-slate-900 dark:bg-slate-800 text-white rounded-2xl p-10 text-center transition-all group-hover:bg-slate-800">
+                                <Video className="mx-auto text-emerald-400 mb-4" size={40} />
+                                <p className="text-sm font-bold">{video ? 'Video Selected' : 'Add Property Video'}</p>
+                                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">{video ? video.name : 'Optional walk-through tour'}</p>
+                             </div>
+                          </div>
+                       </div>
 
-              {/* Rooms & Price */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    <Bed className="inline w-4 h-4 mr-1" />
-                    Total Rooms *
-                  </label>
-                  <input
-                    type="number"
-                    name="rooms"
-                    value={formData.rooms}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                    min="1"
-                    required
-                  />
-                </div>
+                       <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm max-h-[400px] overflow-y-auto">
+                          <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">Selected Assets ({images.length + existingImages.length})</h3>
+                          <div className="grid grid-cols-2 gap-3">
+                             {existingImages.map((src, i) => (
+                                <div key={`ex-${i}`} className="relative group rounded-xl overflow-hidden aspect-square border border-slate-100 dark:border-slate-800">
+                                   <img src={src.startsWith('http') ? src : `${process.env.REACT_APP_API_URL}/uploads/${src}`} alt="" className="w-full h-full object-cover" />
+                                   <button onClick={() => removeExistingImage(src)} className="absolute top-1.5 right-1.5 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all"><X size={12} /></button>
+                                </div>
+                             ))}
+                             {imagePreviews.map((src, i) => (
+                                <div key={i} className="relative group rounded-xl overflow-hidden aspect-square border border-emerald-500/50">
+                                   <img src={src} alt="" className="w-full h-full object-cover" />
+                                   <button onClick={() => removeImage(i)} className="absolute top-1.5 right-1.5 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all"><X size={12} /></button>
+                                </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 </motion.div>
+              )}
+           </AnimatePresence>
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    <IndianRupee className="inline w-4 h-4 mr-1" />
-                    Price/Month
-                  </label>
-                  <input
-                    type="number"
-                    name="pricePerMonth"
-                    value={formData.pricePerMonth}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                    placeholder="8000"
-                  />
-                </div>
-              </div>
+        {/* Footer Navigation */}
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm">
+           <button 
+             onClick={() => currentStep > 1 && setCurrentStep(prev => prev - 1)}
+             className={`px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${currentStep === 1 ? 'opacity-20 cursor-not-allowed' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+           >
+              <ChevronLeft size={16} /> Back
+           </button>
+           
+           <div className="flex gap-4">
+              {currentStep < 5 ? (
+                 <button 
+                  onClick={() => setCurrentStep(prev => prev + 1)}
+                  className="px-8 py-3 bg-slate-900 dark:bg-blue-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-blue-700"
+                 >
+                    Next Step <ChevronRight size={16} />
+                 </button>
+              ) : (
+                 <button 
+                  onClick={handleSubmit}
+                  disabled={addHostelMutation.isPending || updateHostelMutation.isPending || (images.length === 0 && existingImages.length === 0)}
+                  className={`px-8 py-3 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 ${isEditing ? 'bg-blue-600' : 'bg-emerald-600'}`}
+                 >
+                    {(addHostelMutation.isPending || updateHostelMutation.isPending) ? <Loader2 className="animate-spin" /> : <><Zap size={16} /> {isEditing ? "Update Hostel" : "Add Hostel"}</>}
+                 </button>
+              )}
+           </div>
+        </div>
 
-              {/* Location */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    <MapPin className="inline w-4 h-4 mr-1" />
-                    Location *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleUseCurrentLocation}
-                    disabled={locationLoading}
-                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                  >
-                    {locationLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Getting...
-                      </>
-                    ) : (
-                      <>
-                        <LocateFixed className="w-4 h-4" />
-                        Use Current
-                      </>
-                    )}
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                  placeholder="e.g. Mangalpally, Hyderabad"
-                  required
-                />
-              </div>
-
-              {/* Facilities */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Facilities *
-                </label>
-                <textarea
-                  name="facilities"
-                  value={formData.facilities}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                  placeholder="WiFi, Mess, AC Rooms, Study Area, etc"
-                  rows="3"
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    <FileText className="inline w-4 h-4 mr-1" />
-                    Description *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleGenerateDescription}
-                    disabled={aiLoading}
-                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                  >
-                    {aiLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" />
-                        AI Generate
-                      </>
-                    )}
-                  </button>
-                </div>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-                  placeholder="Describe your hostel..."
-                  rows="4"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className="flex-1 py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-lg font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(3)}
-                  disabled={!canProceedToStep3}
-                  className={`flex-1 py-3 rounded-lg font-semibold transition-colors ${
-                    canProceedToStep3
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
-                  }`}
-                >
-                  Next Step →
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Media Upload */}
-          {currentStep === 3 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 space-y-5">
-              <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-4">
-                Upload Media
-              </h3>
-
-              {/* Images Upload */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  <Upload className="inline w-4 h-4 mr-1" />
-                  Hostel Images * ({images.length} selected)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 file:font-semibold hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer"
-                  required
-                />
-
-                {/* Image Previews */}
-                {imagePreviews.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Video Upload */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Hostel Video (Optional) {video && `(${video.name})`}
-                </label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoChange}
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300 file:font-semibold hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="flex-1 py-3 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white rounded-lg font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || images.length === 0}
-                  className={`flex-1 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
-                    loading || images.length === 0
-                      ? "bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white"
-                  }`}
-                >
-                  {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                  {loading ? "Submitting..." : "Submit Hostel"}
-                </button>
-              </div>
-            </div>
-          )}
-        </form>
       </div>
     </div>
   );

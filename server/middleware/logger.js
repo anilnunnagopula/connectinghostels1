@@ -25,4 +25,17 @@ const logger = createLogger({
   transports: [new transports.Console()],
 });
 
+// BetterStack Logs transport (optional — activate by setting BETTERSTACK_SOURCE_TOKEN)
+if (process.env.BETTERSTACK_SOURCE_TOKEN) {
+  try {
+    const { Logtail } = require("@logtail/node");
+    const { LogtailTransport } = require("@logtail/winston");
+    const logtail = new Logtail(process.env.BETTERSTACK_SOURCE_TOKEN);
+    logger.add(new LogtailTransport(logtail));
+    logger.info("BetterStack log transport enabled");
+  } catch (err) {
+    logger.warn("BetterStack transport failed to load: " + err.message);
+  }
+}
+
 module.exports = logger;

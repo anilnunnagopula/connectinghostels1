@@ -195,6 +195,17 @@ exports.registerWithEmail = async (req, res) => {
     // Check if user exists
     const existing = await User.findOne({ email });
     if (existing) {
+      // Check if this was a pre-created account (by an owner adding a walk-in student)
+      // These accounts have no password set by the student themselves
+      // Signal to frontend to show "your owner enrolled you" message
+      const Student = require("../models/Student");
+      const studentProfile = await Student.findOne({ user: existing._id });
+      if (studentProfile && studentProfile.currentOwner) {
+        return res.status(409).json({
+          message: "An account was already created for you by your hostel owner. Please login or reset your password to access your profile.",
+          ownerCreated: true,
+        });
+      }
       return res.status(409).json({ message: "Email already registered" });
     }
 
@@ -228,6 +239,16 @@ exports.registerWithEmail = async (req, res) => {
       profileCompleted: user.profileCompleted,
     };
 
+    // Enqueue welcome email (non-blocking)
+    try {
+      const { addEmailJob } = require("../queues/emailQueue");
+      if (addEmailJob) {
+        await addEmailJob("welcome", { user: { name: user.name, email: user.email, role: user.role } });
+      }
+    } catch (emailErr) {
+      logger.warn("Failed to enqueue welcome email: " + emailErr.message);
+    }
+
     res.status(201).json({
       message: "Registered successfully",
       user: userPayload,
@@ -255,7 +276,7 @@ exports.loginWithEmail = async (req, res) => {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     if (!user.password) {
@@ -268,7 +289,7 @@ exports.loginWithEmail = async (req, res) => {
     // Verify password
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Optional: Verify role matches if provided

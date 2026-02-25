@@ -1,13 +1,16 @@
-// utils / auth.js;
 // utils/auth.js
 export const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
-  return !!token;
+  const user = localStorage.getItem('user');
+  return !!user;
 };
 
 export const getUserRole = () => {
-  // If you store role in localStorage, retrieve it
-  return localStorage.getItem('userRole') || null;
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    return user?.role || null;
+  } catch {
+    return null;
+  }
 };
 
 export const isStudent = () => {

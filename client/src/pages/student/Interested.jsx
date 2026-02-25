@@ -1,24 +1,7 @@
-/**
- * Interested.jsx - Student's Wishlist/Saved Hostels
- *
- * Features:
- * - Display all saved/interested hostels
- * - Remove from list with optimistic update
- * - Sort by date added, price, name
- * - Grid/list view toggle
- * - Clear all with confirmation
- * - Navigate to hostel details
- *
- * Performance Optimizations:
- * - Memoized sorted hostels
- * - Optimistic UI updates
- * - useCallback for handlers
- * - Proper loading/error states
- */
-
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import {
   Heart,
   Trash2,
@@ -26,17 +9,21 @@ import {
   IndianRupee,
   Grid3x3,
   List,
-  Loader2,
   AlertCircle,
   X,
   SortAsc,
+  RefreshCw,
 } from "lucide-react";
+import {
+  useInterestedHostels,
+  useRemoveInterested,
+  useClearInterested,
+} from "../../hooks/useQueries";
+import { SkeletonHostelCard } from "../../components/ui/SkeletonCard";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 const SORT_OPTIONS = {
   DATE_DESC: "date_desc",
@@ -55,15 +42,17 @@ const VIEW_MODES = {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-const getToken = () => localStorage.getItem("token");
-
-/**
- * Extracts numeric price from string like "₹4800/mo"
- */
-const extractPrice = (priceString) => {
-  if (!priceString) return 0;
-  const match = priceString.match(/\d+/);
-  return match ? parseInt(match[0]) : 0;
+const getImageUrl = (hostel) => {
+  if (!hostel.images || hostel.images.length === 0)
+    return "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?fit=crop&w=800&q=80";
+  const img = hostel.images[0];
+  if (img.startsWith("http")) return img;
+  
+  // Note: We'll assume the baseURL is handled by the server serving static files from /uploads
+  // For now, consistent with other pages, we'll prefix with host if needed.
+  // But standardizing on the server providing full URLs or handling it centrally is better.
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  return img.startsWith("/") ? `${API_BASE_URL}${img}` : `${API_BASE_URL}/${img}`;
 };
 
 // ============================================================================
@@ -72,16 +61,18 @@ const extractPrice = (priceString) => {
 
 const Interested = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // TanStack Query — data + mutations
+  const { data, isLoading, isError } = useInterestedHostels();
+  const hostels = useMemo(() => data || [], [data]);
+
+  const removeMutation = useRemoveInterested();
+  const clearMutation = useClearInterested();
 
   // ==========================================================================
-  // STATE MANAGEMENT
+  // LOCAL UI STATE
   // ==========================================================================
-
-  const [state, setState] = useState({
-    hostels: [],
-    loading: true,
-    error: null,
-  });
 
   const [sortBy, setSortBy] = useState(SORT_OPTIONS.DATE_DESC);
   const [viewMode, setViewMode] = useState(VIEW_MODES.GRID);
@@ -89,168 +80,69 @@ const Interested = () => {
   const [showClearModal, setShowClearModal] = useState(false);
 
   // ==========================================================================
-  // DATA FETCHING
-  // ==========================================================================
-
-  /**
-   * Fetches interested hostels from API or localStorage
-   */
-  const fetchInterestedHostels = useCallback(async () => {
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
-      const token = getToken();
-
-      // Try API first
-      if (token) {
-        try {
-          const response = await axios.get(
-            `${API_BASE_URL}/api/students/interested`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
-
-          setState({
-            hostels: response.data.data || response.data || [],
-            loading: false,
-            error: null,
-          });
-          return;
-        } catch (apiError) {
-          console.log("API fetch failed, using localStorage fallback");
-        }
-      }
-
-      // Fallback to localStorage
-      const storedHostels = localStorage.getItem("interestedHostels");
-      const hostels = storedHostels ? JSON.parse(storedHostels) : [];
-
-      setState({
-        hostels,
-        loading: false,
-        error: null,
-      });
-    } catch (error) {
-      console.error("Error fetching interested hostels:", error);
-      setState({
-        hostels: [],
-        loading: false,
-        error: error.message || "Failed to load your interested hostels",
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchInterestedHostels();
-  }, [fetchInterestedHostels]);
-
-  // ==========================================================================
   // COMPUTED VALUES (Memoized)
   // ==========================================================================
 
-  /**
-   * Sorts hostels based on selected sort option
-   */
   const sortedHostels = useMemo(() => {
-    if (!state.hostels || state.hostels.length === 0) return [];
-
-    const sorted = [...state.hostels];
+    if (!hostels.length) return [];
+    const sorted = [...hostels];
 
     switch (sortBy) {
       case SORT_OPTIONS.DATE_DESC:
-        return sorted.reverse(); // Most recently added first
+        return sorted.reverse();
       case SORT_OPTIONS.DATE_ASC:
-        return sorted; // Oldest first
+        return sorted;
       case SORT_OPTIONS.PRICE_DESC:
-        return sorted.sort(
-          (a, b) => extractPrice(b.price) - extractPrice(a.price),
-        );
+        return sorted.sort((a, b) => (b.pricePerMonth || 0) - (a.pricePerMonth || 0));
       case SORT_OPTIONS.PRICE_ASC:
-        return sorted.sort(
-          (a, b) => extractPrice(a.price) - extractPrice(b.price),
-        );
+        return sorted.sort((a, b) => (a.pricePerMonth || 0) - (b.pricePerMonth || 0));
       case SORT_OPTIONS.NAME_ASC:
         return sorted.sort((a, b) => a.name.localeCompare(b.name));
       default:
         return sorted;
     }
-  }, [state.hostels, sortBy]);
+  }, [hostels, sortBy]);
 
   // ==========================================================================
   // EVENT HANDLERS
   // ==========================================================================
 
-  /**
-   * Removes a hostel from interested list with optimistic update
-   */
   const handleRemoveHostel = useCallback(
     async (hostelId) => {
-      const token = getToken();
       setRemovingId(hostelId);
 
-      // Optimistic update
-      const originalHostels = state.hostels;
-      setState((prev) => ({
-        ...prev,
-        hostels: prev.hostels.filter((h) => h.id !== hostelId),
-      }));
+      // Optimistic update in cache
+      queryClient.setQueryData(["interested"], (old) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((h) => (h._id || h.id) !== hostelId);
+      });
 
       try {
-        // Try API call
-        if (token) {
-          await axios.delete(
-            `${API_BASE_URL}/api/students/interested/${hostelId}`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
-        }
-
-        // Update localStorage
-        const updatedHostels = originalHostels.filter((h) => h.id !== hostelId);
-        localStorage.setItem(
-          "interestedHostels",
-          JSON.stringify(updatedHostels),
-        );
-      } catch (error) {
-        console.error("Failed to remove hostel:", error);
-        // Revert optimistic update on error
-        setState((prev) => ({ ...prev, hostels: originalHostels }));
+        await removeMutation.mutateAsync(hostelId);
+      } catch {
+        // Revert by invalidating
+        queryClient.invalidateQueries({ queryKey: ["interested"] });
+        toast.error("Failed to remove hostel");
       } finally {
         setRemovingId(null);
       }
     },
-    [state.hostels],
+    [queryClient, removeMutation],
   );
 
-  /**
-   * Clears all interested hostels
-   */
   const handleClearAll = useCallback(async () => {
-    const token = getToken();
-    const originalHostels = state.hostels;
-
-    // Optimistic update
-    setState((prev) => ({ ...prev, hostels: [] }));
+    queryClient.setQueryData(["interested"], []);
     setShowClearModal(false);
 
     try {
-      // Try API call
-      if (token) {
-        await axios.delete(`${API_BASE_URL}/api/students/interested/all`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      // Clear localStorage
-      localStorage.setItem("interestedHostels", JSON.stringify([]));
-    } catch (error) {
-      console.error("Failed to clear all:", error);
-      // Revert on error
-      setState((prev) => ({ ...prev, hostels: originalHostels }));
+      await clearMutation.mutateAsync();
+      toast.success("All hostels removed from your list");
+    } catch {
+      queryClient.invalidateQueries({ queryKey: ["interested"] });
+      toast.error("Failed to clear list");
     }
-  }, [state.hostels]);
+  }, [queryClient, clearMutation]);
 
-  /**
-   * Navigates to hostel details page
-   */
   const handleViewDetails = useCallback(
     (hostelId) => {
       navigate(`/student/hostels/${hostelId}`);
@@ -258,18 +150,12 @@ const Interested = () => {
     [navigate],
   );
 
-  /**
-   * Toggles view mode between grid and list
-   */
   const handleToggleView = useCallback(() => {
     setViewMode((prev) =>
       prev === VIEW_MODES.GRID ? VIEW_MODES.LIST : VIEW_MODES.GRID,
     );
   }, []);
 
-  /**
-   * Changes sort option
-   */
   const handleSortChange = useCallback((e) => {
     setSortBy(e.target.value);
   }, []);
@@ -278,76 +164,15 @@ const Interested = () => {
   // RENDER HELPERS
   // ==========================================================================
 
-  /**
-   * Renders loading state
-   */
-  const renderLoading = () => (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">
-          Loading your interested hostels...
-        </p>
-      </div>
-    </div>
-  );
-
-  /**
-   * Renders error state
-   */
-  const renderError = () => (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md text-center">
-        <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-white">
-          Unable to Load
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">{state.error}</p>
-        <button
-          onClick={fetchInterestedHostels}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
-        >
-          Try Again
-        </button>
-      </div>
-    </div>
-  );
-
-  /**
-   * Renders empty state
-   */
-  const renderEmpty = () => (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="text-center">
-        <Heart className="w-24 h-24 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-white">
-          No Interested Hostels Yet
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Start exploring hostels and save your favorites here
-        </p>
-        <button
-          onClick={() => navigate("/student/hostels")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition"
-        >
-          Explore Hostels
-        </button>
-      </div>
-    </div>
-  );
-
-  /**
-   * Renders controls (sort, view toggle, clear all)
-   */
   const renderControls = () => (
     <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <SortAsc size={20} className="text-gray-600 dark:text-gray-400" />
+          <SortAsc size={20} className="text-gray-600 dark:text-slate-400" />
           <select
             value={sortBy}
             onChange={handleSortChange}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value={SORT_OPTIONS.DATE_DESC}>Newest First</option>
             <option value={SORT_OPTIONS.DATE_ASC}>Oldest First</option>
@@ -359,210 +184,166 @@ const Interested = () => {
 
         <button
           onClick={handleToggleView}
-          className="p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          className="p-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition"
           aria-label="Toggle view mode"
         >
-          {viewMode === VIEW_MODES.GRID ? (
-            <List size={20} />
-          ) : (
-            <Grid3x3 size={20} />
-          )}
+          {viewMode === VIEW_MODES.GRID ? <List size={20} /> : <Grid3x3 size={20} />}
         </button>
       </div>
 
-      {state.hostels.length > 0 && (
+      {hostels.length > 0 && (
         <button
           onClick={() => setShowClearModal(true)}
           className="flex items-center gap-2 text-red-600 dark:text-red-400 hover:underline"
         >
           <Trash2 size={18} />
-          <span>Clear All</span>
+          <span>Clear All List</span>
         </button>
       )}
     </div>
   );
 
-  /**
-   * Renders hostel card in grid view
-   */
-  const renderGridCard = (hostel) => (
-    <div
-      key={hostel.id}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition transform hover:scale-[1.02] overflow-hidden relative"
-    >
-      {/* Remove button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleRemoveHostel(hostel.id);
-        }}
-        disabled={removingId === hostel.id}
-        className="absolute top-2 right-2 z-10 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-        aria-label="Remove from interested"
-      >
-        {removingId === hostel.id ? (
-          <Loader2 size={18} className="animate-spin text-red-500" />
-        ) : (
-          <Heart size={18} className="text-red-500" fill="red" />
-        )}
-      </button>
-
-      {/* Image */}
-      <div
-        onClick={() => handleViewDetails(hostel.id)}
-        className="cursor-pointer"
-      >
-        <img
-          src={hostel.image}
-          alt={hostel.name}
-          className="w-full h-48 object-cover"
-          loading="lazy"
-        />
-      </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <h2
-          onClick={() => handleViewDetails(hostel.id)}
-          className="text-xl font-semibold mb-2 text-gray-800 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
-        >
-          {hostel.name}
-        </h2>
-        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-1">
-          <MapPin size={16} />
-          <span>{hostel.location}</span>
-        </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-          🛏️ {hostel.type}
-        </p>
-        <div className="flex items-center gap-1 text-lg font-bold text-gray-900 dark:text-white">
-          <IndianRupee size={18} />
-          <span>{hostel.price}</span>
-        </div>
-
-        <button
-          onClick={() => handleViewDetails(hostel.id)}
-          className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition"
-        >
-          View Details
-        </button>
-      </div>
-    </div>
-  );
-
-  /**
-   * Renders hostel card in list view
-   */
-  const renderListCard = (hostel) => (
-    <div
-      key={hostel.id}
-      className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition p-4 flex gap-4 relative"
-    >
-      {/* Remove button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleRemoveHostel(hostel.id);
-        }}
-        disabled={removingId === hostel.id}
-        className="absolute top-4 right-4 p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-        aria-label="Remove from interested"
-      >
-        {removingId === hostel.id ? (
-          <Loader2 size={18} className="animate-spin text-red-500" />
-        ) : (
-          <Heart size={18} className="text-red-500" fill="red" />
-        )}
-      </button>
-
-      {/* Image */}
-      <div
-        onClick={() => handleViewDetails(hostel.id)}
-        className="cursor-pointer flex-shrink-0"
-      >
-        <img
-          src={hostel.image}
-          alt={hostel.name}
-          className="w-32 h-32 object-cover rounded-lg"
-          loading="lazy"
-        />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1">
-        <h2
-          onClick={() => handleViewDetails(hostel.id)}
-          className="text-xl font-semibold mb-2 text-gray-800 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
-        >
-          {hostel.name}
-        </h2>
-        <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mb-1">
-          <MapPin size={16} />
-          <span>{hostel.location}</span>
-        </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-          🛏️ {hostel.type}
-        </p>
-        <div className="flex items-center gap-1 text-lg font-bold text-gray-900 dark:text-white">
-          <IndianRupee size={18} />
-          <span>{hostel.price}</span>
-        </div>
-      </div>
-
-      {/* Action */}
-      <div className="flex items-center">
-        <button
-          onClick={() => handleViewDetails(hostel.id)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition"
-        >
-          View Details
-        </button>
-      </div>
-    </div>
-  );
-
-  /**
-   * Renders clear all confirmation modal
-   */
-  const renderClearModal = () => {
-    if (!showClearModal) return null;
+  const renderGridCard = (hostel) => {
+    const id = hostel._id || hostel.id;
+    const imgSrc = getImageUrl(hostel);
+    const isRemoving = removingId === id;
 
     return (
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        key={id}
+        className="bg-white dark:bg-slate-800 rounded-lg shadow hover:shadow-lg transition transform hover:scale-[1.02] overflow-hidden relative"
+      >
+        <button
+          onClick={(e) => { e.stopPropagation(); handleRemoveHostel(id); }}
+          disabled={isRemoving}
+          className="absolute top-2 right-2 z-10 p-2 bg-white/90 dark:bg-slate-800/90 rounded-full shadow-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+          aria-label="Remove from interested"
+        >
+          {isRemoving ? (
+            <RefreshCw size={18} className="animate-spin text-red-500" />
+          ) : (
+            <Heart size={18} className="text-red-500" fill="red" />
+          )}
+        </button>
+
+        <div onClick={() => handleViewDetails(id)} className="cursor-pointer">
+          <img
+            src={imgSrc}
+            alt={hostel.name}
+            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?fit=crop&w=800&q=80"; }}
+            className="w-full h-48 object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        <div className="p-4">
+          <h2
+            onClick={() => handleViewDetails(id)}
+            className="text-xl font-bold mb-2 text-gray-800 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
+          >
+            {hostel.name}
+          </h2>
+          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mb-3 font-medium">
+            <MapPin size={16} className="text-blue-500" />
+            <span>{hostel.locality || hostel.location}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-xl font-black text-gray-900 dark:text-white">
+              <IndianRupee size={18} />
+              <span>{hostel.pricePerMonth || hostel.price}<span className="text-sm font-normal text-gray-500">/mo</span></span>
+            </div>
+            <button onClick={() => handleViewDetails(id)} className="text-blue-600 font-bold hover:underline">Details</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderListCard = (hostel) => {
+    const id = hostel._id || hostel.id;
+    const imgSrc = getImageUrl(hostel);
+    const isRemoving = removingId === id;
+
+    return (
+      <div
+        key={id}
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-3 flex gap-4 pt-4 relative pr-12"
+      >
+        <div onClick={() => handleViewDetails(id)} className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer">
+          <img
+            src={imgSrc}
+            alt={hostel.name}
+            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?fit=crop&w=400&q=80"; }}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h2
+            onClick={() => handleViewDetails(id)}
+            className="text-xl font-bold mb-1 truncate cursor-pointer hover:text-blue-600 transition"
+          >
+            {hostel.name}
+          </h2>
+          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mb-2">
+            <MapPin size={16} className="text-blue-500" />
+            <span>{hostel.locality || hostel.location}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 text-lg font-black text-gray-900 dark:text-white">
+              <IndianRupee size={16} />
+              <span>{hostel.pricePerMonth || hostel.price}</span>
+            </div>
+            <button
+               onClick={() => handleViewDetails(id)}
+               className="text-sm font-bold text-blue-600 hover:text-blue-700"
+            >
+              View Details
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); handleRemoveHostel(id); }}
+          disabled={isRemoving}
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-gray-50 dark:bg-slate-700 rounded-full hover:bg-red-50 transition"
+        >
+          {isRemoving ? <RefreshCw size={20} className="animate-spin text-red-500" /> : <Trash2 size={20} className="text-gray-400 hover:text-red-500" />}
+        </button>
+      </div>
+    );
+  };
+
+  const renderClearModal = () => {
+    if (!showClearModal) return null;
+    return (
+      <div
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in"
         onClick={() => setShowClearModal(false)}
       >
         <div
-          className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full"
+          className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-start justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              Clear All Interested Hostels?
-            </h2>
-            <button
-              onClick={() => setShowClearModal(false)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <X size={24} />
-            </button>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            This will remove all {state.hostels.length} hostel(s) from your
-            interested list. This action cannot be undone.
+          <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6 mx-auto"><Trash2 size={32} className="text-red-500" /></div>
+          <h2 className="text-2xl font-black mb-2 text-center text-gray-800 dark:text-white">Clear the entire list?</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8 text-center">
+            This will remove all {hostels.length} hostels from your favorites. You can't undo this.
           </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowClearModal(false)}
-              className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-            >
-              Cancel
-            </button>
+          <div className="flex flex-col gap-3">
             <button
               onClick={handleClearAll}
-              className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition"
+              disabled={clearMutation.isPending}
+              className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold transition shadow-lg shadow-red-100 flex items-center justify-center gap-2"
             >
-              Clear All
+              {clearMutation.isPending ? <RefreshCw size={20} className="animate-spin" /> : "Remove All"}
+            </button>
+            <button
+              onClick={() => setShowClearModal(false)}
+              className="w-full py-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold transition hover:bg-slate-200"
+            >
+              Cancel
             </button>
           </div>
         </div>
@@ -574,54 +355,49 @@ const Interested = () => {
   // MAIN RENDER
   // ==========================================================================
 
-  if (state.loading) {
-    return renderLoading();
-  }
-
-  if (state.error) {
-    return renderError();
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 p-4">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg max-w-md text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Unable to Load</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">Failed to load your interested hostels.</p>
+          <button onClick={() => queryClient.invalidateQueries({ queryKey: ["interested"] })} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition">Try Again</button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-white p-4 sm:p-6 pb-24">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-            💖 Your Interested Hostels
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {state.hostels.length}{" "}
-            {state.hostels.length === 1 ? "hostel" : "hostels"} saved
+        <div className="mb-8">
+          <h1 className="text-3xl font-black mb-2">💖 Your Favorites</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium font-sm">
+            {isLoading ? "Loading…" : `${hostels.length} ${hostels.length === 1 ? "hostel" : "hostels"} saved`}
           </p>
         </div>
 
-        {/* Empty state */}
-        {state.hostels.length === 0 ? (
-          renderEmpty()
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonHostelCard key={i} />)}
+          </div>
+        ) : hostels.length === 0 ? (
+          <div className="min-h-[50vh] flex flex-col items-center justify-center text-center">
+            <Heart className="w-20 h-20 text-slate-200 dark:text-slate-700 mb-6" />
+            <h2 className="text-2xl font-bold mb-2">No Favorites Yet</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm">Explore hostels and save them here to compare and book later.</p>
+            <button onClick={() => navigate("/student/hostels")} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-100 transition transform hover:scale-105">Explore Now</button>
+          </div>
         ) : (
           <>
-            {/* Controls */}
             {renderControls()}
-
-            {/* Hostel Grid/List */}
-            <div
-              className={
-                viewMode === VIEW_MODES.GRID
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                  : "space-y-4"
-              }
-            >
-              {sortedHostels.map((hostel) =>
-                viewMode === VIEW_MODES.GRID
-                  ? renderGridCard(hostel)
-                  : renderListCard(hostel),
-              )}
+            <div className={viewMode === VIEW_MODES.GRID ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-4 max-w-4xl"}>
+              {sortedHostels.map((hostel) => viewMode === VIEW_MODES.GRID ? renderGridCard(hostel) : renderListCard(hostel))}
             </div>
           </>
         )}
 
-        {/* Clear all modal */}
         {renderClearModal()}
       </div>
     </div>
@@ -629,41 +405,3 @@ const Interested = () => {
 };
 
 export default Interested;
-
-/**
- * ============================================================================
- * REFACTORING IMPROVEMENTS
- * ============================================================================
- *
- * 1. STATE MANAGEMENT
- *    ✅ Consolidated state object
- *    ✅ Proper loading/error states
- *
- * 2. PERFORMANCE
- *    ✅ Memoized sorted hostels (useMemo)
- *    ✅ useCallback for all handlers
- *    ✅ Lazy loading images
- *    ✅ Optimistic UI updates for remove
- *
- * 3. UX IMPROVEMENTS
- *    ✅ Sort options (date, price, name)
- *    ✅ Grid/list view toggle
- *    ✅ Remove individual hostels
- *    ✅ Clear all with confirmation
- *    ✅ Empty state with CTA
- *    ✅ Loading indicators
- *    ✅ Navigate to details
- *
- * 4. CODE QUALITY
- *    ✅ API + localStorage fallback
- *    ✅ Separated render functions
- *    ✅ Clear organization
- *    ✅ Comprehensive documentation
- *
- * OPTIONAL ENHANCEMENTS:
- * - Add search/filter by location or type
- * - Add export to PDF/email
- * - Add share list functionality
- * - Add comparison mode
- * - Add drag-to-reorder
- */

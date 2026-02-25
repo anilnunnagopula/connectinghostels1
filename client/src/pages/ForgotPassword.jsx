@@ -1,7 +1,7 @@
 // src/pages/ForgotPassword.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api from "../apiConfig";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -11,7 +11,6 @@ const ForgotPassword = () => {
 
   // 🔍 Component lifecycle log
   useEffect(() => {
-    console.log("[ForgotPassword] Component mounted");
   }, []);
 
   const validateEmail = (email) => {
@@ -21,8 +20,6 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("[ForgotPassword] Form submitted");
-    console.log("[ForgotPassword] Email entered:", email);
 
     setMessage({ type: "", text: "" });
 
@@ -40,15 +37,13 @@ const ForgotPassword = () => {
     }
 
     setLoading(true);
-    console.log("[ForgotPassword] Sending forgot-password request...");
 
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/auth/forgot-password`,
+      const response = await api.post(
+        `/api/auth/forgot-password`,
         { email },
       );
 
-      console.log("[ForgotPassword] API success response:", response.data);
 
       setMessage({
         type: "success",
@@ -67,7 +62,6 @@ const ForgotPassword = () => {
       });
     } finally {
       setLoading(false);
-      console.log("[ForgotPassword] Request completed");
     }
   };
 
@@ -106,10 +100,6 @@ const ForgotPassword = () => {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  console.log(
-                    "[ForgotPassword] Email updated:",
-                    e.target.value,
-                  );
                 }}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder="Email address"
@@ -133,7 +123,6 @@ const ForgotPassword = () => {
             </p>
             <button
               onClick={() => {
-                console.log("[ForgotPassword] Resending email triggered");
                 setEmailSent(false);
                 setEmail("");
                 setMessage({ type: "", text: "" });

@@ -7,13 +7,13 @@ const PartnerTerms = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           ConnectingHostels Partner Terms & Conditions
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           These Partner Terms & Conditions ("Terms") constitute a legally
           binding agreement between **ConnectingHostels** ("we," "us," or
           "our"), located in Hyderabad-501506, Telangana, India, and you, the
@@ -21,7 +21,7 @@ const PartnerTerms = () => {
           "your"), regarding your use of the ConnectingHostels platform and
           services (the "Service").
         </p>
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           By registering, listing a hostel, or otherwise using the Service as a
           Partner, you acknowledge that you have read, understood, and agree to
           be bound by these Terms, our main{" "}
@@ -56,7 +56,7 @@ const PartnerTerms = () => {
           to these Terms, you may not use the Service as a Partner.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           1. Eligibility & Account Verification
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -74,7 +74,7 @@ const PartnerTerms = () => {
             </strong>{" "}
             You agree to provide all requested documentation for verification
             purposes, including but not limited to:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>Government-issued ID of the authorized representative.</li>
               <li>
                 Proof of hostel ownership or management authority (e.g.,
@@ -94,10 +94,10 @@ const PartnerTerms = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           2. Listing Requirements & Accuracy
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           As a Partner, you are solely responsible for the accuracy and quality
           of your hostel listings.
         </p>
@@ -107,7 +107,7 @@ const PartnerTerms = () => {
               2.1. Accurate Information:
             </strong>{" "}
             All listings must contain complete and accurate details, including:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>Room types and capacities.</li>
               <li>
                 Current and all-inclusive fees (including any hidden charges, if
@@ -155,10 +155,10 @@ const PartnerTerms = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           3. Booking Management & Student Experience
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Providing a positive experience for students is paramount.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -211,10 +211,10 @@ const PartnerTerms = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           4. Fees, Commissions & Payments
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Your financial obligations for using the ConnectingHostels platform.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -255,10 +255,10 @@ const PartnerTerms = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           5. Data Protection & Privacy
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           You agree to handle student data obtained through the Service with
           utmost care and in compliance with privacy laws.
         </p>
@@ -306,7 +306,7 @@ const PartnerTerms = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           6. Intellectual Property
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -331,10 +331,10 @@ const PartnerTerms = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           7. Indemnification
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           You agree to indemnify, defend, and hold harmless ConnectingHostels,
           its affiliates, officers, directors, employees, and agents from and
           against any and all claims, liabilities, damages, losses, and
@@ -348,10 +348,10 @@ const PartnerTerms = () => {
           compliance with laws.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           8. Limitation of Liability
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           To the maximum extent permitted by applicable law, in no event shall
           ConnectingHostels be liable for any indirect, incidental, special,
           consequential, or punitive damages, including without limitation, loss
@@ -367,7 +367,7 @@ const PartnerTerms = () => {
           such damage.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           9. Suspension & Termination
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -378,7 +378,7 @@ const PartnerTerms = () => {
             We reserve the right, in our sole discretion, to suspend or
             terminate your Partner account and delist your hostel(s)
             immediately, with or without notice, if:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 You violate these Partner Terms, our main Terms & Conditions, or
                 any other policies.
@@ -407,15 +407,15 @@ const PartnerTerms = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           10. Governing Law & Dispute Resolution
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           These Partner Terms shall be governed by and construed in accordance
           with the laws of India, specifically the laws of the State of
           Telangana, without regard to its conflict of law provisions.
         </p>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           Any dispute, controversy, or claim arising out of or relating to these
           Partner Terms or the breach, termination, or invalidity thereof, shall
           be settled by arbitration in Mangalpalle, Telangana, India, in
@@ -424,10 +424,10 @@ const PartnerTerms = () => {
           English.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           11. Changes to These Partner Terms
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We reserve the right to modify or replace these Partner Terms at any
           time. If a revision is material, we will provide at least 30 days'
           notice prior to any new terms taking effect. What constitutes a
@@ -438,10 +438,10 @@ const PartnerTerms = () => {
           Service as a Partner.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           12. Contact Us
         </h2>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           For any questions about these Partner Terms, please contact us:
         </p>
         <p className="mb-2">
@@ -453,12 +453,12 @@ const PartnerTerms = () => {
             anilnunnagopula15@gmail.com
           </a>
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderabad-501506, Telangana, India
         </p>
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July 17, 2025
         </p>
       </div>

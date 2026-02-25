@@ -5,13 +5,13 @@ const TermsAndConditions = () => {
     window.scrollTo(0, 0);
   }, []);
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           ConnectingHostels Terms & Conditions
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           Welcome to <strong>ConnectingHostels!</strong> These Terms and
           Conditions ("Terms") govern your access to and use of the
           ConnectingHostels website, mobile application, and related services
@@ -19,7 +19,7 @@ const TermsAndConditions = () => {
           Company Name/Entity Name] ("we," "us," or "our"), located in
           Mangalpalle, Telangana, India.
         </p>
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           By accessing or using the Service, you signify that you have read,
           understood, and agree to be bound by these Terms, our Privacy Policy,
           and any other guidelines, rules, or policies applicable to specific
@@ -27,7 +27,7 @@ const TermsAndConditions = () => {
           do not agree with any part of these Terms, you must not use the
           Service.
         </p>
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           We reserve the right to modify or discontinue the Service (or any part
           thereof) with or without notice at any time. We also reserve the right
           to update or change these Terms at any time. Your continued use of the
@@ -35,7 +35,7 @@ const TermsAndConditions = () => {
           Terms.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           1. Eligibility and User Accounts
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -70,7 +70,7 @@ const TermsAndConditions = () => {
             <strong className="text-blue-600 dark:text-blue-400">
               1.4. User Roles:
             </strong>
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 <strong>Students:</strong> May create profiles, browse hostel
                 listings, submit booking inquiries/requests, communicate with
@@ -86,7 +86,7 @@ const TermsAndConditions = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           2. Listings, Bookings, and Payments
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -114,7 +114,7 @@ const TermsAndConditions = () => {
             <strong className="text-blue-600 dark:text-blue-400">
               2.3. Fees and Payments:
             </strong>
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 Hostel fees, deposits, and any other charges are determined by
                 the hostel owner.
@@ -162,7 +162,7 @@ const TermsAndConditions = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           3. User Responsibilities and Prohibited Conduct
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -188,7 +188,7 @@ const TermsAndConditions = () => {
               3.3. Prohibited Conduct:
             </strong>{" "}
             You agree not to:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 Post misleading, false, fraudulent, or inaccurate information.
               </li>
@@ -222,7 +222,7 @@ const TermsAndConditions = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           4. Content and Intellectual Property
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -254,7 +254,7 @@ const TermsAndConditions = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           5. Disclaimers and Limitation of Liability
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -304,10 +304,10 @@ const TermsAndConditions = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           6. Account Suspension and Termination
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We may, in our sole discretion, suspend or terminate your account and
           refuse any and all current or future use of the Service for any
           reason, including, without limitation, if we believe that you have
@@ -316,15 +316,15 @@ const TermsAndConditions = () => {
           cease.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           7. Governing Law and Dispute Resolution
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           These Terms shall be governed and construed in accordance with the
           laws of India, specifically the laws of the State of Telangana,
           without regard to its conflict of law provisions.
         </p>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           Any dispute arising out of or in connection with these Terms,
           including any question regarding its existence, validity, or
           termination, shall be referred to and finally resolved by arbitration
@@ -333,10 +333,10 @@ const TermsAndConditions = () => {
           of the arbitration shall be English.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           8. Links to Other Websites
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           Our Service may contain links to third-party websites or services that
           are not owned or controlled by ConnectingHostels. We have no control
           over and assume no responsibility for the content, privacy policies,
@@ -345,10 +345,10 @@ const TermsAndConditions = () => {
           any third-party websites or services that you visit.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           9. Changes to These Terms
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We reserve the right, at our sole discretion, to modify or replace
           these Terms at any time. If a revision is material, we will provide at
           least 30 days' notice prior to any new terms taking effect. What
@@ -359,10 +359,10 @@ const TermsAndConditions = () => {
           Service.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           10. Contact Us
         </h2>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           If you have any questions about these Terms, please contact us:
         </p>
         <p className="mb-2">
@@ -374,12 +374,12 @@ const TermsAndConditions = () => {
             anilnunnagopula15@gmail.com
           </a>
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderbad-501506, Telanagana, India
         </p> 
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July , 2025
         </p>
       </div>

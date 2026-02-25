@@ -1,7 +1,7 @@
 const Complaint = require("../models/Complaint");
 const Student = require("../models/Student");
 const Hostel = require("../models/Hostel");
-const mongoose = require("mongoose");
+const logger = require("../middleware/logger");
 
 // ============================================================================
 // STUDENT ACTIONS
@@ -16,15 +16,6 @@ exports.createComplaint = async (req, res) => {
     const { subject, message, type, room, hostelId } = req.body;
     const userId = req.user.id;
 
-    console.log("📝 Creating complaint:", {
-      userId,
-      subject,
-      type,
-      room,
-      hostelId,
-    });
-
-    // Find student profile
     const student = await Student.findOne({ user: userId });
     if (!student) {
       return res.status(404).json({
@@ -32,29 +23,19 @@ exports.createComplaint = async (req, res) => {
       });
     }
 
-    // Check if student has an active hostel
     if (!student.currentHostel) {
       return res.status(400).json({
         error: "You must be assigned to a hostel to raise complaints.",
       });
     }
 
-    // Use provided hostelId or student's current hostel
     const targetHostelId = hostelId || student.currentHostel;
 
-    // Verify hostel exists
     const hostel = await Hostel.findById(targetHostelId);
     if (!hostel) {
       return res.status(404).json({ error: "Hostel not found." });
     }
 
-    console.log("✅ Hostel found:", {
-      hostelId: hostel._id,
-      ownerId: hostel.ownerId,
-      name: hostel.name,
-    });
-
-    // Handle file attachments
     const attachments = [];
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
@@ -67,7 +48,6 @@ exports.createComplaint = async (req, res) => {
       });
     }
 
-    // Create complaint
     const newComplaint = new Complaint({
       student: student._id,
       hostel: targetHostelId,
@@ -76,14 +56,14 @@ exports.createComplaint = async (req, res) => {
       subject,
       message,
       type,
-      issue: `${subject} - ${message}`, // Backward compatibility
+      issue: `${subject} - ${message}`,
       attachments,
       status: "Pending",
     });
 
     await newComplaint.save();
 
-    console.log("✅ Complaint created:", newComplaint._id);
+    logger.info(`Complaint created: complaintId=${newComplaint._id} studentId=${student._id}`);
 
     res.status(201).json({
       message: "Complaint submitted successfully!",
@@ -96,7 +76,7 @@ exports.createComplaint = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("❌ Error creating complaint:", err);
+    logger.error("Error creating complaint: " + err.message);
     res.status(500).json({
       error: "Failed to submit complaint.",
       details: process.env.NODE_ENV === "development" ? err.message : undefined,
@@ -105,35 +85,40 @@ exports.createComplaint = async (req, res) => {
 };
 
 /**
- * Get student's own complaints
- * @route GET /api/complaints/my-complaints
+ * Get student's own complaints (paginated)
+ * @route GET /api/complaints/my-complaints?page=1&limit=20
  */
 exports.getStudentComplaints = async (req, res) => {
   try {
     const userId = req.user.id;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const skip = (page - 1) * limit;
 
-    console.log("📋 Fetching complaints for user:", userId);
-
-    // Find student profile
     const student = await Student.findOne({ user: userId });
     if (!student) {
       return res.status(404).json({ error: "Student profile not found." });
     }
 
-    // Get all complaints for this student
-    const complaints = await Complaint.find({ student: student._id })
-      .populate("hostel", "name location")
-      .populate("owner", "name email")
-      .sort({ createdAt: -1 });
+    const filter = { student: student._id };
 
-    console.log("📦 Found complaints:", complaints.length);
+    const [complaints, total] = await Promise.all([
+      Complaint.find(filter)
+        .populate("hostel", "name location")
+        .populate("owner", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Complaint.countDocuments(filter),
+    ]);
 
     res.status(200).json({
       complaints,
       count: complaints.length,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (err) {
-    console.error("❌ Error fetching student complaints:", err);
+    logger.error("Error fetching student complaints: " + err.message);
     res.status(500).json({ error: "Failed to fetch complaints." });
   }
 };
@@ -143,30 +128,86 @@ exports.getStudentComplaints = async (req, res) => {
 // ============================================================================
 
 /**
- * Get all complaints for owner's hostels
- * @route GET /api/complaints/mine
+ * Get all complaints for owner's hostels (paginated)
+ * @route GET /api/complaints/mine?page=1&limit=20
  */
 exports.getOwnerComplaints = async (req, res) => {
   try {
     const ownerId = req.user.id;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const skip = (page - 1) * limit;
 
-    console.log("📋 Fetching complaints for owner:", ownerId);
+    const filter = { owner: ownerId };
 
-    // Get all complaints where the owner matches
-    const complaints = await Complaint.find({ owner: ownerId })
-      .populate("student", "name email phone")
-      .populate("hostel", "name location")
-      .sort({ createdAt: -1 });
-
-    console.log("📦 Found owner complaints:", complaints.length);
+    const [complaints, total] = await Promise.all([
+      Complaint.find(filter)
+        .populate("student", "name email phone")
+        .populate("hostel", "name location")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Complaint.countDocuments(filter),
+    ]);
 
     res.status(200).json({
       complaints,
       count: complaints.length,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (err) {
-    console.error("❌ Error fetching owner complaints:", err);
+    logger.error("Error fetching owner complaints: " + err.message);
     res.status(500).json({ error: "Failed to fetch complaints." });
+  }
+};
+
+/**
+ * Update complaint status (Owner)
+ * @route PUT /api/complaints/:complaintId/status
+ */
+exports.updateComplaintStatus = async (req, res) => {
+  try {
+    const { complaintId } = req.params;
+    const { status } = req.body;
+    const ownerId = req.user.id;
+
+    const allowed = ["Pending", "In Progress", "Resolved"];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${allowed.join(", ")}` });
+    }
+
+    const complaint = await Complaint.findOne({ _id: complaintId, owner: ownerId })
+      .populate("student", "user");
+
+    if (!complaint) {
+      return res.status(404).json({ error: "Complaint not found or unauthorized." });
+    }
+
+    complaint.status = status;
+    await complaint.save();
+
+    logger.info(`Complaint status updated: complaintId=${complaintId} status=${status}`);
+
+    // Notify the student in real-time (non-blocking)
+    try {
+      const studentUserId = complaint.student?.user;
+      if (studentUserId) {
+        req.app?.locals?.io
+          ?.to(`user:${studentUserId}`)
+          .emit("complaint:updated", {
+            complaintId: complaint._id,
+            subject: complaint.subject,
+            status,
+          });
+      }
+    } catch (emitErr) {
+      logger.warn("Failed to emit complaint:updated: " + emitErr.message);
+    }
+
+    res.status(200).json({ message: "Complaint status updated.", status });
+  } catch (err) {
+    logger.error("Error updating complaint status: " + err.message);
+    res.status(500).json({ error: "Failed to update complaint status." });
   }
 };
 
@@ -179,13 +220,10 @@ exports.deleteComplaint = async (req, res) => {
     const { complaintId } = req.params;
     const ownerId = req.user.id;
 
-    console.log("🗑️ Deleting complaint:", { complaintId, ownerId });
-
-    // Find and verify ownership
     const complaint = await Complaint.findOne({
       _id: complaintId,
       owner: ownerId,
-    });
+    }).populate("student", "user");
 
     if (!complaint) {
       return res.status(404).json({
@@ -193,16 +231,31 @@ exports.deleteComplaint = async (req, res) => {
       });
     }
 
-    // Delete the complaint
+    // Notify student the complaint was resolved before deleting
+    try {
+      const studentUserId = complaint.student?.user;
+      if (studentUserId) {
+        req.app?.locals?.io
+          ?.to(`user:${studentUserId}`)
+          .emit("complaint:updated", {
+            complaintId: complaint._id,
+            subject: complaint.subject,
+            status: "Resolved",
+          });
+      }
+    } catch (emitErr) {
+      logger.warn("Failed to emit complaint:updated on delete: " + emitErr.message);
+    }
+
     await Complaint.findByIdAndDelete(complaintId);
 
-    console.log("✅ Complaint deleted successfully");
+    logger.info(`Complaint deleted: complaintId=${complaintId}`);
 
     res.status(200).json({
       message: "Complaint resolved and deleted successfully.",
     });
   } catch (err) {
-    console.error("❌ Error deleting complaint:", err);
+    logger.error("Error deleting complaint: " + err.message);
     res.status(500).json({ error: "Failed to delete complaint." });
   }
 };

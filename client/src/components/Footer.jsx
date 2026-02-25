@@ -1,276 +1,329 @@
 import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
-  FaFacebookF,
+  MapPin,
+  Mail,
+  Phone,
+  ChevronRight,
+  Building2,
+  GraduationCap,
+  ShieldCheck,
+  MessageCircle,
+} from "lucide-react";
+import {
   FaInstagram,
   FaTwitter,
-  FaLinkedin,
-  FaGooglePlay,
-  FaApple,
+  FaLinkedinIn,
+  FaFacebookF,
+  FaWhatsapp,
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+
+const HIDDEN_PATHS = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+];
+
+const SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  name: "ConnectingHostels",
+  url: "https://connectinghostels1.netlify.app",
+  logo: "https://connectinghostels1.netlify.app/Hostel.jpg",
+  description:
+    "Find verified hostels & PG accommodations near CVR College, Mangalpally, Hyderabad, Telangana.",
+  telephone: "+91-93988-28248",
+  email: "anilnunnagopula15@gmail.com",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "CVR College Road",
+    addressLocality: "Mangalpally",
+    addressRegion: "Telangana",
+    postalCode: "501301",
+    addressCountry: "IN",
+  },
+  areaServed: ["Mangalpally", "Ibrahimpatnam", "Sheriguda", "Hyderabad"],
+  priceRange: "₹₹",
+  openingHours: "Mo-Su 09:00-21:00",
+};
 
 const Footer = () => {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const navigate = useNavigate();
-
   const isLoggedIn = !!user;
   const userRole = user?.role;
 
-  // ❌ Hide on auth pages and all dashboard pages
-  const hiddenRoutes = [
-    "/login",
-    "/register",
-    "/forgot-password",
-    "/reset-password",
-  ];
-
-  // // Hide footer on both owner and student dashboard pages
-  // const isOwnerPage = pathname.startsWith("/owner");
-  // const isStudentDashboard = pathname.startsWith("/student");
-
-  // if (hiddenRoutes.includes(pathname) || isOwnerPage || isStudentDashboard) {
-  //   return null;
-  // }
-  if (hiddenRoutes.includes(pathname)) {
-    return null;
-  }
-
-  // Smart navigation handlers
-  const handleDashboardClick = (e) => {
-    e.preventDefault();
-    if (!isLoggedIn) {
-      navigate("/login");
-    } else if (userRole === "student") {
-      navigate("/student-dashboard");
-    } else if (userRole === "owner") {
-      navigate("/owner-dashboard");
-    } else {
-      navigate("/");
-    }
-  };
-
-  const handleHomeClick = (e) => {
-    e.preventDefault();
-    if (!isLoggedIn) {
-      navigate("/");
-    } else if (userRole === "student") {
-      navigate("/student-dashboard");
-    } else if (userRole === "owner") {
-      navigate("/owner-dashboard");
-    } else {
-      navigate("/");
-    }
-  };
+  if (HIDDEN_PATHS.some((p) => pathname.startsWith(p))) return null;
 
   return (
-    <footer className="bg-blue-950 text-gray-300 pt-5 pb-6 px-4 sm:px-10 lg:px-20 border-t border-blue-800 mt-10">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-        {/* 🧱 Brand Overview */}
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-3">
-            ConnectingHostels
-          </h2>
-          <p className="text-sm leading-6">
-            The platform for searching the hostel in Mangalpally.
-          </p>
-          <div className="flex gap-4 mt-4">
-            <a
-              href="#"
-              className="text-white text-lg hover:text-gray-300 transition-colors"
-              aria-label="Download on Google Play"
-            >
-              <FaGooglePlay />
-            </a>
-            <a
-              href="#"
-              className="text-white text-lg hover:text-gray-300 transition-colors"
-              aria-label="Download on App Store"
-            >
-              <FaApple />
-            </a>
-          </div>
-        </div>
+    <footer
+      className="bg-slate-900 text-slate-300"
+      aria-label="Site footer"
+    >
+      {/* JSON-LD structured data — RealEstateAgent schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA) }}
+      />
 
-        {/* 📌 Quick Navigation - Context-Aware */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4 sm:ml-20">
-            Quick Links
-          </h3>
-          <ul className="space-y-2 text-sm sm:ml-20">
-            <li>
-              <button
-                onClick={handleHomeClick}
-                className="hover:text-white transition-colors text-left"
-              >
-                🏠 Home
-              </button>
-            </li>
-            <li>
-              <Link to="/about" className="hover:text-white transition-colors">
-                ℹ️ About Us
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/contact"
-                className="hover:text-white transition-colors"
-              >
-                📞 Contact
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={handleDashboardClick}
-                className="hover:text-white transition-colors text-left"
-              >
-                📊 {isLoggedIn ? "Dashboard" : "Login"}
-              </button>
-            </li>
+      {/* ── Main content ───────────────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
 
-            {/* Show role-specific links if logged in */}
-            {isLoggedIn && userRole === "student" && (
-              <li>
-                <Link
-                  to="/student/hostels"
-                  className="hover:text-white transition-colors"
-                >
-                  🏢 Browse Hostels
-                </Link>
-              </li>
-            )}
-          </ul>
-        </div>
-
-        {/* 📞 Contact + Social */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Get in Touch
-          </h3>
-          <div className="text-sm mb-3 space-y-1">
-            <a
-              href="https://www.google.com/maps/search/?api=1&query=CVR+College+Road,+Mangalpally,+Hyderabad,+Telangana"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block hover:text-white transition-colors"
+          {/* Column 1 — Brand ──────────────────────────────────── */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <Link
+              to="/"
+              aria-label="ConnectingHostels Home"
+              className="inline-flex items-center gap-2 mb-4 group"
             >
-              📍 CVR College Road, Mangalpally, Hyderabad, Telangana
-            </a>
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600 text-white text-[11px] font-black select-none">
+                CH
+              </span>
+              <span className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                ConnectingHostels
+              </span>
+            </Link>
 
-            <a
-              href="mailto:anilnunnagopula15@gmail.com"
-              className="block hover:text-white transition-colors"
-            >
-              📧 anilnunnagopula15@gmail.com
-            </a>
+            <p className="text-sm leading-relaxed text-slate-400 mb-6 max-w-xs">
+              The fastest way to find verified hostels &amp; PG rooms near CVR
+              College, Mangalpally, Hyderabad. Trusted by 400+ students across
+              Telangana.
+            </p>
 
-            <a
-              href="tel:+919398828248"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block hover:text-white transition-colors"
-            >
-              📞 +91 93988 28248
-            </a>
+            {/* Social links — real <a> tags for SEO */}
+            <div className="flex items-center gap-2">
+              <SocialLink
+                href="https://instagram.com"
+                label="Follow ConnectingHostels on Instagram"
+                icon={FaInstagram}
+                hover="hover:bg-pink-600"
+              />
+              <SocialLink
+                href="https://twitter.com"
+                label="Follow ConnectingHostels on Twitter"
+                icon={FaTwitter}
+                hover="hover:bg-sky-500"
+              />
+              <SocialLink
+                href="https://linkedin.com"
+                label="ConnectingHostels on LinkedIn"
+                icon={FaLinkedinIn}
+                hover="hover:bg-blue-600"
+              />
+              <SocialLink
+                href="https://facebook.com"
+                label="ConnectingHostels on Facebook"
+                icon={FaFacebookF}
+                hover="hover:bg-blue-700"
+              />
+              <SocialLink
+                href="https://wa.me/919398828248"
+                label="Chat on WhatsApp"
+                icon={FaWhatsapp}
+                hover="hover:bg-green-600"
+              />
+            </div>
           </div>
 
-          <div className="flex gap-3 text-lg mt-2">
-            <a
-              href="#"
-              className="hover:text-blue-300 transition-colors"
-              aria-label="Facebook"
+          {/* Column 2 — For Students ───────────────────────────── */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 flex items-center gap-2">
+              <GraduationCap size={14} className="text-blue-400" />
+              For Students
+            </h3>
+            <nav aria-label="Student links">
+              <ul className="space-y-2.5">
+                <FooterLink to="/student/hostels">Browse Hostels</FooterLink>
+                {isLoggedIn && userRole === "student" ? (
+                  <>
+                    <FooterLink to="/student-dashboard">My Dashboard</FooterLink>
+                    <FooterLink to="/student/my-bookings">My Bookings</FooterLink>
+                    <FooterLink to="/student/my-hostel">My Hostel</FooterLink>
+                    <FooterLink to="/student/interested">Saved Hostels</FooterLink>
+                    <FooterLink to="/student/raise-complaint">Raise Complaint</FooterLink>
+                  </>
+                ) : (
+                  <>
+                    <FooterLink to="/register">Create Account</FooterLink>
+                    <FooterLink to="/login">Sign In</FooterLink>
+                    <FooterLink to="/about">How It Works</FooterLink>
+                  </>
+                )}
+              </ul>
+            </nav>
+          </div>
+
+          {/* Column 3 — For Owners ─────────────────────────────── */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 flex items-center gap-2">
+              <Building2 size={14} className="text-blue-400" />
+              For Owners
+            </h3>
+            <nav aria-label="Owner links">
+              <ul className="space-y-2.5">
+                {isLoggedIn && userRole === "owner" ? (
+                  <>
+                    <FooterLink to="/owner-dashboard">My Dashboard</FooterLink>
+                    <FooterLink to="/owner/my-hostels">My Hostels</FooterLink>
+                    <FooterLink to="/owner/add-hostel">Add Hostel</FooterLink>
+                    <FooterLink to="/owner/view-requests">Booking Requests</FooterLink>
+                    <FooterLink to="/owner/my-students">My Students</FooterLink>
+                  </>
+                ) : (
+                  <>
+                    <FooterLink to="/register">List Your Hostel</FooterLink>
+                    <FooterLink to="/login">Owner Login</FooterLink>
+                    <FooterLink to="/about">How It Works</FooterLink>
+                  </>
+                )}
+                <FooterLink to="/legal/partner-terms">Partner Terms</FooterLink>
+                <FooterLink to="/support">Support Center</FooterLink>
+              </ul>
+            </nav>
+          </div>
+
+          {/* Column 4 — Contact ────────────────────────────────── */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5 flex items-center gap-2">
+              <ShieldCheck size={14} className="text-blue-400" />
+              Get in Touch
+            </h3>
+
+            <address className="not-italic space-y-3 text-sm text-slate-400">
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=CVR+College+Road,+Mangalpally,+Hyderabad,+Telangana"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-2.5 hover:text-white transition-colors group"
+              >
+                <MapPin
+                  size={14}
+                  className="shrink-0 mt-0.5 text-blue-400 group-hover:text-blue-300"
+                />
+                <span>
+                  CVR College Road, Mangalpally,
+                  <br />
+                  Hyderabad, Telangana — 501301
+                </span>
+              </a>
+
+              <a
+                href="mailto:anilnunnagopula15@gmail.com"
+                className="flex items-center gap-2.5 hover:text-white transition-colors group"
+              >
+                <Mail
+                  size={14}
+                  className="shrink-0 text-blue-400 group-hover:text-blue-300"
+                />
+                anilnunnagopula15@gmail.com
+              </a>
+
+              <a
+                href="tel:+919398828248"
+                className="flex items-center gap-2.5 hover:text-white transition-colors group"
+              >
+                <Phone
+                  size={14}
+                  className="shrink-0 text-blue-400 group-hover:text-blue-300"
+                />
+                +91 93988 28248
+              </a>
+
+              <a
+                href="https://wa.me/919398828248"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 hover:text-white transition-colors group"
+              >
+                <MessageCircle
+                  size={14}
+                  className="shrink-0 text-green-500 group-hover:text-green-400"
+                />
+                WhatsApp us
+              </a>
+            </address>
+
+            <Link
+              to="/contact"
+              className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
-              <FaFacebookF />
-            </a>
-            <a
-              href="#"
-              className="hover:text-pink-400 transition-colors"
-              aria-label="Instagram"
-            >
-              <FaInstagram />
-            </a>
-            <a
-              href="#"
-              className="hover:text-blue-400 transition-colors"
-              aria-label="Twitter"
-            >
-              <FaTwitter />
-            </a>
-            <a
-              href="#"
-              className="hover:text-blue-500 transition-colors"
-              aria-label="LinkedIn"
-            >
-              <FaLinkedin />
-            </a>
+              Send a Message
+              <ChevronRight size={14} />
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* 🧾 Legal Row */}
-      <div className="mt-10 border-t border-blue-800 pt-6 text-sm text-center text-gray-400">
-        <p>
-          &copy; {new Date().getFullYear()}{" "}
-          <span className="text-white font-semibold">ConnectingHostels</span>.
-          All rights reserved.
-        </p>
-        <div className="mt-2 flex flex-wrap justify-center gap-4">
-          <Link
-            to="/legal/privacy-policy"
-            className="hover:text-white transition-colors"
+      {/* ── Bottom strip ───────────────────────────────────────── */}
+      <div className="border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-slate-500 text-center sm:text-left">
+            &copy; {new Date().getFullYear()}{" "}
+            <Link
+              to="/"
+              className="text-slate-300 font-semibold hover:text-white transition-colors"
+            >
+              ConnectingHostels
+            </Link>
+            . All rights reserved. Made with ♥ in Hyderabad, India.
+          </p>
+
+          <nav
+            aria-label="Legal links"
+            className="flex flex-wrap justify-center gap-x-4 gap-y-1.5"
           >
-            Privacy Policy
-          </Link>
-          <Link
-            to="/legal/terms-and-conditions"
-            className="hover:text-white transition-colors"
-          >
-            Terms & Conditions
-          </Link>
-          <Link
-            to="/legal/cookie-policy"
-            className="hover:text-white transition-colors"
-          >
-            Cookies
-          </Link>
-          <Link
-            to="/legal/refund-policy"
-            className="hover:text-white transition-colors"
-          >
-            Refund Policy
-          </Link>
-          <Link
-            to="/legal/community-guidelines"
-            className="hover:text-white transition-colors"
-          >
-            Community Guidelines
-          </Link>
-          <Link
-            to="/legal/partner-terms"
-            className="hover:text-white transition-colors"
-          >
-            Partner Terms
-          </Link>
-          <Link
-            to="/legal/data-protection"
-            className="hover:text-white transition-colors"
-          >
-            Data Protection
-          </Link>
-          <Link
-            to="/legal/transparency"
-            className="hover:text-white transition-colors"
-          >
-            Transparency
-          </Link>
-          <Link to="/support" className="hover:text-white transition-colors">
-            Support
-          </Link>
+            {[
+              ["/legal/privacy-policy", "Privacy Policy"],
+              ["/legal/terms-and-conditions", "Terms of Service"],
+              ["/legal/cookie-policy", "Cookies"],
+              ["/legal/refund-policy", "Refund Policy"],
+              ["/support", "Support"],
+            ].map(([to, label]) => (
+              <Link
+                key={to}
+                to={to}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
       </div>
     </footer>
   );
 };
+
+// ── Sub-components ──────────────────────────────────────────────────────────
+
+const FooterLink = ({ to, children }) => (
+  <li>
+    <Link
+      to={to}
+      className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors group"
+    >
+      <ChevronRight
+        size={11}
+        className="text-blue-500/50 group-hover:text-blue-400 transition-colors shrink-0"
+      />
+      {children}
+    </Link>
+  </li>
+);
+
+const SocialLink = ({ href, label, icon: Icon, hover }) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label={label}
+    className={`w-8 h-8 rounded-full bg-slate-800 ${hover} inline-flex items-center justify-center text-slate-300 hover:text-white transition-colors`}
+  >
+    <Icon size={14} />
+  </a>
+);
 
 export default Footer;

@@ -5,13 +5,13 @@ const CookiePolicy = () => {
     window.scrollTo(0, 0);
   }, []);
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           ConnectingHostels Cookie Policy
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           This Cookie Policy ("Policy") explains how{" "}
           <strong>ConnectingHostels</strong>
           ("we," "us," or "our") uses cookies and similar technologies (like web
@@ -19,16 +19,16 @@ const CookiePolicy = () => {
           our mobile application, or interact with our online services
           (collectively, the "Service").
         </p>
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           By continuing to use our Service, you consent to the use of cookies as
           described in this Policy. You have the right to withdraw your consent
           at any time.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           1. What Are Cookies?
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           Cookies are small text files that are placed on your computer or
           mobile device when you visit a website. They are widely used to make
           websites work more efficiently, as well as to provide reporting
@@ -54,10 +54,10 @@ const CookiePolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           2. How We Use Cookies
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We use cookies for several reasons, including:
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -105,7 +105,7 @@ const CookiePolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           3. Types of Cookies We Use
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -162,10 +162,10 @@ const CookiePolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           4. Third-Party Cookies
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           In addition to our own cookies, we may also use various third-party
           cookies to report usage statistics of the Service, deliver
           advertisements on and through the Service, and so on. These third
@@ -202,10 +202,10 @@ const CookiePolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           5. Your Choices and Managing Cookies
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           You have the ability to accept or decline cookies. Most web browsers
           automatically accept cookies, but you can usually modify your browser
           setting to decline cookies if you prefer.
@@ -240,10 +240,10 @@ const CookiePolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           6. Changes to This Cookie Policy
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We may update our Cookie Policy from time to time. We will notify you
           of any changes by posting the new Cookie Policy on this page and
           updating the "Last updated" date. We will also inform you via email or
@@ -252,10 +252,10 @@ const CookiePolicy = () => {
           Cookie Policy periodically for any changes.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           7. Contact Us
         </h2>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           If you have any questions about this Cookie Policy, please contact us:
         </p>
         <p className="mb-2">
@@ -267,12 +267,12 @@ const CookiePolicy = () => {
             anilnunnagopula15@gmail.com
           </a>
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderbad-501506, Telanagana, India
         </p>
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July , 2025
         </p>
       </div>

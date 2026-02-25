@@ -7,13 +7,13 @@ const DataProtection = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           ConnectingHostels Data Protection Policy
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           At <strong>ConnectingHostels</strong>, we are deeply committed to
           safeguarding the privacy and personal data of all our users – both
           students and hostel owners. This Data Protection Policy ("Policy")
@@ -24,7 +24,7 @@ const DataProtection = () => {
           </strong>
           , and global best practices for data privacy.
         </p>
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           By using our Service, you agree to the terms of this Policy. This
           Policy is incorporated into and forms part of our{" "}
           <a
@@ -36,10 +36,10 @@ const DataProtection = () => {
           .
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           1. What is Personal Data?
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           As per the DPDP Act, "personal data" means any data about an
           individual who is identifiable by or in relation to such data. This
           includes, but is not limited to:
@@ -96,10 +96,10 @@ const DataProtection = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           2. Principles of Data Processing
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Our data processing activities are governed by the following
           principles in accordance with the DPDP Act, 2023:
         </p>
@@ -154,10 +154,10 @@ const DataProtection = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           3. How We Collect Data & Consent
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We collect personal data through various means, primarily with your
           explicit consent:
         </p>
@@ -166,7 +166,7 @@ const DataProtection = () => {
             <strong className="text-blue-600 dark:text-blue-400">
               3.1. Direct Collection:
             </strong>
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 When you register and create an account as a student or hostel
                 owner.
@@ -188,7 +188,7 @@ const DataProtection = () => {
             <strong className="text-blue-600 dark:text-blue-400">
               3.2. Automated Collection:
             </strong>
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 Device and usage data (IP address, browser type, operating
                 system) via cookies and similar technologies (please refer to
@@ -214,7 +214,7 @@ const DataProtection = () => {
             We obtain your consent before collecting and processing your
             personal data, especially for purposes that are not strictly
             necessary for the provision of the Service. You provide consent by:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 Ticking an "I agree" box during registration or a specific
                 feature activation.
@@ -229,10 +229,10 @@ const DataProtection = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           4. How We Use Your Data
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We use your personal data strictly for the purposes for which it was
           collected, including:
         </p>
@@ -283,10 +283,10 @@ const DataProtection = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           5. Data Principal Rights (Your Rights)
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Under the DPDP Act, 2023, you, as a Data Principal, have significant
           rights concerning your personal data:
         </p>
@@ -335,17 +335,17 @@ const DataProtection = () => {
             based on consent before its withdrawal.
           </li>
         </ul>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           To exercise any of these rights, please contact our Data Protection
           Officer (Grievance Officer) as detailed in Section 8. We will respond
           to your request in accordance with the DPDP Act and other applicable
           laws.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           6. Data Disclosure & Sharing
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We treat your personal data with utmost confidentiality. We do
           <strong> not </strong> sell your personal data. We only disclose or
           share it under specific circumstances:
@@ -367,7 +367,7 @@ const DataProtection = () => {
             We engage trusted third-party service providers (Data Processors) to
             perform functions on our behalf and help us operate our Service.
             These include:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 <strong>Cloud Hosting:</strong> Google Cloud Platform (Firebase
                 for Auth, Firestore, Storage).
@@ -410,7 +410,7 @@ const DataProtection = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           7. Data Security & Retention
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -421,7 +421,7 @@ const DataProtection = () => {
             We implement robust technical and organizational security measures
             to protect your personal data from unauthorized access, alteration,
             disclosure, or destruction. This includes:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 Encryption of data in transit and at rest (where feasible).
               </li>
@@ -452,14 +452,14 @@ const DataProtection = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           8. Grievance Redressal & Data Protection Officer
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           In accordance with the DPDP Act, we have appointed a Grievance Officer
           to address any concerns or requests regarding your personal data.
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           If you have any questions, concerns, or wish to exercise your rights
           under this Policy or the DPDP Act, please contact our Grievance
           Officer:
@@ -479,19 +479,19 @@ const DataProtection = () => {
             anilnunnagopula15@gmail.com
           </a>
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderabad-501506, Telangana, India
         </p>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We will endeavor to resolve your concerns in a timely and effective
           manner, as stipulated by the DPDP Act.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           9. Children's Data
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           Our Service is not directed to individuals under the age of 18. We do
           not knowingly collect personal data from children. If we become aware
           that we have collected personal data from a child without parental
@@ -499,10 +499,10 @@ const DataProtection = () => {
           possible.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           10. Changes to This Data Protection Policy
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We may update this Data Protection Policy from time to time to reflect
           changes in our practices or legal requirements. We will notify you of
           any material changes by posting the new Policy on this page and
@@ -510,7 +510,7 @@ const DataProtection = () => {
           Policy periodically.
         </p> 
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July 17, 2025
         </p>
       </div>

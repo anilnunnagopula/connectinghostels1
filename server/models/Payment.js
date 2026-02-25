@@ -15,7 +15,6 @@ const paymentSchema = new mongoose.Schema(
     hostel: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hostel",
-      required: true,
     },
     amount: {
       type: Number,
@@ -51,5 +50,7 @@ const paymentSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+paymentSchema.index({ student: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Payment", paymentSchema);

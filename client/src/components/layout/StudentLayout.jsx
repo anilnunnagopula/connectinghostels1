@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSocket } from "../../context/SocketContext";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
@@ -23,6 +25,7 @@ const StudentLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { unreadCount } = useSocket();
 
   // Get user info from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -125,7 +128,7 @@ const StudentLayout = ({ children }) => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="relative min-h-screen bg-gray-50 dark:bg-slate-900">
       {/* Overlay for mobile sidebar */}
       {sidebarOpen && (
         <div
@@ -136,13 +139,13 @@ const StudentLayout = ({ children }) => {
 
       {/* Sidebar - Only visible when menu is opened on mobile */}
       <aside
-        className={`fixed left-0 top-0 z-50 h-full w-72 transform border-r border-gray-200 bg-white transition-transform duration-300 dark:border-gray-800 dark:bg-gray-900 ${
+        className={`fixed left-0 top-0 z-50 h-full w-72 transform border-r border-gray-200 bg-white transition-transform duration-300 dark:border-slate-800 dark:bg-slate-900 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-800">
+          <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
                 <Building2 className="h-5 w-5 text-white" />
@@ -151,21 +154,21 @@ const StudentLayout = ({ children }) => {
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                   ConnectingHostels
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gray-500 dark:text-slate-400">
                   Student Portal
                 </p>
               </div>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-slate-800"
             >
               <X size={20} />
             </button>
           </div>
 
           {/* User Profile */}
-          <div className="border-b border-gray-200 p-4 dark:border-gray-800">
+          <div className="border-b border-gray-200 p-4 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-purple-100 text-blue-600 dark:from-blue-900 dark:to-purple-900 dark:text-blue-400">
                 <User size={20} />
@@ -174,7 +177,7 @@ const StudentLayout = ({ children }) => {
                 <p className="truncate font-semibold text-gray-900 dark:text-white">
                   {studentName}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-gray-500 dark:text-slate-400">
                   Student Account
                 </p>
               </div>
@@ -186,7 +189,7 @@ const StudentLayout = ({ children }) => {
             <div className="space-y-6">
               {menuItems.map((section, idx) => (
                 <div key={idx}>
-                  <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                     {section.section}
                   </h3>
                   <div className="space-y-1">
@@ -201,11 +204,16 @@ const StudentLayout = ({ children }) => {
                           className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                             active
                               ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
-                              : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                              : "text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                           }`}
                         >
                           <Icon size={18} />
                           <span className="flex-1">{item.label}</span>
+                          {item.path === "/student/notifications" && unreadCount > 0 && (
+                            <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                              {unreadCount > 9 ? "9+" : unreadCount}
+                            </span>
+                          )}
                           {active && <ChevronRight size={16} />}
                         </Link>
                       );
@@ -217,7 +225,7 @@ const StudentLayout = ({ children }) => {
           </nav>
 
           {/* Logout */}
-          <div className="border-t border-gray-200 p-4 dark:border-gray-800">
+          <div className="border-t border-gray-200 p-4 dark:border-slate-800">
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-all hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -229,21 +237,31 @@ const StudentLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Main Content - No left margin since we're using your global navbar */}
+      {/* Main Content */}
       <main className="min-h-screen">
-        <div className="pb-20 lg:pb-0">{children}</div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="pb-20 lg:pb-0"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-        <nav className="border-t border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-900">
+        <nav className="border-t border-gray-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900">
           <div className="grid grid-cols-5 gap-1 px-2 py-2 safe-area-inset-bottom">
             <Link
               to="/student-dashboard"
               className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 transition-all ${
                 isActive("/student-dashboard")
                   ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
-                  : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                  : "text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
               }`}
             >
               <Home size={20} strokeWidth={2.5} />
@@ -255,7 +273,7 @@ const StudentLayout = ({ children }) => {
               className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 transition-all ${
                 isActive("/student/hostels")
                   ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
-                  : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                  : "text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
               }`}
             >
               <Building2 size={20} strokeWidth={2.5} />
@@ -267,7 +285,7 @@ const StudentLayout = ({ children }) => {
               className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 transition-all ${
                 isActive("/student/my-requests")
                   ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
-                  : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                  : "text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
               }`}
             >
               <FileText size={20} strokeWidth={2.5} />
@@ -279,7 +297,7 @@ const StudentLayout = ({ children }) => {
               className={`flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 transition-all ${
                 isActive("/student/interested")
                   ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md"
-                  : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                  : "text-gray-600 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
               }`}
             >
               <Heart size={20} strokeWidth={2.5} />
@@ -288,7 +306,7 @@ const StudentLayout = ({ children }) => {
 
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-gray-600 transition-all hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+              className="flex flex-col items-center justify-center gap-1 rounded-lg px-2 py-2.5 text-gray-600 transition-all hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
             >
               <Menu size={20} strokeWidth={2.5} />
               <span className="text-[10px] font-semibold">More</span>

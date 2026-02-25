@@ -40,7 +40,7 @@ const LoginPrompt = ({
 
         {/* Body */}
         <div className="p-6 space-y-4">
-          <p className="text-gray-700 dark:text-gray-300 text-center text-lg">
+          <p className="text-gray-700 dark:text-slate-300 text-center text-lg">
             {message}
           </p>
 
@@ -60,7 +60,7 @@ const LoginPrompt = ({
             </button>
             <button
               onClick={onClose}
-              className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-all"
+              className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-all"
             >
               Continue Browsing
             </button>

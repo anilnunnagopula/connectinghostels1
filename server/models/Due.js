@@ -14,6 +14,12 @@ const dueSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     title: {
       type: String, // e.g., "Rent - August 2025"
       required: true,
@@ -59,6 +65,10 @@ const dueSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+dueSchema.index({ student: 1, status: 1 });
+dueSchema.index({ owner: 1, createdAt: -1 });
+dueSchema.index({ dueDate: 1, status: 1 });
 
 // Virtual for total payable amount (amount + fine)
 dueSchema.virtual('totalAmount').get(function() {

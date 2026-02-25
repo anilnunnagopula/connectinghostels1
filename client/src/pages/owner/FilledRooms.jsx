@@ -1,339 +1,205 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-  CheckCircle,
-  Home,
-  BedDouble,
-  Search,
-  RefreshCw,
-  Loader2,
-  Users,
-} from "lucide-react";
-import { motion } from "framer-motion";
+/**
+ * FilledRooms.jsx - Premium Occupancy Ledger
+ * 
+ * Migration Status:
+ * - Migrated to React Query (useOwnerHostels, useOwnerStudents)
+ * - Refined occupancy grouping logic for real-time fleet visibility
+ * - Upgraded UI to professional "Asset Allocation" standard
+ */
+
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import ownerService from "../../services/ownerService";
-import EmptyState from "../../components/dashboard/EmptyState";
+import { 
+  CheckCircle, 
+  Search, 
+  RefreshCw, 
+  Loader2, 
+  Users, 
+  BedDouble, 
+  Building2, 
+  Filter, 
+  ChevronDown,
+  ArrowUpRight,
+  AlertCircle,
+  ShieldCheck
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useOwnerHostels, useOwnerStudents } from "../../hooks/useQueries";
 
 const FilledRooms = () => {
   const navigate = useNavigate();
-  const [hostels, setHostels] = useState([]);
-  const [allStudents, setAllStudents] = useState([]);
   const [selectedHostel, setSelectedHostel] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [error, setError] = useState(null);
 
-  // Fetch all hostels and students
-  const fetchData = useCallback(
-    async (showLoader = true) => {
-      if (showLoader) setLoading(true);
-      else setRefreshing(true);
+  // Queries
+  const { data: hostelsData, isLoading: hostelsLoading } = useOwnerHostels();
+  const hostels = hostelsData?.hostels || [];
+  
+  const { data: studentsData, isLoading: studentsLoading, refetch } = useOwnerStudents();
+  const allStudents = studentsData || [];
 
-      setError(null);
-
-      try {
-        // Use service layer
-        const hostelsData = await ownerService.getMyHostels();
-        setHostels(hostelsData);
-
-        // Set first hostel as default
-        if (hostelsData.length > 0 && !selectedHostel) {
-          setSelectedHostel(hostelsData[0]._id);
-        }
-
-        // Fetch students
-        const studentsData = await ownerService.getMyStudents();
-        setAllStudents(studentsData);
-      } catch (err) {
-        console.error("❌ Error fetching data:", err);
-        setError(err.message || "Failed to fetch data");
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [selectedHostel],
-  );
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Filter students based on the selected hostel
-  const studentsInSelectedHostel = allStudents.filter(
-    (student) => student.hostel?._id === selectedHostel,
-  );
-
-  // Group students by room number
-  const roomsOccupancy = studentsInSelectedHostel.reduce((acc, student) => {
-    const roomKey = `${student.room}`;
-    if (!acc[roomKey]) {
-      acc[roomKey] = {
-        roomNo: student.room,
-        students: [],
-      };
+  // Sync default hostel
+  useMemo(() => {
+    if (hostels.length > 0 && !selectedHostel) {
+      setSelectedHostel(hostels[0]._id);
     }
-    acc[roomKey].students.push({
-      name: student.name,
-      id: student._id,
-    });
-    return acc;
-  }, {});
+  }, [hostels, selectedHostel]);
 
-  // Generate filled rooms list
-  const generateFilledRoomsList = () => {
-    const rooms = [];
+  // Derived: occupancy matrix
+  const matrix = useMemo(() => {
+    const studentsInHostel = allStudents.filter(s => s.hostel?._id === selectedHostel);
+    const rooms = studentsInHostel.reduce((acc, s) => {
+      const roomKey = `${s.room}`;
+      if (!acc[roomKey]) acc[roomKey] = { roomNo: s.room, residents: [] };
+      acc[roomKey].residents.push({ name: s.name, id: s._id, category: s.category });
+      return acc;
+    }, {});
 
-    for (const roomKey in roomsOccupancy) {
-      rooms.push({
-        roomNo: roomKey,
-        students: roomsOccupancy[roomKey].students,
-        occupancy: roomsOccupancy[roomKey].students.length,
-      });
-    }
+    return Object.values(rooms)
+      .sort((a, b) => parseInt(a.roomNo) - parseInt(b.roomNo))
+      .filter(r => 
+        searchQuery === "" || 
+        r.roomNo.toString().includes(searchQuery) || 
+        r.residents.some(res => res.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+  }, [allStudents, selectedHostel, searchQuery]);
 
-    // Sort by room number
-    return rooms.sort((a, b) => parseInt(a.roomNo) - parseInt(b.roomNo));
-  };
+  const stats = useMemo(() => {
+    const studentsInHostel = allStudents.filter(s => s.hostel?._id === selectedHostel);
+    return {
+      totalFilled: matrix.length,
+      totalResidents: studentsInHostel.length
+    };
+  }, [matrix, allStudents, selectedHostel]);
 
-  const filledRooms = generateFilledRoomsList();
-
-  // Search filter
-  const filteredRooms = filledRooms.filter(
-    (room) =>
-      searchQuery === "" ||
-      room.roomNo.toString().includes(searchQuery) ||
-      room.students.some((s) =>
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-  );
-
-  // Get stats
-  const stats = {
-    totalFilled: filledRooms.length,
-    totalStudents: studentsInSelectedHostel.length,
-  };
-
-  // Refresh handler
-  const handleRefresh = () => {
-    fetchData(false);
-  };
-
-  // Loading state
-  if (loading) {
+  if (hostelsLoading || studentsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-lg text-slate-700 dark:text-slate-300">
-            Loading filled rooms...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-        <div className="text-center">
-          <div className="text-6xl mb-4">❌</div>
-          <p className="text-xl text-red-500 mb-4">{error}</p>
-          <button
-            onClick={() => fetchData()}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state - No hostels
-  if (hostels.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
-        <EmptyState
-          icon={<Home className="w-16 h-16 text-slate-400" />}
-          title="No Hostels Yet"
-          message="You need to add a hostel before you can view filled rooms."
-          actionLabel="Add Your First Hostel"
-          onAction={() => navigate("/owner/add-hostel")}
-        />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-            <BedDouble className="text-green-500" />
-            Filled Rooms
-          </h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            View occupied rooms and their occupants
-          </p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-12 pb-32">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 mb-12">
+           <div className="space-y-3">
+              <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">
+                 Occupancy Registry
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm flex items-center gap-2">
+                 <ShieldCheck size={16} className="text-emerald-500" /> Active directory of assigned rooms and residents
+              </p>
+           </div>
+           <div className="flex gap-4">
+              <button 
+                onClick={() => refetch()}
+                className="p-3.5 bg-white dark:bg-slate-900 text-slate-400 hover:text-blue-600 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all"
+              >
+                 <RefreshCw size={20} />
+              </button>
+           </div>
         </div>
 
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="p-2 bg-slate-200 dark:bg-slate-700 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw
-            className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`}
-          />
-        </button>
-      </div>
+        {/* Property & Stats Bar */}
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 mb-10 flex flex-col lg:flex-row gap-8 lg:items-center">
+           <div className="flex-1 space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Select Property</label>
+              <div className="relative group">
+                 <Building2 className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                 <select 
+                   value={selectedHostel} 
+                   onChange={e => setSelectedHostel(e.target.value)}
+                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-emerald-600 rounded-xl pl-12 pr-10 py-3.5 font-bold text-xs uppercase tracking-wide outline-none appearance-none cursor-pointer"
+                 >
+                    {hostels.map(h => <option key={h._id} value={h._id}>{h.name}</option>)}
+                 </select>
+                 <ChevronDown size={14} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
+           </div>
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-700">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Filled Rooms
-          </p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-            {stats.totalFilled}
-          </p>
+           <div className="flex gap-4">
+              <div className="px-6 py-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-5 min-w-[180px]">
+                 <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl flex items-center justify-center font-bold text-lg">{stats.totalFilled}</div>
+                 <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Filled Units</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Active Count</p>
+                 </div>
+              </div>
+              <div className="px-6 py-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-5 min-w-[180px]">
+                 <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl flex items-center justify-center font-bold text-lg">{stats.totalResidents}</div>
+                 <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Residents</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Total Population</p>
+                 </div>
+              </div>
+           </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-700">
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Total Students
-          </p>
-          <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
-            {stats.totalStudents}
-          </p>
-        </div>
-      </div>
 
-      {/* Filters Bar */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-700 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Hostel Selector */}
-          <div className="flex items-center gap-2">
-            <Home className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-            <select
-              value={selectedHostel}
-              onChange={(e) => setSelectedHostel(e.target.value)}
-              className="flex-1 sm:w-auto px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-            >
-              {hostels.map((hostel) => (
-                <option key={hostel._id} value={hostel._id}>
-                  {hostel.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by room number or student name..."
+        {/* Search */}
+        <div className="mb-10 relative max-w-xl">
+           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+           <input 
+              type="text" 
+              placeholder="Search by room or resident..." 
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
-            />
-          </div>
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-emerald-600 rounded-xl pl-14 pr-8 py-3.5 font-bold text-xs uppercase tracking-wider outline-none shadow-sm transition-all"
+           />
         </div>
 
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-3">
-          Showing {filteredRooms.length} of {filledRooms.length} filled rooms
-        </p>
+        {/* Grid Display */}
+        {matrix.length === 0 ? (
+           <div className="py-24 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+              <BedDouble className="mx-auto text-slate-200 dark:text-slate-800 mb-6" size={64} />
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No Occupancy</h2>
+              <p className="text-sm font-medium text-slate-400">The registry for this property is currently vacant.</p>
+           </div>
+        ) : (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {matrix.map((room, i) => (
+                 <motion.div 
+                   key={room.roomNo}
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="group bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-emerald-500/30 transition-all flex flex-col"
+                 >
+                    <div className="flex items-center justify-between mb-8">
+                       <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl flex items-center justify-center text-lg font-bold border border-slate-100 dark:border-slate-700">
+                          {room.roomNo}
+                       </div>
+                       <div className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[9px] font-bold uppercase tracking-wider rounded-lg border border-emerald-500/20 flex items-center gap-1.5">
+                          <CheckCircle size={10} /> Occupied
+                       </div>
+                    </div>
+
+                    <div className="space-y-4 flex-1">
+                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                          <Users size={12} /> Occupants
+                       </p>
+                       <div className="space-y-3">
+                          {room.residents.map(res => (
+                             <div key={res.id} className="flex items-center justify-between">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{res.name}</span>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase">ID:{res.id.slice(-4)}</span>
+                             </div>
+                          ))}
+                       </div>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                       <button className="w-full py-3 bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-emerald-600 rounded-xl text-[9px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all">
+                          Inspect Unit <ArrowUpRight size={12} />
+                       </button>
+                    </div>
+                 </motion.div>
+              ))}
+           </div>
+        )}
       </div>
-
-      {/* Rooms Grid */}
-      {filteredRooms.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center border border-slate-200 dark:border-slate-700">
-          {filledRooms.length === 0 ? (
-            <>
-              <BedDouble className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-lg text-slate-600 dark:text-slate-400">
-                No filled rooms yet
-              </p>
-              <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">
-                Add students to see occupied rooms
-              </p>
-              <button
-                onClick={() => navigate("/owner/add-student")}
-                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
-              >
-                Add Student
-              </button>
-            </>
-          ) : (
-            <>
-              <Search className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-lg text-slate-600 dark:text-slate-400">
-                No rooms match your search
-              </p>
-              <button
-                onClick={() => setSearchQuery("")}
-                className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Clear Search
-              </button>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filteredRooms.map((room, index) => (
-            <motion.div
-              key={`${selectedHostel}-${room.roomNo}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-white dark:bg-slate-800 rounded-xl shadow hover:shadow-xl p-5 transition-all duration-300 border-l-4 border-green-500"
-            >
-              {/* Room Header */}
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
-                  Room {room.roomNo}
-                </h2>
-                <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
-                  <CheckCircle className="w-4 h-4" />
-                  Occupied
-                </span>
-              </div>
-
-              {/* Occupancy Info */}
-              <div className="flex items-center gap-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
-                <Users className="w-4 h-4" />
-                <span>
-                  {room.occupancy}{" "}
-                  {room.occupancy === 1 ? "Student" : "Students"}
-                </span>
-              </div>
-
-              {/* Students List */}
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Occupants:
-                </p>
-                <ul className="space-y-1">
-                  {room.students.map((student, idx) => (
-                    <li
-                      key={student.id}
-                      className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2"
-                    >
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      {student.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

@@ -56,7 +56,7 @@ const PageNotFound = () => {
         </span>
       </h1>
 
-      <p className="mt-4 text-gray-600 dark:text-gray-300 max-w-md">
+      <p className="mt-4 text-gray-600 dark:text-slate-300 max-w-md">
         Either the page doesn’t exist, or it’s still under construction.
       </p>
 

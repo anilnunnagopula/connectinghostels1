@@ -5,9 +5,9 @@
  * Used in HostelDetails.jsx and other components
  */
 
-import axios from "axios";
+import api from "../apiConfig";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const MAX_HISTORY_ITEMS = 50;
 
 /**
@@ -48,10 +48,9 @@ export const addToRecentlyViewed = async (hostel) => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        await axios.post(
-          `${API_BASE_URL}/api/students/recently-viewed`,
+        await api.post(
+          "/api/students/recently-viewed",
           { hostelId: viewedHostel.id, hostel: viewedHostel },
-          { headers: { Authorization: `Bearer ${token}` } },
         );
       } catch (apiError) {
         console.error("Failed to sync view history with API:", apiError);
@@ -127,9 +126,8 @@ export const removeFromRecentlyViewed = async (hostelId) => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        await axios.delete(
-          `${API_BASE_URL}/api/students/recently-viewed/${hostelId}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+        await api.delete(
+          `/api/students/recently-viewed/${hostelId}`,
         );
       } catch (apiError) {
         console.error("Failed to sync removal with API:", apiError);
@@ -157,8 +155,8 @@ export const clearRecentlyViewed = async () => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
-        await axios.delete(`${API_BASE_URL}/api/students/recently-viewed/all`, {
-          headers: { Authorization: `Bearer ${token}` },
+        await api.delete("/api/students/recently-viewed/all", {
+          headers: { },
         });
       } catch (apiError) {
         console.error("Failed to sync clear with API:", apiError);

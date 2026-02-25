@@ -63,6 +63,13 @@ router.get(
   complaintController.getOwnerComplaints,
 );
 
+router.put(
+  "/:complaintId/status",
+  requireAuth,
+  requireOwner,
+  complaintController.updateComplaintStatus,
+);
+
 router.delete(
   "/:complaintId",
   requireAuth,

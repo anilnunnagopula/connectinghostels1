@@ -13,9 +13,9 @@
  * Use: Can be integrated into student dashboard or as standalone page
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import toast from "react-hot-toast";
 import {
   Clock,
   CheckCircle,
@@ -28,14 +28,8 @@ import {
   DoorOpen,
   AlertCircle,
 } from "lucide-react";
+import { useStudentRequests, useCancelRequest } from "../../hooks/useQueries";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
-
-const getToken = () => localStorage.getItem("token");
 
 // Status configuration
 const STATUS_CONFIG = {
@@ -69,46 +63,16 @@ const STATUS_CONFIG = {
 const StudentRequestsStatus = () => {
   const navigate = useNavigate();
 
-  // State
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [studentStatus, setStudentStatus] = useState(null);
-  const [currentHostel, setCurrentHostel] = useState(null);
-  const [cancellingId, setCancellingId] = useState(null);
+  // ── React Query ─────────────────────────────────────────────────────
+  const { data, isLoading: loading } = useStudentRequests();
+  const cancelMutation = useCancelRequest();
+
+  const requests      = data?.requests      || [];
+  const studentStatus = data?.studentStatus || null;
+  const currentHostel = data?.currentHostel || null;
+
+  const [cancellingId,   setCancellingId]   = useState(null);
   const [selectedFilter, setSelectedFilter] = useState("all");
-
-  // ==========================================================================
-  // DATA FETCHING
-  // ==========================================================================
-
-  const fetchRequests = useCallback(async () => {
-    const token = getToken();
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${API_BASE_URL}/api/students/my-requests`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      setRequests(response.data.requests || []);
-      setStudentStatus(response.data.studentStatus);
-      setCurrentHostel(response.data.currentHostel);
-    } catch (err) {
-      console.error("Error fetching requests:", err);
-      alert("Failed to load requests");
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
 
   // ==========================================================================
   // EVENT HANDLERS
@@ -121,26 +85,12 @@ const StudentRequestsStatus = () => {
     if (!window.confirm("Are you sure you want to cancel this request?")) {
       return;
     }
-
-    const token = getToken();
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
     try {
       setCancellingId(requestId);
-
-      await axios.delete(
-        `${API_BASE_URL}/api/students/booking-request/${requestId}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      alert("Request cancelled successfully");
-      fetchRequests(); // Refresh list
+      await cancelMutation.mutateAsync(requestId);
+      toast.success("Request cancelled");
     } catch (err) {
-      console.error("Error cancelling request:", err);
-      alert(err.response?.data?.error || "Failed to cancel request");
+      toast.error(err.response?.data?.error || "Failed to cancel request");
     } finally {
       setCancellingId(null);
     }
@@ -210,10 +160,10 @@ const StudentRequestsStatus = () => {
   const renderEmptyState = () => (
     <div className="text-center py-12">
       <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-300 mb-2">
         No Requests Yet
       </h3>
-      <p className="text-gray-500 dark:text-gray-400 mb-4">
+      <p className="text-gray-500 dark:text-slate-400 mb-4">
         You haven't sent any booking requests yet.
       </p>
       <button
@@ -245,7 +195,7 @@ const StudentRequestsStatus = () => {
             className={`px-4 py-2 rounded-lg font-medium transition whitespace-nowrap ${
               selectedFilter === filter
                 ? "bg-blue-600 text-white"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                : "bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-slate-600"
             }`}
           >
             {filter === "all" ? "All" : filter} ({counts[filter]})
@@ -266,7 +216,7 @@ const StudentRequestsStatus = () => {
     return (
       <div
         key={request._id}
-        className={`bg-white dark:bg-gray-800 border ${statusConfig.borderColor} rounded-lg p-5 shadow-sm hover:shadow-md transition`}
+        className={`bg-white dark:bg-slate-800 border ${statusConfig.borderColor} rounded-lg p-5 shadow-sm hover:shadow-md transition`}
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -274,7 +224,7 @@ const StudentRequestsStatus = () => {
             <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
               {request.hostel?.name || "Hostel"}
             </h3>
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
+            <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400 text-sm">
               <MapPin size={14} />
               <span>{request.hostel?.location || "Location"}</span>
             </div>
@@ -291,13 +241,13 @@ const StudentRequestsStatus = () => {
 
         {/* Details */}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
             <Home size={16} />
             <span className="text-sm">
               Floor: <strong>{request.floor}</strong>
             </span>
           </div>
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
             <DoorOpen size={16} />
             <span className="text-sm">
               Room: <strong>{request.roomNumber}</strong>
@@ -306,7 +256,7 @@ const StudentRequestsStatus = () => {
         </div>
 
         {/* Timestamp */}
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-xs text-gray-500 dark:text-slate-400 mb-4">
           Requested on:{" "}
           {new Date(request.createdAt).toLocaleDateString("en-IN", {
             day: "numeric",
@@ -363,14 +313,14 @@ const StudentRequestsStatus = () => {
   // ==========================================================================
 
   return (
-    <div className="p-6 dark:bg-gray-900 min-h-screen">
+    <div className="p-6 dark:bg-slate-900 min-h-screen">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
             My Booking Requests
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-slate-400">
             Track the status of your hostel booking requests
           </p>
         </div>
@@ -389,7 +339,7 @@ const StudentRequestsStatus = () => {
             {/* Requests List */}
             <div className="space-y-4">
               {filteredRequests.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <div className="text-center py-8 text-gray-500 dark:text-slate-400">
                   No{" "}
                   {selectedFilter === "all" ? "" : selectedFilter.toLowerCase()}{" "}
                   requests found

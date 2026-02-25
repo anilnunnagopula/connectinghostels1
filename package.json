@@ -1,6 +1,19 @@
 {
+  "scripts": {
+    "start:server": "cd server && npm start",
+    "start:client": "cd client && npm start",
+    "dev": "concurrently \"npm run start:server\" \"npm run start:client\"",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "seed:e2e": "node server/scripts/seed-e2e.js"
+  },
   "dependencies": {
     "framer-motion": "^12.23.6",
     "react-hot-toast": "^2.5.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.3.0",
+    "concurrently": "^9.2.1"
   }
 }

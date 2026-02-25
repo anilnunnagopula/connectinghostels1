@@ -1,8 +1,11 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AuthProvider } from "./context/AuthContext";
 import { DarkModeProvider } from "./context/DarkModeContext";
-
+import { SocketProvider } from "./context/SocketContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,6 +39,7 @@ import FilledRooms from "./pages/owner/FilledRooms";
 import MyStudents from "./pages/owner/MyStudents";
 import ViewComplaints from "./pages/owner/ViewComplaints";
 import AvailableRooms from "./pages/owner/AvailableRooms";
+import OwnerProfile from "./pages/owner/OwnerProfile";
 import Interested from "./pages/student/Interested";
 import Notifications from "./pages/student/Notifications";
 import RecentlyViewed from "./pages/student/RecentlyViewed";
@@ -65,6 +69,8 @@ import MyHostelRules from "./pages/student/MyHostelRules";
 import MyRoomDetails from "./pages/student/MyRoomDetails";
 import PayHostelFee from "./pages/student/PaymentsPage";
 import StudentLayout from "./components/layout/StudentLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Owner - Hostel Details
 import OwnerHostelDetails from "./pages/owner/HostelDetails";
@@ -72,285 +78,100 @@ import OwnerHostelDetails from "./pages/owner/HostelDetails";
 // Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
-const App = () => {
-  return (
-    <Router>
-      <AuthProvider>
-        <DarkModeProvider>
-          <Navbar />
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            <Route path="/complete-profile" element={<CompleteProfile />} />
-            <Route path="/profile" element={<ViewProfile />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            <Route path="/support" element={<Support />} />
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false },
+  },
+});
 
-            {/* Student Routes - All Wrapped in StudentLayout */}
+const pageVariants = {
+  initial: { opacity: 0, y: 8 },
+  in: { opacity: 1, y: 0 },
+  out: { opacity: 0, y: -8 },
+};
+const pageTransition = { duration: 0.22, ease: "easeOut" };
+
+// Wraps public (non-layout) route content with a fade transition
+const P = ({ children }) => (
+  <motion.div
+    variants={pageVariants}
+    initial="initial"
+    animate="in"
+    exit="out"
+    transition={pageTransition}
+  >
+    {children}
+  </motion.div>
+);
+
+// Inner component so useLocation works inside <Router>
+const AppContent = () => {
+  const location = useLocation();
+  return (
+    <>
+      <Navbar />
+      <ErrorBoundary>
+        <AnimatePresence mode="wait" initial={false}>
+          <Routes location={location} key={location.pathname}>
+
+            {/* Public Routes */}
+            <Route path="/" element={<P><Home /></P>} />
+            <Route path="/login" element={<P><Login /></P>} />
+            <Route path="/register" element={<P><Register /></P>} />
+            <Route path="/about" element={<P><About /></P>} />
+            <Route path="/contact" element={<P><Contact /></P>} />
+            <Route path="/forgot-password" element={<P><ForgotPassword /></P>} />
+            <Route path="/reset-password/:token" element={<P><ResetPassword /></P>} />
+            <Route path="/complete-profile" element={<P><CompleteProfile /></P>} />
+            <Route path="/profile" element={<P><ViewProfile /></P>} />
+            <Route path="/edit-profile" element={<P><EditProfile /></P>} />
+            <Route path="/support" element={<P><Support /></P>} />
+
+            {/* Student Routes - All Wrapped in StudentLayout + ProtectedRoute */}
             <Route
               path="/student-dashboard"
               element={
-                <StudentLayout>
-                  <StudentDashboard />
-                </StudentLayout>
+                <ProtectedRoute role="student">
+                  <StudentLayout>
+                    <StudentDashboard />
+                  </StudentLayout>
+                </ProtectedRoute>
               }
             />
-            <Route
-              path="/student/profile-settings"
-              element={
-                <StudentLayout>
-                  <StudentSettingsPage />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/hostels"
-              element={
-                <StudentLayout>
-                  <HostelListings />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/hostels/:id"
-              element={
-                <StudentLayout>
-                  <StudentHostelDetails />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/interested"
-              element={
-                <StudentLayout>
-                  <Interested />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/notifications"
-              element={
-                <StudentLayout>
-                  <Notifications />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/recently-viewed"
-              element={
-                <StudentLayout>
-                  <RecentlyViewed />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/booking-request/:hostelId"
-              element={
-                <StudentLayout>
-                  <BookingRequestPage />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/raise-complaint"
-              element={
-                <StudentLayout>
-                  <RaiseComplaint />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/my-requests"
-              element={
-                <StudentLayout>
-                  <StudentRequestsStatus />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/my-room"
-              element={
-                <StudentLayout>
-                  <MyRoomDetails />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/rules-and-regulations"
-              element={
-                <StudentLayout>
-                  <MyHostelRules />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/payments"
-              element={
-                <StudentLayout>
-                  <PayHostelFee />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/my-bookings"
-              element={
-                <StudentLayout>
-                  <MyBookingsPage />
-                </StudentLayout>
-              }
-            />
-            <Route
-              path="/student/my-hostel"
-              element={
-                <StudentLayout>
-                  <MyHostelPage />
-                </StudentLayout>
-              }
-            />
+            <Route path="/student/profile-settings" element={<ProtectedRoute role="student"><StudentLayout><StudentSettingsPage /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/hostels" element={<ProtectedRoute role="student"><StudentLayout><HostelListings /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/hostels/:id" element={<ProtectedRoute role="student"><StudentLayout><StudentHostelDetails /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/interested" element={<ProtectedRoute role="student"><StudentLayout><Interested /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/notifications" element={<ProtectedRoute role="student"><StudentLayout><Notifications /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/recently-viewed" element={<ProtectedRoute role="student"><StudentLayout><RecentlyViewed /></StudentLayout></ProtectedRoute>} />
+            <Route path="/booking-request/:hostelId" element={<ProtectedRoute role="student"><StudentLayout><BookingRequestPage /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/raise-complaint" element={<ProtectedRoute role="student"><StudentLayout><RaiseComplaint /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/my-requests" element={<ProtectedRoute role="student"><StudentLayout><StudentRequestsStatus /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/my-room" element={<ProtectedRoute role="student"><StudentLayout><MyRoomDetails /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/rules-and-regulations" element={<ProtectedRoute role="student"><StudentLayout><MyHostelRules /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/payments" element={<ProtectedRoute role="student"><StudentLayout><PayHostelFee /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/my-bookings" element={<ProtectedRoute role="student"><StudentLayout><MyBookingsPage /></StudentLayout></ProtectedRoute>} />
+            <Route path="/student/my-hostel" element={<ProtectedRoute role="student"><StudentLayout><MyHostelPage /></StudentLayout></ProtectedRoute>} />
 
-            {/* Owner Routes - Wrapped in OwnerLayout */}
-            <Route
-              path="/owner-dashboard"
-              element={
-                <OwnerLayout>
-                  <OwnerDashboard />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/add-hostel"
-              element={
-                <OwnerLayout>
-                  <AddHostel />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/view-requests"
-              element={
-                <OwnerLayout>
-                  <ViewRequests />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/add-student"
-              element={
-                <OwnerLayout>
-                  <AddStudent />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/send-alerts"
-              element={
-                <OwnerLayout>
-                  <SendAlerts />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/my-hostels"
-              element={
-                <OwnerLayout>
-                  <MyHostels />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/filled-rooms"
-              element={
-                <OwnerLayout>
-                  <FilledRooms />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/my-students"
-              element={
-                <OwnerLayout>
-                  <MyStudents />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/view-complaints"
-              element={
-                <OwnerLayout>
-                  <ViewComplaints />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/available-rooms"
-              element={
-                <OwnerLayout>
-                  <AvailableRooms />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/manage-rooms"
-              element={
-                <OwnerLayout>
-                  <ManageRooms />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/rules-and-regulations"
-              element={
-                <OwnerLayout>
-                  <RulesAndRegulations />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/payment-settings"
-              element={
-                <OwnerLayout>
-                  <OwnerPaymentsPage />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/profile-settings"
-              element={
-                <OwnerLayout>
-                  <OwnerSettingsPage />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/notifications"
-              element={
-                <OwnerLayout>
-                  <OwnerNotificationsPage />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/hostel/:id/view"
-              element={
-                <OwnerLayout>
-                  <OwnerHostelDetails />
-                </OwnerLayout>
-              }
-            />
-            <Route
-              path="/owner/hostel/:id/edit"
-              element={
-                <OwnerLayout>
-                  <AddHostel />
-                </OwnerLayout>
-              }
-            />
+            {/* Owner Routes - Wrapped in OwnerLayout + ProtectedRoute */}
+            <Route path="/owner-dashboard" element={<ProtectedRoute role="owner"><OwnerLayout><OwnerDashboard /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/add-hostel" element={<ProtectedRoute role="owner"><OwnerLayout><AddHostel /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/view-requests" element={<ProtectedRoute role="owner"><OwnerLayout><ViewRequests /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/add-student" element={<ProtectedRoute role="owner"><OwnerLayout><AddStudent /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/send-alerts" element={<ProtectedRoute role="owner"><OwnerLayout><SendAlerts /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/my-hostels" element={<ProtectedRoute role="owner"><OwnerLayout><MyHostels /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/filled-rooms" element={<ProtectedRoute role="owner"><OwnerLayout><FilledRooms /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/my-students" element={<ProtectedRoute role="owner"><OwnerLayout><MyStudents /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/view-complaints" element={<ProtectedRoute role="owner"><OwnerLayout><ViewComplaints /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/available-rooms" element={<ProtectedRoute role="owner"><OwnerLayout><AvailableRooms /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/manage-rooms" element={<ProtectedRoute role="owner"><OwnerLayout><ManageRooms /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/rules-and-regulations" element={<ProtectedRoute role="owner"><OwnerLayout><RulesAndRegulations /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/payment-settings" element={<ProtectedRoute role="owner"><OwnerLayout><OwnerPaymentsPage /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/profile-settings" element={<ProtectedRoute role="owner"><OwnerLayout><OwnerSettingsPage /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/notifications" element={<ProtectedRoute role="owner"><OwnerLayout><OwnerNotificationsPage /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/profile" element={<ProtectedRoute role="owner"><OwnerLayout><OwnerProfile /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/hostel/:id/view" element={<ProtectedRoute role="owner"><OwnerLayout><OwnerHostelDetails /></OwnerLayout></ProtectedRoute>} />
+            <Route path="/owner/hostel/:id/edit" element={<ProtectedRoute role="owner"><OwnerLayout><AddHostel /></OwnerLayout></ProtectedRoute>} />
 
             {/* Legal Routes */}
             <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
@@ -369,15 +190,32 @@ const App = () => {
             <Route path="/legal/transparency" element={<Transparency />} />
 
             {/* Admin Routes */}
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
 
             {/* 404 Page */}
-            <Route path="*" element={<PageNotFound />} />
+            <Route path="*" element={<P><PageNotFound /></P>} />
           </Routes>
-          <Footer />
-        </DarkModeProvider>
-      </AuthProvider>
-    </Router>
+        </AnimatePresence>
+      </ErrorBoundary>
+      <Footer />
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <DarkModeProvider>
+            <SocketProvider>
+              <AppContent />
+            </SocketProvider>
+          </DarkModeProvider>
+        </AuthProvider>
+      </Router>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 };
 

@@ -12,6 +12,7 @@ const passwordResetLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipSuccessfulRequests: false, // Count all requests
   skipFailedRequests: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     // Rate limit by email instead of IP
     return req.body.email || req.ip;
@@ -27,6 +28,7 @@ const loginLimiter = rateLimit({
     message: "Please try again in 15 minutes",
   },
   skipSuccessfulRequests: true, // Don't count successful logins
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => req.body.email || req.ip,
 });
 

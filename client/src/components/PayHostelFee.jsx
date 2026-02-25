@@ -5,11 +5,9 @@
  * Note: amount should be in rupees (e.g., 5000 for ₹5000)
  */
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../apiConfig";
 import { Loader2, IndianRupee, CheckCircle, XCircle } from "lucide-react";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
-const getToken = () => localStorage.getItem("token");
+import toast from 'react-hot-toast';
 
 // Load Razorpay script
 const loadRazorpayScript = () => {
@@ -23,41 +21,41 @@ const loadRazorpayScript = () => {
 };
 
 const PayHostelFee = ({ hostelId, amount, onSuccess }) => {
+  // Get user info for Razorpay prefill (non-sensitive — stored in localStorage for UI)
+  const storedUser = (() => {
+    try { return JSON.parse(localStorage.getItem("user") || "{}"); }
+    catch { return {}; }
+  })();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null); // 'success' or 'failed'
 
   const handlePayment = async () => {
     // ✅ FIX 1: Better validation with clear error messages
     if (!hostelId) {
-      alert("Hostel ID is required");
+      toast.error("Hostel ID is required");
       return;
     }
 
     if (amount === undefined || amount === null) {
-      alert("Amount is required");
+      toast.error("Amount is required");
       return;
     }
 
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      alert(
-        `Invalid amount: ${amount}. Please provide a valid amount greater than 0.`,
-      );
+      toast.error("Invalid payment amount. Must be greater than 0.");
       return;
     }
 
     // Step 1: Load Razorpay script
     const isLoaded = await loadRazorpayScript();
     if (!isLoaded) {
-      alert("Failed to load payment gateway. Please check your internet.");
+      toast.error("Failed to load payment gateway");
       return;
     }
 
-    const token = getToken();
-    if (!token) {
-      alert("Please login first");
-      return;
-    }
+    // Auth is via httpOnly cookie — no localStorage token needed
+    // The api instance already sends the cookie automatically (withCredentials: true)
 
     try {
       setLoading(true);
@@ -66,25 +64,17 @@ const PayHostelFee = ({ hostelId, amount, onSuccess }) => {
       // ✅ FIX 2: Convert rupees to paise (Razorpay expects paise)
       const amountInPaise = Math.round(numAmount * 100);
 
-      console.log("💰 Payment Details:", {
-        hostelId,
-        amountInRupees: numAmount,
-        amountInPaise: amountInPaise,
-      });
-
       // Step 2: Create order on backend
-      const orderResponse = await axios.post(
-        `${API_BASE_URL}/api/payments/create-order`,
+      const orderResponse = await api.post(
+        `/api/payments/create-order`,
         {
           amount: amountInPaise, // Send in paise
           hostelId: hostelId,
         },
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       const { order, key_id } = orderResponse.data;
 
-      console.log("📦 Order created:", order);
 
       // Step 3: Open Razorpay Checkout
       const options = {
@@ -97,8 +87,8 @@ const PayHostelFee = ({ hostelId, amount, onSuccess }) => {
         handler: async function (response) {
           // Step 4: Verify payment on backend
           try {
-            const verifyResponse = await axios.post(
-              `${API_BASE_URL}/api/payments/verify`,
+            const verifyResponse = await api.post(
+              `/api/payments/verify`,
               {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -106,26 +96,23 @@ const PayHostelFee = ({ hostelId, amount, onSuccess }) => {
                 amount: order.amount,
                 hostelId: hostelId,
               },
-              { headers: { Authorization: `Bearer ${token}` } },
             );
 
-            console.log("✅ Payment verified:", verifyResponse.data);
             setStatus("success");
             if (onSuccess) {
               onSuccess(verifyResponse.data);
             }
           } catch (err) {
-            console.error("❌ Payment verification failed:", err);
             setStatus("failed");
-            alert("Payment verification failed. Please contact support.");
+            toast.error("Payment verification failed. Please contact support.");
           } finally {
             setLoading(false);
           }
         },
         prefill: {
-          name: "Student Name", // TODO: Get from user data
-          email: "student@example.com",
-          contact: "9999999999",
+          name: storedUser.name || "",
+          email: storedUser.email || "",
+          contact: storedUser.phone || "",
         },
         theme: {
           color: "#3B82F6", // Blue color
@@ -133,7 +120,6 @@ const PayHostelFee = ({ hostelId, amount, onSuccess }) => {
         modal: {
           ondismiss: function () {
             setLoading(false);
-            console.log("Payment cancelled by user");
           },
         },
       };
@@ -141,14 +127,10 @@ const PayHostelFee = ({ hostelId, amount, onSuccess }) => {
       const razorpay = new window.Razorpay(options);
       razorpay.open();
     } catch (err) {
-      console.error("❌ Payment error:", err);
       setLoading(false);
       setStatus("failed");
-
-      // ✅ FIX 3: Better error messages
-      const errorMessage =
-        err.response?.data?.message || err.message || "Unknown error";
-      alert(`Failed to initiate payment: ${errorMessage}`);
+      const errorMessage = err.response?.data?.message || err.message || "Unknown error";
+      toast.error(`Payment failed: ${errorMessage}`);
     }
   };
 

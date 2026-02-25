@@ -6,8 +6,8 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen px-4 py-8 bg-gray-100 dark:bg-gray-900 flex justify-center items-center">
-      <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 w-full max-w-md">
+    <div className="min-h-screen px-4 py-8 bg-gray-100 dark:bg-slate-900 flex justify-center items-center">
+      <div className="bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-6 w-full max-w-md">
         {/* 🔘 Profile Avatar & Name */}
         <div className="flex flex-col items-center">
           <img
@@ -26,7 +26,7 @@ const ProfilePage = () => {
         </div>
 
         {/* 📄 User Info */}
-        <div className="mt-6 space-y-3 text-gray-800 dark:text-gray-300">
+        <div className="mt-6 space-y-3 text-gray-800 dark:text-slate-300">
           <div>
             <span className="font-semibold">📧 Email:</span> {user?.email}
           </div>

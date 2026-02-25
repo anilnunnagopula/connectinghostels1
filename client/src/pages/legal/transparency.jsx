@@ -7,13 +7,13 @@ const Transparency = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           Transparency Statement for ConnectingHostels
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           At <strong>ConnectingHostels</strong>, we believe that a strong
           community is built on trust, and trust is fostered through clear and
           open communication. This Transparency Statement outlines our core
@@ -23,10 +23,10 @@ const Transparency = () => {
           experience for both students and hostel owners.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           1. Our Platform's Purpose & Mission
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           <strong>ConnectingHostels</strong> serves as a dedicated bridge
           connecting students with quality, verified hostel accommodations,
           primarily in Mangalpalle, Hyderabad. Our mission is to:
@@ -56,10 +56,10 @@ const Transparency = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           2. Transparent Pricing & Fees
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We believe in a clear and understandable fee structure.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -93,10 +93,10 @@ const Transparency = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           3. Verified & Accurate Listings
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Ensuring the reliability of our listings is a top priority.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -129,10 +129,10 @@ const Transparency = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           4. Fair Reviews & Ratings
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           User-generated reviews are crucial for our community's integrity.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -170,10 +170,10 @@ const Transparency = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           5. Advertising & Promotion Transparency
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Any promotional content on our platform will be clearly identified.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -195,10 +195,10 @@ const Transparency = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           6. Data Usage & Privacy
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Your privacy is paramount. We are committed to responsible data
           handling.
         </p>
@@ -253,10 +253,10 @@ const Transparency = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           7. Our Commitment to Continuous Improvement
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We are dedicated to continuously improving our Service and maintaining
           the highest standards of transparency and integrity.
         </p>
@@ -278,10 +278,10 @@ const Transparency = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           8. Contact Us
         </h2>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           Your questions and concerns are important to us. If you have any
           feedback, questions about this Transparency Statement, or suggestions
           for how we can improve, please do not hesitate to contact us.
@@ -295,18 +295,18 @@ const Transparency = () => {
             anilnunnagopula15@gmail.com
           </a>
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderabad-501506, Telangana, India
         </p>
 
-        <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+        <p className="mt-12 text-sm text-gray-500 dark:text-slate-400 italic text-center">
           Building <strong>ConnectingHostels</strong> with integrity, respect,
           and a commitment to full transparency for students and hostel owners
           alike.
         </p>
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July 17, 2025
         </p>
       </div>

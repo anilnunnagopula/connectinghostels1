@@ -1,121 +1,187 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import toast from 'react-hot-toast';
-import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+/**
+ * ViewRequests.jsx - Premium Lease Intake Console
+ * 
+ * Migration Status:
+ * - Migrated to React Query (useOwnerRequests, useApproveRequest, useRejectRequest)
+ * - Upgraded UI to professional "Request Queue" with high-contrast actions
+ * - Improved student profile data display for the Phase 1 schema
+ */
 
-// The authentication token is retrieved from local storage, as in other components
-const getToken = () => localStorage.getItem("token");
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Loader2, 
+  CheckCircle2, 
+  XCircle, 
+  User, 
+  Clock, 
+  Building, 
+  Bed, 
+  ArrowUpRight,
+  Filter,
+  Inbox,
+  Check,
+  X,
+  ChevronRight,
+  AlertCircle
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
+import { useOwnerRequests, useApproveRequest, useRejectRequest } from "../../hooks/useQueries";
 
 const ViewRequests = () => {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Queries
+  const { data, isLoading, error, refetch } = useOwnerRequests();
+  const approveMutation = useApproveRequest();
+  const rejectMutation = useRejectRequest();
 
-  const fetchRequests = async () => {
-    setLoading(true);
-    const token = getToken();
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+  const requests = data?.requests || [];
 
+  const handleApprove = async (requestId) => {
+    const toastId = toast.loading("Executing Enrollment Protocol...");
     try {
-      // ✅ NEW: Fetch requests from the backend
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/booking-requests/mine`, // New endpoint
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setRequests(response.data.requests);
+      await approveMutation.mutateAsync({ requestId });
+      toast.success("Lease Activated Successfully", { id: toastId });
     } catch (err) {
-      console.error("Error fetching requests:", err);
-      toast.error("Failed to fetch booking requests.");
-    } finally {
-      setLoading(false);
+      toast.error(err?.response?.data?.error || "Approval Handshake Failed", { id: toastId });
     }
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const handleAction = async (requestId, action) => {
-    const token = getToken();
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
+  const handleReject = async (requestId) => {
+    const toastId = toast.loading("Initiating Denial Sequence...");
     try {
-      // ✅ NEW: Send an API call to approve or reject the request
-      await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/owner/booking-requests/${requestId}/${action}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      toast.success(
-        `Request ${
-          action === "approve" ? "approved" : "rejected"
-        } successfully!`
-      );
-      fetchRequests(); // Re-fetch to update the list
+      await rejectMutation.mutateAsync({ requestId });
+      toast.success("Request Decommissioned", { id: toastId });
     } catch (err) {
-      console.error(`Error ${action}ing request:`, err);
-      toast.error(`Failed to ${action} request.`);
+      toast.error(err?.response?.data?.error || "Rejection Protocol Failed", { id: toastId });
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center dark:bg-gray-900">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-rose-500 gap-4">
+        <AlertCircle size={48} />
+        <p className="font-black uppercase tracking-widest text-sm italic">Queue Synchronization Failed</p>
+        <button onClick={() => refetch()} className="px-8 py-3 bg-blue-600 text-white rounded-full font-black uppercase text-[10px] tracking-widest">Reconnect Feed</button>
       </div>
     );
   }
 
   return (
-    <div className="p-6 dark:bg-gray-900 min-h-screen text-gray-800 dark:text-white font-inter">
-      <h2 className="text-2xl font-bold mb-4">📩 Booking Requests</h2>
-      {requests.length === 0 ? (
-        <p className="text-center text-gray-500 dark:text-gray-400">
-          No pending requests.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {requests.map((req) => (
-            <div
-              key={req._id}
-              className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-4 shadow flex flex-col sm:flex-row justify-between items-start sm:items-center"
-            >
-              <div>
-                <p>
-                  <strong>{req.student.name}</strong> wants to book room{" "}
-                  <strong>{req.roomNumber}</strong> in{" "}
-                  <strong>{req.hostel.name}</strong>
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Date: {new Date(req.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="flex gap-2 mt-4 sm:mt-0">
-                <button
-                  onClick={() => handleAction(req._id, "approve")}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded transition"
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => handleAction(req._id, "reject")}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded transition"
-                >
-                  Reject
-                </button>
-              </div>
-            </div>
-          ))}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-12 pb-32">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
+           <div className="space-y-2">
+              <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">
+                 Booking Requests
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm flex items-center gap-2">
+                 <Inbox size={16} className="text-blue-600" /> Pending enrollment & tenant requests
+              </p>
+           </div>
+
+           <div className="flex gap-4">
+              <button className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-blue-600 rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-2">
+                 <Filter size={16} /> Filter Queue
+              </button>
+           </div>
         </div>
-      )}
+
+         <div className="space-y-4">
+            {requests.length === 0 ? (
+               <div className="p-20 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 shadow-sm">
+                  <Inbox className="mx-auto text-slate-200 dark:text-slate-800 mb-6" size={80} />
+                  <h2 className="text-2xl font-bold text-slate-400">Queue Empty</h2>
+                  <p className="text-sm font-medium text-slate-400 mt-2">No pending admission requests at the moment</p>
+               </div>
+           ) : (
+              <AnimatePresence>
+                 {requests.map((req, i) => {
+                    const studentName = req.student?.user?.name || req.student?.name || "Anonymous Client";
+                    const isProcessing = (approveMutation.isPending && approveMutation.variables?.requestId === req._id) || 
+                                       (rejectMutation.isPending && rejectMutation.variables?.requestId === req._id);
+                    
+                    return (
+                       <motion.div 
+                        key={req._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="group bg-white dark:bg-slate-900 rounded-2xl p-6 lg:p-8 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all"
+                       >
+                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+                                                          <div className="flex items-center gap-5">
+                                 <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 shrink-0 border border-slate-200 dark:border-slate-700 relative overflow-hidden group-hover:border-blue-500/30 transition-colors">
+                                    <User size={28} />
+                                    <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                 </div>
+                                 <div className="space-y-1">
+                                    <div className="flex items-center gap-3">
+                                       <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                                          {studentName}
+                                       </h3>
+                                       <span className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider rounded-full">New Request</span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                       <span className="flex items-center gap-1.5">
+                                          <Building size={14} className="text-blue-500" /> {req.hostel?.name}
+                                       </span>
+                                       <span className="flex items-center gap-1.5">
+                                          <Bed size={14} className="text-purple-500" /> Room {req.roomNumber || "TBD"}
+                                       </span>
+                                       <span className="flex items-center gap-1.5">
+                                          <Clock size={14} className="text-emerald-500" /> {new Date(req.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                                       </span>
+                                    </div>
+                                 </div>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                 <button 
+                                   onClick={() => handleReject(req._id)}
+                                   disabled={isProcessing}
+                                   className="p-4 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all border border-slate-200 dark:border-slate-700"
+                                 >
+                                    {rejectMutation.isPending && rejectMutation.variables?.requestId === req._id ? <Loader2 size={20} className="animate-spin" /> : <X size={20} />}
+                                 </button>
+                                 <button 
+                                   onClick={() => handleApprove(req._id)}
+                                   disabled={isProcessing}
+                                   className="px-8 py-4 bg-slate-900 dark:bg-blue-600 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-blue-700 active:scale-95"
+                                 >
+                                    {approveMutation.isPending && approveMutation.variables?.requestId === req._id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                    Approve Request
+                                 </button>
+                              </div>
+
+                          </div>
+                                                    <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {req._id}</p>
+                              <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-1 hover:underline">
+                                 View Profile Details <ChevronRight size={12} />
+                              </button>
+                           </div>
+                       </motion.div>
+                    );
+                 })}
+              </AnimatePresence>
+           )}
+        </div>
+
+      </div>
     </div>
   );
 };

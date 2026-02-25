@@ -1,23 +1,41 @@
-import React, { useState, useEffect } from "react";
-import Select from "react-select";
-import { FaPaperPlane } from "react-icons/fa";
-import { Sparkles, Loader2 } from "lucide-react";
-import axios from "axios";
-import toast from 'react-hot-toast';
-import { useNavigate } from "react-router-dom";
+/**
+ * SendAlerts.jsx - Premium Broadcast Intelligence
+ * 
+ * Migration Status:
+ * - Migrated to React Query (useOwnerHostels, useOwnerStudents)
+ * - Refined AI synthesis with Gemini flash optimization
+ * - Upgraded UI to professional "Communication Hub" standard
+ */
 
-// Constants for select-all options
-const allStudentsOption = {
-  value: "all-students",
-  label: "Select All Students",
-};
-const allHostelsOption = { value: "all-hostels", label: "All Hostels" };
+import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import Select from "react-select";
+import { 
+  PaperPlaneIcon, 
+  Sparkles, 
+  Loader2, 
+  Send, 
+  Trash2, 
+  CheckCircle2 ,
+  Building2, 
+  Users, 
+  ShieldCheck, 
+  Info, 
+  MessageSquare,
+  Zap,
+  Star,
+  ChevronRight
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import toast from 'react-hot-toast';
+import { useOwnerHostels, useOwnerStudents } from "../../hooks/useQueries";
+import api from "../../apiConfig";
 
 const messageTypes = [
-  { value: "holiday", label: "Holiday Notice" },
-  { value: "fee", label: "Fee Reminder" },
-  { value: "welcome", label: "Welcome Message" },
-  { value: "others", label: "Other hostel related Message" },
+  { value: "holiday", label: "Holiday Protocol", icon: Star },
+  { value: "fee", label: "Fee Synchronization", icon: Zap },
+  { value: "welcome", label: "Identity Greeting", icon: ShieldCheck },
+  { value: "others", label: "Global Announcement", icon: Info },
 ];
 
 const SendAlerts = () => {
@@ -26,442 +44,283 @@ const SendAlerts = () => {
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [selectedHostel, setSelectedHostel] = useState({ value: "all-hostels", label: "Spectrum: All Assets" });
 
-  // Dynamic data states
-  const [allStudents, setAllStudents] = useState([]); // All students from all hostels
-  const [hostels, setHostels] = useState([]);
-  const [selectedHostel, setSelectedHostel] = useState(allHostelsOption);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch all hostels and students for the logged-in owner
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        navigate("/login");
-        throw new Error("Authentication token not found");
-      }
-
-      // Fetch hostels to populate the dropdown
-      const hostelsRes = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/owner/hostels/my-hostels`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      const hostelOptions = hostelsRes.data.hostels.map((hostel) => ({
-        value: hostel._id,
-        label: hostel.name,
+  // Queries
+  const { data: hostelsData, isLoading: hostelsLoading } = useOwnerHostels();
+  const hostels = useMemo(() => [
+    { value: "all-hostels", label: "Spectrum: All Assets" },
+    ...(hostelsData?.hostels || []).map(h => ({ value: h._id, label: h.name }))
+  ], [hostelsData]);
+  
+  const { data: studentsData, isLoading: studentsLoading } = useOwnerStudents();
+  const allStudents = useMemo(() => {
+    return (studentsData || [])
+      .map(s => ({
+        value: s._id,
+        label: `${s.name} (Unit ${s.room || "TBD"})`,
+        hostelId: s.hostel?._id || s.hostel,
       }));
-      setHostels(hostelOptions);
+  }, [studentsData]);
 
-      // ✅ FIXED: Fetch students and use Student._id as value
-      const studentsRes = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/students/mine`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+  const filteredStudents = useMemo(() => {
+    return selectedHostel.value === "all-hostels" 
+      ? allStudents 
+      : allStudents.filter(s => s.hostelId === selectedHostel.value);
+  }, [allStudents, selectedHostel]);
 
-      const studentOptions = studentsRes.data.students
-        .filter((student) => student.status === "Active") // ✅ Only active students
-        .map((student) => ({
-          value: student._id, // ✅ Use _id instead of phone
-          label: `${student.name} (Room ${student.roomNumber || "N/A"})`,
-          hostelId: student.currentHostel?._id || student.currentHostel, // Handle both formats
-          phone: student.phone, // Keep for display if needed
-        }));
+  const studentOptions = useMemo(() => [
+    { value: "all-students", label: "Select Entire Cohort" },
+    ...filteredStudents
+  ], [filteredStudents]);
 
-      setAllStudents(studentOptions);
-
-      console.log(`✅ Loaded ${studentOptions.length} active students`);
-    } catch (err) {
-      console.error("❌ Error fetching data:", err.message);
-      toast.error("Failed to fetch data.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Filter students based on selected hostel
-  const filteredStudents =
-    selectedHostel && selectedHostel.value !== "all-hostels"
-      ? allStudents.filter(
-          (student) => student.hostelId === selectedHostel.value,
-        )
-      : allStudents;
-
-  // Logic for generating AI message template
-  const generateTemplate = async () => {
-    if (!selectedType) {
-      toast.error("Please select a message type!");
-      return;
-    }
-
+  const handleGenerateAI = async () => {
+    if (!selectedType) return toast.error("Select Communication Protocol");
     setAiGenerating(true);
-
-    let recipientName = "Students";
-    if (selectedStudents.length === 1) {
-      recipientName = selectedStudents[0].label.split(" (")[0];
-    } else if (
-      selectedStudents.length === filteredStudents.length &&
-      selectedHostel.value !== "all-hostels"
-    ) {
-      recipientName = `All students of ${selectedHostel.label}`;
-    }
-
-    let hostelNameForPrompt =
-      selectedHostel.value === "all-hostels"
-        ? "your hostels"
-        : selectedHostel.label;
-
-    let prompt = "";
-    switch (selectedType.value) {
-      case "holiday":
-        prompt = `Generate a concise holiday notice for ${recipientName} of ${hostelNameForPrompt}. Mention that the mess will be closed tomorrow due to holidays. Keep it friendly and informative.`;
-        break;
-      case "fee":
-        prompt = `Write a polite fee reminder message for ${recipientName} of ${hostelNameForPrompt}. Ask them to clear their hostel fee dues for this month and kindly pay at the office.`;
-        break;
-      case "welcome":
-        prompt = `Create a warm welcome message for ${recipientName} joining ${hostelNameForPrompt}. Express hope for a comfortable and successful stay.`;
-        break;
-      case "others":
-        prompt = `Generate a general hostel-related message for ${recipientName} of ${hostelNameForPrompt}. The message should be adaptable for various announcements.`;
-        break;
-      default:
-        prompt = `Generate a general message for ${recipientName} of ${hostelNameForPrompt}.`;
-    }
-
+    const toastId = toast.loading("Synthesizing Broadcast Copy...");
+    
     try {
-      const chatHistory = [];
-      chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-      const payload = { contents: chatHistory };
-      const apiKey = process.env.REACT_APP_GEMINI_API_KEY || "";
+      const recipientLabel = selectedStudents.length === 0 ? "residents" : (selectedStudents.length === 1 ? selectedStudents[0].label.split(" (")[0] : `${selectedStudents.length} residents`);
+      const prompt = `Synthesize a premium and concise broadcast message:
+        Type: ${selectedType.label}
+        Recipient: ${recipientLabel}
+        Asset: ${selectedHostel.label === "Spectrum: All Assets" ? "your properties" : selectedHostel.label}
+        Focus on professional clarity and architectural tone. Keep it under 60 words.`;
+
+      const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-      const response = await fetch(apiUrl, {
+      const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] }),
       });
 
-      const result = await response.json();
-
-      if (
-        result.candidates &&
-        result.candidates.length > 0 &&
-        result.candidates[0].content &&
-        result.candidates[0].content.parts &&
-        result.candidates[0].content.parts.length > 0
-      ) {
-        const generatedText = result.candidates[0].content.parts[0].text;
-        setMessage(generatedText);
-        toast.success("✨ Template generated successfully!");
-      } else {
-        toast.error("❌ Failed to generate template. Please try again.");
-        console.error("Gemini API response structure unexpected:", result);
-      }
+      const result = await res.json();
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) {
+        setMessage(text.trim());
+        toast.success("Intelligence Synchronized", { id: toastId });
+      } else throw new Error();
     } catch (err) {
-      toast.error("❌ Error generating template. Please check your network.");
-      console.error("Error calling Gemini API:", err);
+      toast.error("AI node handshake failed", { id: toastId });
     } finally {
       setAiGenerating(false);
     }
   };
 
-  // Logic for selecting students
-  const handleStudentSelectChange = (selectedOptions) => {
-    // Check if "Select All" was just selected
-    if (
-      selectedOptions &&
-      selectedOptions.some((option) => option.value === "all-students")
-    ) {
-      setSelectedStudents(filteredStudents);
-      return;
-    }
-    // Filter out the "Select All" option
-    setSelectedStudents(
-      selectedOptions
-        ? selectedOptions.filter((option) => option.value !== "all-students")
-        : [],
-    );
-  };
-
-  // Logic for selecting hostels
-  const handleHostelSelectChange = (selectedOption) => {
-    setSelectedHostel(selectedOption);
-    setSelectedStudents([]); // Clear student selection when hostel changes
-  };
-
-  // ✅ IMPROVED: Logic for sending message with better validation and error handling
   const handleSend = async () => {
-    // ✅ ADDED: Debug logging
-    console.log("🔍 handleSend called with:", {
-      message,
-      messageLength: message?.length,
-      selectedStudents: selectedStudents.length,
-      selectedType: selectedType?.value,
-    });
+    if (!message || message.trim().length < 5) return toast.error("Communication payload too short");
+    if (selectedStudents.length === 0) return toast.error("Target Cohort undefined");
 
-    // ✅ IMPROVED: Better validation with specific error messages
-    if (!message || message.trim().length === 0) {
-      toast.error("⚠️ Please enter a message!");
-      return;
-    }
-
-    if (message.trim().length < 5) {
-      toast.error("⚠️ Message must be at least 5 characters long!");
-      return;
-    }
-
-    if (selectedStudents.length === 0) {
-      toast.error("⚠️ Please select at least one student!");
-      return;
-    }
-
-    // ✅ CHANGED: Send student IDs instead of phone numbers
-    const studentIds = selectedStudents.map((s) => s.value); // Now these are _id values
-
-    // ✅ ADDED: More debug logging
-    console.log("📤 Sending alert:", {
-      studentIds,
-      studentCount: studentIds.length,
-      message: message.substring(0, 50) + "...",
-      messageLength: message.length,
-      type: selectedType?.value || "info",
-    });
-
-    setAiGenerating(true);
+    setSending(true);
+    const toastId = toast.loading("Broadcasting Intelligence...");
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/alerts/send`,
-        {
-          studentIds, // ✅ CHANGED: was phoneNumbers
-          message,
-          type: selectedType?.value || "info", // ✅ ADDED: Send type
-        },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      // ✅ ADDED: Log success response
-      console.log("✅ Success response:", response.data);
-
-      toast.success(
-        `✅ Alerts sent successfully to ${studentIds.length} student(s)!`,
-      );
+      const studentIds = selectedStudents.map(s => s.value);
+      await api.post(`/api/alerts/send`, { studentIds, message, type: selectedType?.value || "info" });
+      toast.success("Broadcast Dispatched Successfully", { id: toastId });
       setMessage("");
       setSelectedStudents([]);
-      setSelectedType(null);
     } catch (err) {
-      // ✅ IMPROVED: Better error logging
-      console.error("❌ Error sending alerts:", err);
-      console.error("❌ Error response:", err.response);
-      console.error("❌ Error data:", err.response?.data);
-      console.error("❌ Error message:", err.response?.data?.message);
-
-      // ✅ IMPROVED: Show the actual backend error message
-      const errorMessage =
-        err.response?.data?.message || "Failed to send alerts.";
-      toast.error(`❌ ${errorMessage}`);
+      toast.error("Global Broadcast Protocol Failure", { id: toastId });
     } finally {
-      setAiGenerating(false);
+      setSending(false);
     }
   };
 
-  if (loading) {
+  if (hostelsLoading || studentsLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-xl text-gray-700 dark:text-gray-300">
-          Loading data...
-        </p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
       </div>
     );
   }
 
-  // We need to re-generate the student options with select all every time
-  // filteredStudents changes. This is the correct way to handle it.
-  const studentOptionsWithSelectAll = [allStudentsOption, ...filteredStudents];
+  const selectStyles = {
+    control: (base, state) => ({
+      ...base,
+      backgroundColor: 'transparent',
+      borderWidth: '2px',
+      borderColor: state.isFocused ? '#3b82f6' : 'transparent',
+      borderRadius: '2rem',
+      padding: '0.75rem 1.5rem',
+      boxShadow: 'none',
+      '&:hover': { borderColor: state.isFocused ? '#3b82f6' : '#f1f5f9' },
+    }),
+    singleValue: (base) => ({ ...base, color: 'inherit', fontWeight: '800', textTransform: 'uppercase', fontStyle: 'italic', fontSize: '12px', letterSpacing: '0.05em' }),
+    placeholder: (base) => ({ ...base, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', fontStyle: 'italic', fontSize: '10px', letterSpacing: '0.1em' }),
+    menu: (base) => ({ ...base, backgroundColor: '#ffffff', borderRadius: '2rem', padding: '1rem', border: '1px solid #f1f5f9', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.1)', overflow: 'hidden', zIndex: 100 }),
+    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#f8fafc' : 'transparent', color: state.isFocused ? '#3b82f6' : '#64748b', fontWeight: '800', textTransform: 'uppercase', fontStyle: 'italic', fontSize: '10px', letterSpacing: '0.1em', borderRadius: '1rem', padding: '1rem' }),
+    multiValue: (base) => ({ ...base, backgroundColor: '#eff6ff', borderRadius: '1rem', padding: '2px 8px' }),
+    multiValueLabel: (base) => ({ ...base, color: '#3b82f6', fontWeight: '800', fontSize: '10px' }),
+    multiValueRemove: (base) => ({ ...base, color: '#3b82f6', '&:hover': { backgroundColor: '#dbeafe', color: '#1d4ed8' } }),
+  };
 
-  const hostelOptionsWithSelectAll = [allHostelsOption, ...hostels];
+  const darkStyles = {
+    ...selectStyles,
+    menu: (base) => ({ ...base, backgroundColor: '#0f172a', borderRadius: '2rem', padding: '1rem', border: '1px solid #1e293b', boxShadow: 'none', overflow: 'hidden', zIndex: 100 }),
+    option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? '#1e293b' : 'transparent', color: state.isFocused ? '#3b82f6' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase', fontStyle: 'italic', fontSize: '10px', letterSpacing: '0.1em', borderRadius: '1rem', padding: '1rem' }),
+    multiValue: (base) => ({ ...base, backgroundColor: '#1e293b', borderRadius: '1rem', padding: '2px 8px' }),
+    multiValueLabel: (base) => ({ ...base, color: '#60a5fa' }),
+  };
+
+  const isDarkMode = document.documentElement.classList.contains('dark');
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white p-6 font-inter">
-      <h1 className="text-3xl font-bold mb-6 text-blue-700 dark:text-blue-300">
-        📩 Send Smart Alerts to Students
-      </h1>
-      <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-        {/* Hostel Selection */}
-        <div className="mb-4">
-          <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
-            Select Hostel
-          </label>
-          <Select
-            options={hostelOptionsWithSelectAll}
-            value={selectedHostel}
-            onChange={handleHostelSelectChange}
-            placeholder="Select a hostel..."
-            isDisabled={loading}
-            styles={{
-              control: (baseStyles) => ({
-                ...baseStyles,
-                backgroundColor: "#f3f4f6",
-                borderRadius: "0.375rem",
-              }),
-              menu: (baseStyles) => ({
-                ...baseStyles,
-                backgroundColor: "#f3f4f6",
-                borderRadius: "0.375rem",
-              }),
-              option: (baseStyles, state) => ({
-                ...baseStyles,
-                backgroundColor: state.isFocused ? "#dbeafe" : "#f3f4f6",
-                color: "#1f2937",
-                "&:active": {
-                  backgroundColor: "#bfdbfe",
-                },
-              }),
-            }}
-          />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-12 pb-32">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 mb-12">
+           <div className="space-y-3">
+              <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">
+                 Broadcast Intelligence
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm flex items-center gap-2">
+                 <ShieldCheck size={16} className="text-blue-500" /> Mass communication hub & smart alert system
+              </p>
+           </div>
         </div>
 
-        {/* Message Type Selection */}
-        <div className="mb-4">
-          <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
-            Select Message Type
-          </label>
-          <Select
-            options={messageTypes}
-            value={selectedType}
-            onChange={(type) => setSelectedType(type)}
-            placeholder="Choose type (Holiday, Fee, Welcome...)"
-            isDisabled={loading}
-            styles={{
-              control: (baseStyles) => ({
-                ...baseStyles,
-                backgroundColor: "#f3f4f6",
-                borderRadius: "0.375rem",
-              }),
-              menu: (baseStyles) => ({
-                ...baseStyles,
-                backgroundColor: "#f3f4f6",
-                borderRadius: "0.375rem",
-              }),
-              option: (baseStyles, state) => ({
-                ...baseStyles,
-                backgroundColor: state.isFocused ? "#dbeafe" : "#f3f4f6",
-                color: "#1f2937",
-                "&:active": {
-                  backgroundColor: "#bfdbfe",
-                },
-              }),
-            }}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            
+            {/* Control Panel */}
+            <div className="lg:col-span-2 space-y-8">
+               <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-8">
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 flex items-center gap-2">
+                            <Building2 size={12} /> Source Asset
+                         </label>
+                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                            <Select 
+                               options={hostels} 
+                               value={selectedHostel} 
+                               onChange={setSelectedHostel} 
+                               styles={isDarkMode ? darkStyles : selectStyles} 
+                            />
+                         </div>
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 flex items-center gap-2">
+                            <Zap size={12} /> Message Type
+                         </label>
+                         <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                            <Select 
+                               options={messageTypes} 
+                               value={selectedType} 
+                               onChange={setSelectedType} 
+                               styles={isDarkMode ? darkStyles : selectStyles} 
+                            />
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1 flex items-center gap-2">
+                         <Users size={12} /> Target Cohort
+                      </label>
+                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                         <Select 
+                            isMulti 
+                            options={studentOptions} 
+                            value={selectedStudents} 
+                            onChange={(vals) => {
+                              if (vals && vals.some(v => v.value === 'all-students')) {
+                                 setSelectedStudents(filteredStudents);
+                              } else {
+                                 setSelectedStudents(vals || []);
+                              }
+                            }}
+                            styles={isDarkMode ? darkStyles : selectStyles} 
+                         />
+                      </div>
+                   </div>
+
+                   <div className="space-y-4">
+                      <div className="flex items-center justify-between px-1">
+                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <MessageSquare size={12} /> Intelligence Payload
+                         </label>
+                         <button 
+                           onClick={handleGenerateAI} 
+                           disabled={aiGenerating}
+                           className="px-4 py-2 bg-slate-900 dark:bg-blue-600 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-blue-700 transition-all shadow-sm"
+                         >
+                            {aiGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} AI Synthesize
+                         </button>
+                      </div>
+                      <textarea 
+                         value={message}
+                         onChange={e => setMessage(e.target.value)}
+                         rows="5"
+                         className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:border-blue-600 rounded-2xl px-6 py-5 font-semibold text-slate-900 dark:text-white outline-none shadow-sm resize-none leading-relaxed transition-all"
+                         placeholder="Compose administrative broadcast..."
+                      />
+                      <div className="flex justify-between px-2 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                         <span>Payload Depth: {message.length} units</span>
+                         {message.length > 0 && message.length < 5 && <span className="text-rose-500 animate-pulse">Critical: Payload insufficient</span>}
+                      </div>
+                   </div>
+
+                   <button 
+                     onClick={handleSend}
+                     disabled={sending || !message || message.length < 5 || selectedStudents.length === 0}
+                     className="w-full py-4 bg-slate-900 dark:bg-blue-600 text-white rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-3 hover:bg-slate-800 dark:hover:bg-blue-700 transition-all shadow-sm disabled:opacity-20"
+                   >
+                      {sending ? <Loader2 className="animate-spin" /> : <Send size={18} />} Dispatch Broadcast
+                   </button>
+
+                </div>
+
+            </div>
+
+            {/* Preview & Stats */}
+            <div className="space-y-8">
+               <div className="bg-slate-900 rounded-3xl p-8 text-white overflow-hidden relative shadow-sm border border-slate-800">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[60px] rounded-full" />
+                  
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-8 flex items-center gap-2">
+                     <Zap size={14} className="text-blue-500" /> Dispatch Metrics
+                  </h3>
+
+                  <div className="space-y-6 relative">
+                     <div className="flex justify-between items-end border-b border-white/5 pb-6">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Recipients</span>
+                        <span className="text-4xl font-bold tracking-tighter">{selectedStudents.length}</span>
+                     </div>
+                     <div className="flex justify-between items-end border-b border-white/5 pb-6">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Protocol</span>
+                        <span className="text-lg font-bold tracking-tight uppercase text-blue-400">{selectedType?.label || "Info"}</span>
+                     </div>
+                     <div className="flex justify-between items-end">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Asset Range</span>
+                        <span className="text-xs font-bold tracking-tight uppercase text-emerald-400 truncate max-w-[120px]">{selectedHostel.label}</span>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-6">Broadcast Guidelines</h3>
+                  <ul className="space-y-4">
+                     {[
+                       "Ensure payload clarity for high-retention",
+                       "Target specific units for precise coordination",
+                       "Use AI synthesis for standardized tone",
+                       "Verify emergency contact handshakes"
+                     ].map((t, i) => (
+                       <li key={i} className="flex items-start gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-loose">
+                          <CheckCircle2 size={12} className="text-blue-500 shrink-0 mt-1" /> {t}
+                       </li>
+                     ))}
+                  </ul>
+               </div>
+            </div>
+
         </div>
 
-        {/* Student Selection */}
-        <div className="mb-4">
-          <label className="block mb-1 font-medium text-gray-700 dark:text-gray-300">
-            Select Students
-          </label>
-          <Select
-            isMulti
-            options={studentOptionsWithSelectAll}
-            value={selectedStudents}
-            onChange={handleStudentSelectChange}
-            placeholder="Search and select students..."
-            isDisabled={loading || filteredStudents.length === 0}
-            styles={{
-              control: (baseStyles) => ({
-                ...baseStyles,
-                backgroundColor: "#f3f4f6",
-                borderRadius: "0.375rem",
-              }),
-              menu: (baseStyles) => ({
-                ...baseStyles,
-                backgroundColor: "#f3f4f6",
-                borderRadius: "0.375rem",
-              }),
-              option: (baseStyles, state) => ({
-                ...baseStyles,
-                backgroundColor: state.isFocused ? "#dbeafe" : "#f3f4f6",
-                color: "#1f2937",
-                "&:active": {
-                  backgroundColor: "#bfdbfe",
-                },
-              }),
-            }}
-          />
-        </div>
-
-        <div className="flex items-center justify-between mb-2">
-          <label className="font-semibold text-lg text-gray-700 dark:text-gray-300">
-            Your Message
-          </label>
-          <button
-            type="button"
-            onClick={generateTemplate}
-            className="text-sm text-blue-600 dark:text-yellow-300 flex items-center gap-1 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={aiGenerating}
-          >
-            {aiGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" /> Generate Template
-              </>
-            )}
-          </button>
-        </div>
-        <textarea
-          className="w-full p-4 rounded-md bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white mb-2 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-          rows="5"
-          placeholder="Type your message here or use AI to generate (minimum 5 characters)"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          disabled={aiGenerating}
-        />
-        {/* ✅ ADDED: Character counter */}
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Characters: {message.length}
-          {message.length > 0 && message.length < 5 && (
-            <span className="text-red-500 ml-2">
-              ⚠️ Minimum 5 characters required
-            </span>
-          )}
-        </div>
-
-        {message && (
-          <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-md shadow mb-4">
-            <h3 className="text-lg font-semibold mb-2 text-blue-700 dark:text-blue-300">
-              🧾 Message Preview
-            </h3>
-            <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">
-              {message}
-            </p>
-          </div>
-        )}
-        <button
-          onClick={handleSend}
-          className="bg-blue-600 hover:bg-blue-700 transition px-6 py-3 rounded-md flex items-center gap-2 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed w-full"
-          disabled={
-            aiGenerating ||
-            !message ||
-            message.trim().length < 5 ||
-            selectedStudents.length === 0
-          }
-        >
-          {aiGenerating ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <FaPaperPlane />
-          )}
-          {aiGenerating ? "Sending..." : "Send Alerts"}
-        </button>
       </div>
     </div>
   );

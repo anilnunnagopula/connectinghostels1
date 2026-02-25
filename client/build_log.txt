@@ -1,0 +1,211 @@
+
+> client@0.1.0 build
+> react-scripts build
+
+Creating an optimized production build...
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Compiled with warnings.
+
+[eslint] 
+src\components\PayHostelFee.jsx
+  Line 12:7:  'API_BASE_URL' is assigned a value but never used  no-unused-vars
+
+src\pages\owner\AddHostel.jsx
+  Line 20:3:  'IndianRupee' is defined but never used  no-unused-vars
+  Line 28:3:  'Star' is defined but never used         no-unused-vars
+
+src\pages\owner\AddStudent.jsx
+  Line 22:3:  'CheckCircle' is defined but never used                                                                                                                                                          no-unused-vars
+  Line 23:3:  'PlusCircle' is defined but never used                                                                                                                                                           no-unused-vars
+  Line 40:9:  The 'hostels' logical expression could make the dependencies of useEffect Hook (at line 59) change on every render. To fix this, wrap the initialization of 'hostels' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+src\pages\owner\AvailableRooms.jsx
+  Line 13:3:   'BedDouble' is defined but never used                                                                                                                                                                                                         no-unused-vars
+  Line 15:3:   'RefreshCw' is defined but never used                                                                                                                                                                                                         no-unused-vars
+  Line 19:3:   'Filter' is defined but never used                                                                                                                                                                                                            no-unused-vars
+  Line 21:3:   'ArrowUpRight' is defined but never used                                                                                                                                                                                                      no-unused-vars
+  Line 26:18:  'AnimatePresence' is defined but never used                                                                                                                                                                                                   no-unused-vars
+  Line 36:9:   The 'hostels' logical expression could make the dependencies of useMemo Hook (at line 46) change on every render. To fix this, wrap the initialization of 'hostels' in its own useMemo() Hook                                                 react-hooks/exhaustive-deps
+  Line 36:9:   The 'hostels' logical expression could make the dependencies of useMemo Hook (at line 75) change on every render. To fix this, wrap the initialization of 'hostels' in its own useMemo() Hook                                                 react-hooks/exhaustive-deps
+  Line 36:9:   The 'hostels' logical expression could make the dependencies of useMemo Hook (at line 88) change on every render. To fix this, wrap the initialization of 'hostels' in its own useMemo() Hook                                                 react-hooks/exhaustive-deps
+  Line 38:59:  'refetch' is assigned a value but never used                                                                                                                                                                                                  no-unused-vars
+  Line 39:9:   The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 75) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'allStudents' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+src\pages\owner\FilledRooms.jsx
+  Line 20:3:   'Filter' is defined but never used                                                                                                                                                                     no-unused-vars
+  Line 23:3:   'AlertCircle' is defined but never used                                                                                                                                                                no-unused-vars
+  Line 26:18:  'AnimatePresence' is defined but never used                                                                                                                                                            no-unused-vars
+  Line 30:9:   'navigate' is assigned a value but never used                                                                                                                                                          no-unused-vars
+  Line 36:9:   The 'hostels' logical expression could make the dependencies of useMemo Hook (at line 46) change on every render. To fix this, wrap the initialization of 'hostels' in its own useMemo() Hook          react-hooks/exhaustive-deps
+  Line 39:9:   The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 65) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  Line 39:9:   The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 73) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+src\pages\owner\HostelDetails.jsx
+  Line 23:3:   'Phone' is defined but never used               no-unused-vars
+  Line 25:3:   'CheckCircle2' is defined but never used        no-unused-vars
+  Line 26:3:   'ArrowRight' is defined but never used          no-unused-vars
+  Line 36:3:   'Clock' is defined but never used               no-unused-vars
+  Line 59:11:  'roomsData' is assigned a value but never used  no-unused-vars
+
+src\pages\owner\ManageRooms.jsx
+  Line 15:3:    'BedDouble' is defined but never used                                                                                                                                                           no-unused-vars
+  Line 16:3:    'Home' is defined but never used                                                                                                                                                                no-unused-vars
+  Line 22:3:    'AlertCircle' is defined but never used                                                                                                                                                         no-unused-vars
+  Line 24:3:    'XCircle' is defined but never used                                                                                                                                                             no-unused-vars
+  Line 34:3:    'BarChart3' is defined but never used                                                                                                                                                           no-unused-vars
+  Line 37:3:    'Hash' is defined but never used                                                                                                                                                                no-unused-vars
+  Line 181:9:   The 'hostels' logical expression could make the dependencies of useMemo Hook (at line 215) change on every render. To fix this, wrap the initialization of 'hostels' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  Line 191:41:  'loadingSummary' is assigned a value but never used                                                                                                                                             no-unused-vars
+  Line 193:9:   The 'rooms' logical expression could make the dependencies of useMemo Hook (at line 221) change on every render. To fix this, wrap the initialization of 'rooms' in its own useMemo() Hook      react-hooks/exhaustive-deps
+  Line 193:9:   The 'rooms' logical expression could make the dependencies of useMemo Hook (at line 231) change on every render. To fix this, wrap the initialization of 'rooms' in its own useMemo() Hook      react-hooks/exhaustive-deps
+  Line 194:9:   'summary' is assigned a value but never used                                                                                                                                                    no-unused-vars
+  Line 197:9:   'addRoomMutation' is assigned a value but never used                                                                                                                                            no-unused-vars
+  Line 198:9:   'updateRoomMutation' is assigned a value but never used                                                                                                                                         no-unused-vars
+  Line 199:9:   'deleteRoomMutation' is assigned a value but never used                                                                                                                                         no-unused-vars
+  Line 202:9:   'addFloorMutation' is assigned a value but never used                                                                                                                                           no-unused-vars
+  Line 206:10:  'editRoom' is assigned a value but never used                                                                                                                                                   no-unused-vars
+  Line 207:10:  'showAddRoom' is assigned a value but never used                                                                                                                                                no-unused-vars
+  Line 208:10:  'showAddFloor' is assigned a value but never used                                                                                                                                               no-unused-vars
+
+src\pages\owner\MyHostels.jsx
+  Line 14:3:  'Filter' is defined but never used        no-unused-vars
+  Line 25:3:  'MoreVertical' is defined but never used  no-unused-vars
+
+src\pages\owner\MyStudents.jsx
+  Line 14:3:   'Phone' is defined but never used                                                                                                                                                                                                       no-unused-vars
+  Line 19:3:   'Filter' is defined but never used                                                                                                                                                                                                      no-unused-vars
+  Line 22:3:   'Mail' is defined but never used                                                                                                                                                                                                        no-unused-vars
+  Line 26:3:   'CheckCircle2' is defined but never used                                                                                                                                                                                                no-unused-vars
+  Line 27:3:   'Trash2' is defined but never used                                                                                                                                                                                                      no-unused-vars
+  Line 31:18:  'AnimatePresence' is defined but never used                                                                                                                                                                                             no-unused-vars
+  Line 33:8:   'toast' is defined but never used                                                                                                                                                                                                       no-unused-vars
+  Line 42:9:   The 'hostels' logical expression could make the dependencies of useMemo Hook (at line 52) change on every render. To fix this, wrap the initialization of 'hostels' in its own useMemo() Hook                                           react-hooks/exhaustive-deps
+  Line 44:59:  'refetch' is assigned a value but never used                                                                                                                                                                                            no-unused-vars
+  Line 45:9:   The 'students' logical expression could make the dependencies of useMemo Hook (at line 63) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'students' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+src\pages\owner\OwnerDashboard.jsx
+  Line 26:3:   'ShieldCheck' is defined but never used      no-unused-vars
+  Line 45:18:  'AnimatePresence' is defined but never used  no-unused-vars
+  Line 49:8:   'StatCard' is defined but never used         no-unused-vars
+  Line 50:8:   'ActionCard' is defined but never used       no-unused-vars
+  Line 51:8:   'EmptyState' is defined but never used       no-unused-vars
+
+src\pages\owner\OwnerNotificationsPage.jsx
+  Line 18:3:  'X' is defined but never used  no-unused-vars
+
+src\pages\owner\OwnerProfile.jsx
+  Line 12:3:  'User' is defined but never used       no-unused-vars
+  Line 19:3:  'BedDouble' is defined but never used  no-unused-vars
+  Line 20:3:  'MapPin' is defined but never used     no-unused-vars
+  Line 22:3:  'Share2' is defined but never used     no-unused-vars
+
+src\pages\owner\PaymentsPage.jsx
+  Line 12:3:   'Building2' is defined but never used                                                                                                                                                            no-unused-vars
+  Line 14:3:   'Calendar' is defined but never used                                                                                                                                                             no-unused-vars
+  Line 27:10:  'motion' is defined but never used                                                                                                                                                               no-unused-vars
+  Line 27:18:  'AnimatePresence' is defined but never used                                                                                                                                                      no-unused-vars
+  Line 32:9:   The 'payments' logical expression could make the dependencies of useMemo Hook (at line 39) change on every render. To fix this, wrap the initialization of 'payments' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+src\pages\owner\RulesAndRegulations.jsx
+  Line 23:3:  'ChevronRight' is defined but never used                                                                                                                                                             no-unused-vars
+  Line 41:9:  The 'rawHostels' logical expression could make the dependencies of useMemo Hook (at line 67) change on every render. To fix this, wrap the initialization of 'rawHostels' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  Line 44:9:  The 'rules' logical expression could make the dependencies of useMemo Hook (at line 62) change on every render. To fix this, wrap the initialization of 'rules' in its own useMemo() Hook            react-hooks/exhaustive-deps
+
+src\pages\owner\SendAlerts.jsx
+  Line 192:13:  'response' is assigned a value but never used  no-unused-vars
+
+src\pages\owner\SettingsPage.jsx
+  Line 23:3:  'Building2' is defined but never used          no-unused-vars
+  Line 28:3:  'Info' is defined but never used               no-unused-vars
+  Line 31:3:  'Check' is defined but never used              no-unused-vars
+  Line 32:3:  'X' is defined but never used                  no-unused-vars
+  Line 49:9:  'navigate' is assigned a value but never used  no-unused-vars
+
+src\pages\owner\ViewComplaints.jsx
+  Line 14:3:  'Trash2' is defined but never used                                                                                                                                                                                                          no-unused-vars
+  Line 15:3:  'Home' is defined but never used                                                                                                                                                                                                            no-unused-vars
+  Line 21:3:  'AlertCircle' is defined but never used                                                                                                                                                                                                     no-unused-vars
+  Line 22:3:  'Hash' is defined but never used                                                                                                                                                                                                            no-unused-vars
+  Line 39:9:  The 'rawHostels' logical expression could make the dependencies of useMemo Hook (at line 51) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'rawHostels' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  Line 42:9:  The 'complaints' logical expression could make the dependencies of useMemo Hook (at line 57) change on every render. To fix this, wrap the initialization of 'complaints' in its own useMemo() Hook                                         react-hooks/exhaustive-deps
+
+src\pages\owner\ViewRequests.jsx
+  Line 14:3:  'CheckCircle2' is defined but never used       no-unused-vars
+  Line 15:3:  'XCircle' is defined but never used            no-unused-vars
+  Line 20:3:  'ArrowUpRight' is defined but never used       no-unused-vars
+  Line 33:9:  'navigate' is assigned a value but never used  no-unused-vars
+
+src\pages\student\BookingRequestPage.jsx
+  Line 128:9:  'handleViewDetails' is assigned a value but never used  no-unused-vars
+
+src\pages\student\HostelDetails.jsx
+  Line 1:38:  'useCallback' is defined but never used  no-unused-vars
+  Line 3:8:   'api' is defined but never used          no-unused-vars
+
+src\pages\student\Interested.jsx
+  Line 13:3:  'X' is defined but never used  no-unused-vars
+
+src\pages\student\MyBookingsPage.jsx
+  Line 73:9:  The 'requests' logical expression could make the dependencies of useMemo Hook (at line 99) change on every render. To fix this, wrap the initialization of 'requests' in its own useMemo() Hook   react-hooks/exhaustive-deps
+  Line 73:9:  The 'requests' logical expression could make the dependencies of useMemo Hook (at line 104) change on every render. To fix this, wrap the initialization of 'requests' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  Line 87:5:  Expected a default case                                                                                                                                                                           default-case
+
+src\pages\student\MyHostelPage.jsx
+  Line 32:10:  'SkeletonHostelCard' is defined but never used  no-unused-vars
+
+src\pages\student\MyHostelRules.jsx
+  Line 14:3:   'ShieldCheck' is defined but never used           no-unused-vars
+  Line 19:3:   'AlertCircle' is defined but never used           no-unused-vars
+  Line 45:12:  'rulesError' is assigned a value but never used   no-unused-vars
+  Line 53:9:   'handleRetry' is assigned a value but never used  no-unused-vars
+
+src\pages\student\MyRoomDetails.jsx
+  Line 14:3:  'BedDouble' is defined but never used  no-unused-vars
+  Line 36:3:  'Calendar' is defined but never used   no-unused-vars
+  Line 39:8:  'toast' is defined but never used      no-unused-vars
+
+src\pages\student\RaiseComplaint.jsx
+  Line 12:38:  'useMemo' is defined but never used        no-unused-vars
+  Line 14:8:   'api' is defined but never used            no-unused-vars
+  Line 17:3:   'MessageSquare' is defined but never used  no-unused-vars
+  Line 21:3:   'AlertCircle' is defined but never used    no-unused-vars
+  Line 23:3:   'Home' is defined but never used           no-unused-vars
+  Line 30:3:   'Trash2' is defined but never used         no-unused-vars
+
+src\pages\student\RecentlyViewed.jsx
+  Line 25:3:  'Calendar' is defined but never used                 no-unused-vars
+  Line 77:7:  'formatFullDate' is assigned a value but never used  no-unused-vars
+
+src\pages\student\SettingsPage.jsx
+  Line 12:38:  'useMemo' is defined but never used       no-unused-vars
+  Line 22:3:   'AlertCircle' is defined but never used   no-unused-vars
+  Line 25:3:   'CheckCircle' is defined but never used   no-unused-vars
+  Line 26:3:   'ChevronRight' is defined but never used  no-unused-vars
+
+src\pages\student\StudentRequestsStatus.jsx
+  Line 16:27:  'useCallback' is defined but never used  no-unused-vars
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+File sizes after gzip:
+
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  npm install -g serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+

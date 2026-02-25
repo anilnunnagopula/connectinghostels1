@@ -1,37 +1,25 @@
 const express = require("express");
 const router = express.Router();
-const roomController = require("../controllers/roomController");
+const ctrl = require("../controllers/roomController");
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
+const { validate } = require("../middleware/validators/authValidators");
+const {
+  createRoomRules,
+  updateRoomRules,
+  updateStatusRules,
+  roomIdRules,
+  listRoomsRules,
+} = require("../middleware/validators/roomValidators");
 
-// IMPORTANT: A proper room management system should have a Room model.
-// These routes are designed to be used once a Room model is in place.
-// For now, they are placeholders.
+const auth = [requireAuth, requireOwner];
 
-// Route to get details for a specific room
-// URL would be something like: /api/owner/rooms/:hostelId/:roomNo
-router.get(
-  "/:hostelId/:roomNo",
-  requireAuth,
-  requireOwner,
-  roomController.getRoomDetails
-);
-
-// Route to update the status of a room (e.g., toggle filled/vacant)
-// URL would be: /api/owner/rooms/:hostelId/:roomNo/status
-router.put(
-  "/:hostelId/:roomNo/status",
-  requireAuth,
-  requireOwner,
-  roomController.updateRoomStatus
-);
-
-// Route to edit the details of a room
-// URL would be: /api/owner/rooms/:hostelId/:roomNo/edit
-router.put(
-  "/:hostelId/:roomNo/edit",
-  requireAuth,
-  requireOwner,
-  roomController.editRoomDetails
-);
+// ── Room CRUD ──────────────────────────────────────────────────────────────
+router.get("/",          ...auth, listRoomsRules,    validate, ctrl.getRooms);          // GET  ?hostelId=
+router.get("/summary",   ...auth,                              ctrl.getFloorSummary); // GET  ?hostelId=
+router.post("/",         ...auth, createRoomRules,   validate, ctrl.addRoom);           // POST
+router.post("/bulk",     ...auth,                              ctrl.bulkUpdateStatus);// POST bulk status
+router.put("/:id",       ...auth, roomIdRules, updateRoomRules,   validate, ctrl.updateRoom);    // PUT
+router.patch("/:id/status", ...auth, updateStatusRules, validate, ctrl.updateRoomStatus); // PATCH status
+router.delete("/:id",    ...auth, roomIdRules,        validate, ctrl.deleteRoom);       // DELETE
 
 module.exports = router;

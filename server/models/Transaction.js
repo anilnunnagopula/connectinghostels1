@@ -77,4 +77,7 @@ const transactionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+transactionSchema.index({ student: 1, createdAt: -1 });
+transactionSchema.index({ "gatewayDetails.razorpayPaymentId": 1 });
+
 module.exports = mongoose.model("Transaction", transactionSchema);

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "./Sidebar";
 import MobileBottomNav from "./MobileBottomNav";
 import MobileDrawer from "./MobileDrawer";
@@ -35,7 +36,17 @@ const OwnerLayout = ({ children }) => {
           pb-20 lg:pb-6
         "
       >
-        <div className="w-full">{children}</div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={window.location.pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="w-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation */}

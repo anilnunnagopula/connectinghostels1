@@ -1,569 +1,282 @@
 // services/ownerService.js
-import axios from "axios";
+import api from "../apiConfig";
 
-const API_URL = process.env.REACT_APP_API_URL;
-
-/**
- * Get authentication token from localStorage
- */
-const getToken = () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("Authentication token not found");
-  }
-  return token;
-};
-
-/**
- * Get authorization headers
- */
-const getHeaders = () => ({
-  Authorization: `Bearer ${getToken()}`,
-});
+// NOTE: 'api' already has baseURL set to process.env.REACT_APP_API_URL (or http://localhost:5000).
+// All paths below must be relative (start with /api/...) — do NOT prepend API_URL again.
 
 /**
  * Owner Service - Centralized API calls for owner operations
- * Real-time ready architecture with event hooks
+ * Auth is handled via httpOnly cookie sent automatically by the api instance.
  */
 export const ownerService = {
   // ==================== DASHBOARD ====================
-  /**
-   * Get dashboard metrics
-   */
   getDashboardMetrics: async () => {
-    const response = await axios.get(`${API_URL}/api/owner/dashboard/metrics`, {
-      headers: getHeaders(),
-    });
+    const response = await api.get(`/api/owner/dashboard/metrics`);
     return response.data;
   },
 
   // ==================== HOSTELS ====================
-  /**
-   * Get all owner's hostels
-   */
   getMyHostels: async () => {
-    const response = await axios.get(
-      `${API_URL}/api/owner/hostels/my-hostels`,
-      { headers: getHeaders() },
-    );
+    const response = await api.get(`/api/owner/hostels/my-hostels`);
     return response.data.hostels;
   },
 
-  /**
-   * Get single hostel by ID
-   */
   getHostelById: async (hostelId) => {
-    const response = await axios.get(
-      `${API_URL}/api/owner/hostels/${hostelId}`,
-      { headers: getHeaders() },
-    );
+    const response = await api.get(`/api/owner/hostels/${hostelId}`);
     return response.data.hostel;
   },
 
-  /**
-   * Add new hostel
-   */
   addHostel: async (formData) => {
-    const response = await axios.post(
-      `${API_URL}/api/owner/hostels/add-hostel`,
+    const response = await api.post(
+      `/api/owner/hostels/add-hostel`,
       formData,
-      {
-        headers: {
-          ...getHeaders(),
-          "Content-Type": "multipart/form-data",
-        },
-      },
+      { headers: { "Content-Type": "multipart/form-data" } },
     );
     return response.data;
   },
 
-  /**
-   * Update hostel
-   */
   updateHostel: async (hostelId, data) => {
-    const response = await axios.put(
-      `${API_URL}/api/owner/hostels/${hostelId}`,
-      data,
-      { headers: getHeaders() },
-    );
+    const response = await api.put(`/api/owner/hostels/${hostelId}`, data);
     return response.data;
   },
 
-  /**
-   * Delete hostel
-   */
   deleteHostel: async (hostelId) => {
-    const response = await axios.delete(
-      `${API_URL}/api/owner/hostels/${hostelId}`,
-      { headers: getHeaders() },
-    );
+    const response = await api.delete(`/api/owner/hostels/${hostelId}`);
     return response.data;
   },
 
   // ==================== ROOMS ====================
-  /**
-   * Get all rooms (optionally filter by hostelId)
-   */
-  getRooms: async (hostelId = null) => {
-    // FIX: Backend has no dedicated rooms endpoint. Synthesize rooms from hostel details + student list.
-    try {
-      if (!hostelId) return [];
-
-      // 1. Fetch Hostel Details (for totalRooms count)
-      const hostelsRes = await axios.get(
-        `${API_URL}/api/owner/hostels/my-hostels`,
-        { headers: getHeaders() },
-      );
-      const targetHostel = hostelsRes.data.hostels.find(
-        (h) => h._id === hostelId,
-      );
-
-      if (!targetHostel) return [];
-
-      // 2. Fetch Students (to map occupancy)
-      const studentsRes = await axios.get(`${API_URL}/api/students/mine`, {
-        headers: getHeaders(),
-      });
-      const students = studentsRes.data.students || [];
-
-      // 3. Synthesize Rooms
-      const totalRooms = targetHostel.totalRooms || 0;
-      const rooms = [];
-      const roomsMap = {};
-
-      // Map students to rooms
-      const hostelStudents = students.filter(
-        (s) => s.hostel && s.hostel._id === hostelId,
-      );
-
-      hostelStudents.forEach((student) => {
-        const roomNum = student.room; // Schema has 'room' field
-        if (roomNum) {
-          if (!roomsMap[roomNum]) {
-            roomsMap[roomNum] = {
-              _id: `gen-${hostelId}-${roomNum}`,
-              hostelId: hostelId,
-              roomNumber: roomNum,
-              capacity: 3, // Default cap
-              status: "Occupied",
-              isAvailable: false,
-              assignedStudents: [],
-            };
-          }
-          roomsMap[roomNum].assignedStudents.push(student);
-        }
-      });
-
-      // Generate sequence
-      for (let i = 1; i <= totalRooms; i++) {
-        const roomNum = i.toString();
-        if (roomsMap[roomNum]) {
-          rooms.push(roomsMap[roomNum]);
-        } else {
-          rooms.push({
-            _id: `gen-${hostelId}-${roomNum}`,
-            hostelId: hostelId,
-            roomNumber: roomNum,
-            capacity: 3,
-            status: "Available",
-            isAvailable: true,
-            assignedStudents: [],
-          });
-        }
-      }
-
-      return rooms;
-    } catch (err) {
-      console.error("Error synthesizing rooms:", err);
-      throw err;
-    }
+  getRooms: async (hostelId, { floor, status } = {}) => {
+    const params = new URLSearchParams({ hostelId });
+    if (floor !== undefined) params.set("floor", floor);
+    if (status) params.set("status", status);
+    const response = await api.get(`/api/owner/rooms?${params}`);
+    return response.data.rooms;
   },
 
-  /**
-   * Get single room by ID
-   */
-  getRoomById: async (roomId) => {
-    const response = await axios.get(`${API_URL}/api/owner/rooms/${roomId}`, {
-      headers: getHeaders(),
-    });
-    return response.data.room;
+  getFloorSummary: async (hostelId) => {
+    const response = await api.get(`/api/owner/rooms/summary?hostelId=${hostelId}`);
+    return response.data.summary;
   },
 
-  /**
-   * Add new room
-   */
   addRoom: async (roomData) => {
-    const response = await axios.post(`${API_URL}/api/owner/rooms`, roomData, {
-      headers: getHeaders(),
-    });
+    const response = await api.post(`/api/owner/rooms`, roomData);
     return response.data;
   },
 
-  /**
-   * Update room
-   */
   updateRoom: async (roomId, roomData) => {
-    const response = await axios.put(
-      `${API_URL}/api/owner/rooms/${roomId}`,
-      roomData,
-      { headers: getHeaders() },
-    );
+    const response = await api.put(`/api/owner/rooms/${roomId}`, roomData);
     return response.data;
   },
 
-  /**
-   * Toggle room status (Available/Occupied/Maintenance)
-   */
-  toggleRoomStatus: async (roomId, status) => {
-    const response = await axios.patch(
-      `${API_URL}/api/owner/rooms/${roomId}/status`,
-      { status },
-      { headers: getHeaders() },
-    );
+  updateRoomStatus: async (roomId, status) => {
+    const response = await api.patch(`/api/owner/rooms/${roomId}/status`, { status });
     return response.data;
   },
 
-  /**
-   * Toggle room availability (quick toggle)
-   */
-  toggleRoomAvailability: async (roomId) => {
-    const response = await axios.patch(
-      `${API_URL}/api/owner/rooms/${roomId}/toggle`,
-      {},
-      { headers: getHeaders() },
-    );
+  bulkUpdateRoomStatus: async (roomIds, status) => {
+    const response = await api.post(`/api/owner/rooms/bulk`, { roomIds, status });
     return response.data;
   },
 
-  /**
-   * Assign student to room
-   */
-  assignStudentToRoom: async (roomId, studentId) => {
-    const response = await axios.post(
-      `${API_URL}/api/owner/rooms/${roomId}/assign`,
-      { studentId },
-      { headers: getHeaders() },
-    );
-    return response.data;
-  },
-
-  /**
-   * Unassign student from room
-   */
-  unassignStudentFromRoom: async (roomId, studentId) => {
-    const response = await axios.post(
-      `${API_URL}/api/owner/rooms/${roomId}/unassign`,
-      { studentId },
-      { headers: getHeaders() },
-    );
-    return response.data;
-  },
-
-  /**
-   * Delete room
-   */
   deleteRoom: async (roomId) => {
-    const response = await axios.delete(
-      `${API_URL}/api/owner/rooms/${roomId}`,
-      { headers: getHeaders() },
-    );
+    const response = await api.delete(`/api/owner/rooms/${roomId}`);
+    return response.data;
+  },
+
+  generateRooms: async (hostelId, floors) => {
+    const response = await api.post(`/api/owner/hostels/${hostelId}/generate-rooms`, { floors });
+    return response.data;
+  },
+
+  addFloor: async (hostelId, floorData) => {
+    const response = await api.post(`/api/owner/hostels/${hostelId}/floors`, floorData);
+    return response.data;
+  },
+
+  deleteFloor: async (hostelId, floorNumber) => {
+    const response = await api.delete(`/api/owner/hostels/${hostelId}/floors/${floorNumber}`);
     return response.data;
   },
 
   // ==================== STUDENTS ====================
-  /**
-   * Get all owner's students
-   */
   getMyStudents: async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     const url = queryParams
-      ? `${API_URL}/api/students/mine?${queryParams}`
-      : `${API_URL}/api/students/mine`;
-    const response = await axios.get(url, { headers: getHeaders() });
+      ? `/api/students/mine?${queryParams}`
+      : `/api/students/mine`;
+    const response = await api.get(url);
     return response.data.students;
   },
 
-  /**
-   * Get single student by ID
-   */
   getStudentById: async (studentId) => {
-    const response = await axios.get(`${API_URL}/api/students/${studentId}`, {
-      headers: getHeaders(),
-    });
+    const response = await api.get(`/api/students/${studentId}`);
     return response.data.student;
   },
 
-  /**
-   * Add new student
-   */
   addStudent: async (studentData) => {
-    const response = await axios.post(`${API_URL}/api/students`, studentData, {
-      headers: getHeaders(),
-    });
+    const response = await api.post(`/api/students`, studentData);
     return response.data;
   },
 
-  /**
-   * Update student
-   */
   updateStudent: async (studentId, studentData) => {
-    const response = await axios.put(
-      `${API_URL}/api/students/${studentId}`,
-      studentData,
-      { headers: getHeaders() },
-    );
+    const response = await api.put(`/api/students/${studentId}`, studentData);
     return response.data;
   },
 
-  /**
-   * Update student status (Active/Vacated)
-   */
   updateStudentStatus: async (studentId, status) => {
-    const response = await axios.patch(
-      `${API_URL}/api/students/${studentId}/status`,
-      { status },
-      { headers: getHeaders() },
-    );
+    const response = await api.patch(`/api/students/${studentId}/status`, { status });
     return response.data;
   },
 
-  /**
-   * Delete student (soft delete)
-   */
   deleteStudent: async (studentId) => {
-    const response = await axios.delete(
-      `${API_URL}/api/students/${studentId}`,
-      { headers: getHeaders() },
-    );
+    const response = await api.delete(`/api/students/${studentId}`);
     return response.data;
   },
 
   // ==================== COMPLAINTS ====================
-  /**
-   * Get all complaints
-   */
   getComplaints: async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     const url = queryParams
-      ? `${API_URL}/api/complaints?${queryParams}`
-      : `${API_URL}/api/complaints`;
-    const response = await axios.get(url, { headers: getHeaders() });
+      ? `/api/complaints?${queryParams}`
+      : `/api/complaints`;
+    const response = await api.get(url);
     return response.data.complaints;
   },
 
-  /**
-   * Update complaint status
-   */
   updateComplaintStatus: async (complaintId, status, notes = "") => {
-    const response = await axios.patch(
-      `${API_URL}/api/complaints/${complaintId}/status`,
+    const response = await api.patch(
+      `/api/complaints/${complaintId}/status`,
       { status, notes },
-      { headers: getHeaders() },
     );
     return response.data;
   },
 
-  /**
-   * Add note to complaint
-   */
   addComplaintNote: async (complaintId, note) => {
-    const response = await axios.post(
-      `${API_URL}/api/complaints/${complaintId}/notes`,
+    const response = await api.post(
+      `/api/complaints/${complaintId}/notes`,
       { note },
-      { headers: getHeaders() },
     );
     return response.data;
   },
 
   // ==================== REQUESTS ====================
-  /**
-   * Get all requests (booking/room change/leave)
-   */
   getRequests: async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     const url = queryParams
-      ? `${API_URL}/api/requests?${queryParams}`
-      : `${API_URL}/api/requests`;
-    const response = await axios.get(url, { headers: getHeaders() });
+      ? `/api/owner/booking-requests/mine?${queryParams}`
+      : `/api/owner/booking-requests/mine`;
+    const response = await api.get(url);
     return response.data.requests;
   },
 
-  /**
-   * Approve request
-   */
   approveRequest: async (requestId, notes = "") => {
-    const response = await axios.post(
-      `${API_URL}/api/requests/${requestId}/approve`,
-      { notes },
-      { headers: getHeaders() },
-    );
+    const response = await api.post(`/api/owner/booking-requests/${requestId}/approve`, { notes });
     return response.data;
   },
 
-  /**
-   * Reject request
-   */
   rejectRequest: async (requestId, reason) => {
-    const response = await axios.post(
-      `${API_URL}/api/requests/${requestId}/reject`,
-      { reason },
-      { headers: getHeaders() },
-    );
+    const response = await api.post(`/api/owner/booking-requests/${requestId}/reject`, { reason });
     return response.data;
   },
 
   // ==================== RULES ====================
-  /**
-   * Get rules for hostel
-   */
   getRules: async (hostelId) => {
-    const response = await axios.get(`${API_URL}/api/owner/rules/${hostelId}`, {
-      headers: getHeaders(),
-    });
+    const response = await api.get(`/api/owner/rules/${hostelId}`);
     return response.data.rules;
   },
 
-  /**
-   * Add rule
-   */
   addRule: async (ruleData) => {
-    const response = await axios.post(`${API_URL}/api/owner/rules`, ruleData, {
-      headers: getHeaders(),
-    });
+    const response = await api.post(`/api/owner/rules`, ruleData);
     return response.data;
   },
 
-  /**
-   * Update rule
-   */
   updateRule: async (ruleId, ruleData) => {
-    const response = await axios.put(
-      `${API_URL}/api/owner/rules/${ruleId}`,
-      ruleData,
-      { headers: getHeaders() },
-    );
+    const response = await api.put(`/api/owner/rules/${ruleId}`, ruleData);
     return response.data;
   },
 
-  /**
-   * Delete rule
-   */
   deleteRule: async (ruleId) => {
-    const response = await axios.delete(
-      `${API_URL}/api/owner/rules/${ruleId}`,
-      { headers: getHeaders() },
-    );
+    const response = await api.delete(`/api/owner/rules/${ruleId}`);
     return response.data;
   },
 
   // ==================== PAYMENTS ====================
-  /**
-   * Get payment settings
-   */
   getPaymentSettings: async () => {
-    const response = await axios.get(`${API_URL}/api/owner/payments/settings`, {
-      headers: getHeaders(),
-    });
+    const response = await api.get(`/api/owner/payments/settings`);
     return response.data.settings;
   },
 
-  /**
-   * Update payment settings
-   */
   updatePaymentSettings: async (settings) => {
-    const response = await axios.post(
-      `${API_URL}/api/owner/payments/settings`,
-      settings,
-      { headers: getHeaders() },
-    );
+    const response = await api.post(`/api/owner/payments/settings`, settings);
     return response.data;
   },
 
-  /**
-   * Get payment history
-   */
   getPaymentHistory: async (filters = {}) => {
     const queryParams = new URLSearchParams(filters).toString();
     const url = queryParams
-      ? `${API_URL}/api/owner/payments/history?${queryParams}`
-      : `${API_URL}/api/owner/payments/history`;
-    const response = await axios.get(url, { headers: getHeaders() });
+      ? `/api/owner/payments/history?${queryParams}`
+      : `/api/owner/payments/history`;
+    const response = await api.get(url);
     return response.data.payments;
   },
 
   // ==================== REAL-TIME (PLACEHOLDER) ====================
-  /**
-   * Subscribe to room updates (WebSocket ready)
-   * Currently returns unsubscribe function placeholder
-   */
   subscribeToRoomUpdates: (callback) => {
-    // TODO: Implement WebSocket connection
-    console.log("🔌 WebSocket: Room updates subscription ready");
-
-    // Placeholder: Return unsubscribe function
-    return () => {
-      console.log("🔌 WebSocket: Unsubscribed from room updates");
-    };
+    return () => {};
   },
 
-  /**
-   * Subscribe to notification updates (WebSocket ready)
-   */
   subscribeToNotifications: (callback) => {
-    // TODO: Implement WebSocket connection
-    console.log("🔌 WebSocket: Notification subscription ready");
-
-    return () => {
-      console.log("🔌 WebSocket: Unsubscribed from notifications");
-    };
+    return () => {};
   },
 
-  /**
-   * Subscribe to general owner events (WebSocket ready)
-   */
   subscribeToEvents: (eventType, callback) => {
-    // TODO: Implement WebSocket connection
-    console.log(`🔌 WebSocket: Subscribed to ${eventType}`);
-
-    return () => {
-      console.log(`🔌 WebSocket: Unsubscribed from ${eventType}`);
-    };
+    return () => {};
   },
-};
 
-/**
- * Error handler wrapper for service calls
- * Handles common error scenarios (401, 403, 500, etc.)
- */
-export const handleServiceError = (error) => {
-  if (error.response) {
-    const { status, data } = error.response;
+  // ==================== PAYOUT METHODS ====================
+  getPayoutMethods: async () => {
+    const response = await api.get(`/api/owner/payout-methods`);
+    return response.data; // { methods: [...] }
+  },
 
-    switch (status) {
-      case 401:
-        // Token expired or invalid
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
-        throw new Error("Session expired. Please login again.");
+  addPayoutMethod: async (data) => {
+    const response = await api.post(`/api/owner/payout-methods`, data);
+    return response.data;
+  },
 
-      case 403:
-        throw new Error("Access denied. You do not have permission.");
+  deletePayoutMethod: async (methodId) => {
+    const response = await api.delete(`/api/owner/payout-methods/${methodId}`);
+    return response.data;
+  },
 
-      case 404:
-        throw new Error(data.message || "Resource not found.");
+  setDefaultPayoutMethod: async (methodId) => {
+    const response = await api.put(`/api/owner/payout-methods/${methodId}/default`);
+    return response.data;
+  },
 
-      case 500:
-        throw new Error("Server error. Please try again later.");
+  // ==================== STUDENTS ====================
+  addStudent: async (data) => {
+    const response = await api.post(`/api/students`, data);
+    return response.data; // { message, student, accountCreated }
+  },
 
-      default:
-        throw new Error(data.message || "An error occurred.");
-    }
-  } else if (error.request) {
-    throw new Error("Network error. Please check your connection.");
-  } else {
-    throw new Error(error.message || "An unexpected error occurred.");
-  }
+  getMyStudents: async (filters = {}) => {
+    const params = new URLSearchParams(filters).toString();
+    const url = params ? `/api/students/mine?${params}` : `/api/students/mine`;
+    const response = await api.get(url);
+    return response.data.students; // array of students
+  },
+
+  updateStudent: async (id, data) => {
+    const response = await api.put(`/api/students/${id}`, data);
+    return response.data;
+  },
+
+  deleteStudent: async (id) => {
+    const response = await api.delete(`/api/students/${id}`);
+    return response.data;
+  },
 };
 
 export default ownerService;

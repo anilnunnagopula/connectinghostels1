@@ -1,75 +1,57 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext"; // 1. Import useAuth
-
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
+import api from "../apiConfig";
+import { useAuth } from "../context/AuthContext";
 import { useGoogleLogin } from "@react-oauth/google";
+
+const registerSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Enter a valid email"),
+    phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit phone number"),
+    password: z
+      .string()
+      .min(8, "At least 8 characters")
+      .regex(/[A-Z]/, "Must include uppercase")
+      .regex(/[0-9]/, "Must include a number")
+      .regex(/[^a-zA-Z0-9]/, "Must include a special character"),
+    confirmPassword: z.string(),
+    hostelName: z.string().optional(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
 const Register = () => {
-  const { login } = useAuth(); // 2. Get the login function from context
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const [role, setRole] = useState("student");
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    // otp: "", // Deactivated for now
-    password: "",
-    confirmPassword: "",
-    hostelName: "",
-  });
-  // const [otpSent, setOtpSent] = useState(false); // Deactivated for now
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const API_URL = process.env.REACT_APP_API_URL;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(registerSchema) });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
-  // Password validation function
-  const validatePassword = (password) => {
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    if (password.length < minLength) {
-      return "Password must be at least 8 characters long.";
-    }
-    if (!hasUpperCase) {
-      return "Password must contain at least one uppercase letter.";
-    }
-    if (!hasLowerCase) {
-      return "Password must contain at least one lowercase letter.";
-    }
-    if (!hasNumber) {
-      return "Password must contain at least one number.";
-    }
-    if (!hasSpecialChar) {
-      return "Password must contain at least one special character.";
-    }
-    return null;
-  };
-
-  // Google OAuth Handler
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setLoading(true);
-      setError("");
-
+      setServerError("");
       try {
-        const res = await axios.post(
-          `${process.env.REACT_APP_API_URL}/api/auth/google`,
-          {
-            credential: tokenResponse.access_token,
-          },
-        );
-
+        const res = await api.post("/api/auth/google", {
+          credential: tokenResponse.access_token,
+        });
         const { token, user, requiresProfileCompletion } = res.data;
-
         if (requiresProfileCompletion) {
           localStorage.setItem("tempToken", token);
           localStorage.setItem("tempUser", JSON.stringify(user));
@@ -78,98 +60,74 @@ const Register = () => {
           login(user, token);
         }
       } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            "Google sign-in failed. Please try again.",
-        );
+        setServerError(err.response?.data?.message || "Google sign-in failed. Please try again.");
       } finally {
         setLoading(false);
       }
     },
     onError: () => {
-      setError("Google sign-in failed. Please try again.");
+      setServerError("Google sign-in failed. Please try again.");
     },
   });
-  /*
-  // --- OTP Sending Logic (for future use) ---
-  const sendOtp = async () => {
-    setError("");
-    if (!form.phone || form.phone.length !== 10) {
-      return setError("Please enter a valid 10-digit phone number first.");
+
+  const onSubmit = async (data) => {
+    setServerError("");
+    if (role === "owner" && !data.hostelName?.trim()) {
+      setServerError("Hostel name is required for owners.");
+      return;
     }
-    try {
-      await axios.post(`${API_URL}/auth/send-otp`, { phone: form.phone });
-      setOtpSent(true);
-      setError(`✅ OTP sent to ${form.phone}.`); 
-    } catch (err) {
-      setError(err.response?.data?.message || "❌ Error sending OTP. Please try again.");
-    }
-  };
-  */
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (form.password !== form.confirmPassword)
-      return setError("Passwords do not match!");
-
-    // Enhanced password validation
-    const passwordError = validatePassword(form.password);
-    if (passwordError) return setError(passwordError);
-
-    if (form.phone.length !== 10)
-      return setError("Please enter a valid 10-digit phone number.");
-    if (role === "owner" && !form.hostelName.trim())
-      return setError("Hostel name is required for owners.");
-    // if (otpSent && !form.otp) return setError("Please enter the OTP you received."); // Deactivated
-
     setLoading(true);
-
     const payload = {
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      password: form.password,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
       role,
-      // otp: form.otp, // Deactivated
-      hostelName: role === "owner" ? form.hostelName : undefined,
+      hostelName: role === "owner" ? data.hostelName : undefined,
     };
-
     try {
-      const res = await axios.post(`${API_URL}/api/auth/register`, payload);
+      const res = await api.post("/api/auth/register", payload);
       const { token, user } = res.data;
-
-      login(user, token); // 3. Use context's login to sign in and redirect
+      login(user, token);
     } catch (err) {
-      const message =
-        err.response?.data?.message || "Registration failed. Please try again.";
-      setError(message);
-      console.error(err);
+      setServerError(err.response?.data?.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const inputCls =
+    "w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-3">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6 text-blue-700 dark:text-white">
-          {role === "owner"
-            ? "Hostel Owner Registration"
-            : "Student Registration"}
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 px-4 py-8">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8 w-full max-w-md">
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-600 text-white text-[11px] font-black select-none">
+            CH
+          </span>
+          <span className="text-xl font-bold text-slate-900 dark:text-white">ConnectingHostels</span>
+        </div>
+
+        <h2 className="text-2xl font-bold text-center mb-1 text-slate-900 dark:text-white">
+          Create your account
         </h2>
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mb-6">
+          {role === "owner" ? "Start listing your hostel" : "Find your perfect hostel"}
+        </p>
 
         {/* Role Toggle */}
-        <div className="flex justify-center gap-4 mb-6">
+        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-6 gap-1">
           {["student", "owner"].map((r) => (
             <button
               key={r}
+              type="button"
               onClick={() => setRole(r)}
-              className={`px-4 py-2 rounded-md text-sm font-semibold ${
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                 role === r
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
+                  ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               }`}
             >
               {r === "student" ? "Student" : "Hostel Owner"}
@@ -177,145 +135,167 @@ const Register = () => {
           ))}
         </div>
 
-        {/* Error/Message Display Area */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 text-sm rounded-lg text-center">
-            {error}
+        {/* Server Error */}
+        {serverError && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg">
+            {serverError}
           </div>
         )}
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
-          />
-
-          {/* Phone - Just the input for now */}
-          <input
-            type="tel"
-            name="phone"
-            placeholder="10-digit Phone Number"
-            value={form.phone}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
-          />
-
-          {/* // --- OTP Button (for future use) ---
-          <div className="flex gap-2">
-            <input ... />
-            <button type="button" onClick={sendOtp}>Send OTP</button>
-          </div>
-          */}
-
-          {/*
-          // --- OTP Input (for future use) ---
-          {otpSent && (
-            <input type="number" name="otp" ... />
-          )}
-          */}
-
-          {/* Hostel Name (Conditional) */}
-          {role === "owner" && (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Name */}
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              Full Name
+            </label>
             <input
+              {...register("name")}
               type="text"
-              name="hostelName"
-              placeholder="Hostel Name"
-              value={form.hostelName}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+              placeholder="Ravi Kumar"
+              className={inputCls}
             />
+            {errors.name && (
+              <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+            )}
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              Email
+            </label>
+            <input
+              {...register("email")}
+              type="email"
+              placeholder="you@example.com"
+              className={inputCls}
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              Phone Number
+            </label>
+            <input
+              {...register("phone")}
+              type="tel"
+              placeholder="10-digit mobile number"
+              className={inputCls}
+            />
+            {errors.phone && (
+              <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
+            )}
+          </div>
+
+          {/* Hostel Name (Owner only) */}
+          {role === "owner" && (
+            <div>
+              <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+                Hostel Name
+              </label>
+              <input
+                {...register("hostelName")}
+                type="text"
+                placeholder="Sri Harsha Boys Hostel"
+                className={inputCls}
+              />
+              {errors.hostelName && (
+                <p className="text-red-500 text-xs mt-1">{errors.hostelName.message}</p>
+              )}
+            </div>
           )}
 
           {/* Password */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
-            />
-            <span
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 text-sm"
-            >
-              {showPassword ? "🙈" : "👁️"}
-            </span>
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                {...register("password")}
+                type={showPassword ? "text" : "password"}
+                placeholder="Min 8 chars, uppercase, number, symbol"
+                className={inputCls + " pr-10"}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+            )}
           </div>
 
           {/* Confirm Password */}
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
-          />
+          <div>
+            <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              Confirm Password
+            </label>
+            <input
+              {...register("confirmPassword")}
+              type="password"
+              placeholder="Re-enter your password"
+              className={inputCls}
+            />
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>
+            )}
+          </div>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full font-semibold py-2 rounded transition-colors ${
-              loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors"
           >
-            {loading ? "Registering..." : `Register as ${role}`}
-          </button>
-
-          <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-blue-600 hover:underline font-medium"
-            >
-              Login here
-            </Link>
-          </p>
-          {/* Google Sign-In Button */}
-          <button
-            onClick={() => handleGoogleLogin()}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 text-gray-700 dark:text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 mb-6"
-          >
-            {loading ? (
-              "Signing in..."
-            ) : (
-              <>
-                <img
-                  src="https://www.google.com/favicon.ico"
-                  alt="Google"
-                  className="w-5 h-5"
-                />
-                Continue with Google
-              </>
-            )}
+            {loading ? "Creating account…" : `Register as ${role}`}
           </button>
         </form>
-        {/* Updated Bottom Text */}
-        <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
-          By continuing, you agree to our Service and Privacy Policy
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+          <span className="text-xs text-slate-400">or</span>
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+        </div>
+
+        {/* Google Sign-In */}
+        <button
+          type="button"
+          onClick={() => handleGoogleLogin()}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 text-slate-700 dark:text-slate-200 font-medium py-2.5 rounded-lg transition disabled:opacity-50"
+        >
+          {loading ? (
+            "Signing in…"
+          ) : (
+            <>
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+              Continue with Google
+            </>
+          )}
+        </button>
+
+        <p className="text-center text-sm mt-5 text-slate-500 dark:text-slate-400">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+            Sign in
+          </Link>
+        </p>
+
+        <p className="text-center text-xs mt-3 text-slate-400 dark:text-slate-500">
+          By registering, you agree to our{" "}
+          <Link to="/legal/terms-and-conditions" className="underline hover:text-slate-600 dark:hover:text-slate-300">Terms</Link>
+          {" "}and{" "}
+          <Link to="/legal/privacy-policy" className="underline hover:text-slate-600 dark:hover:text-slate-300">Privacy Policy</Link>
         </p>
       </div>
     </div>

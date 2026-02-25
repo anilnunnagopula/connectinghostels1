@@ -2,7 +2,7 @@
  * Owner Payment Controller
  */
 
-const OwnerPayment = require("../models/OwnerPayment");
+const OwnerPayment = require("../models/OwnerPayments");
 
 exports.getOwnerPayments = async (req, res) => {
   try {

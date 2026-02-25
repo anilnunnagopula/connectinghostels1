@@ -1,0 +1,13 @@
+{
+  "name": "ConnectingHostels",
+  "short_name": "CHosts",
+  "description": "Find verified PG and hostel accommodation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e40af",
+  "theme_color": "#1e40af",
+  "icons": [
+    { "src": "/Hostel.jpg", "sizes": "192x192", "type": "image/jpeg" },
+    { "src": "/Hostel.jpg", "sizes": "512x512", "type": "image/jpeg" }
+  ]
+}

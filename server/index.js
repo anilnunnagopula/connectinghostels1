@@ -1,144 +1,101 @@
 // dotenv must load first so SENTRY_DSN is available for Sentry.init()
 require("dotenv").config();
 
-// Sentry must be initialized before any other require() calls
-const Sentry = require("@sentry/node");
-
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || "development",
-    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
-  });
-}
-
-require("express-async-errors");
-const express = require("express");
+const app = require("./app");
+const http = require("http");
 const mongoose = require("mongoose");
-const cors = require("cors");
-const helmet = require("helmet");
-const compression = require("compression");
-const cookieParser = require("cookie-parser");
-const mongoSanitize = require("mongoose-sanitize");
-const crypto = require("crypto");
-const path = require("path");
-
+const jwt = require("jsonwebtoken");
+const { Server } = require("socket.io");
+const { createAdapter } = require("@socket.io/redis-adapter");
 const logger = require("./middleware/logger");
-const errorHandler = require("./middleware/errorHandler");
 
-const app = express();
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "https://connectinghostels1.netlify.app",
+];
 
-// ==================== SECURITY MIDDLEWARE ====================
-app.use(
-  helmet({
-    // Allow images served from /uploads to be loaded cross-origin
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
-);
-app.use(compression());
+const httpServer = http.createServer(app);
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://connectinghostels1.netlify.app",
-    ],
-    credentials: true,
-  }),
-);
-
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: true, limit: "10kb" }));
-app.use(cookieParser());
-app.use(mongoSanitize());
-
-// Attach a unique request ID to every request for log tracing
-app.use((req, _res, next) => {
-  req.id = crypto.randomUUID();
-  next();
+// ==================== SOCKET.IO ====================
+const io = new Server(httpServer, {
+  cors: { origin: ALLOWED_ORIGINS, credentials: true },
 });
 
-// ==================== FILE SERVING ====================
-// Hostel images are public. Complaint attachments require authentication.
-app.use("/uploads", (req, res, next) => {
-  if (req.path.startsWith("/complaints")) {
-    const { requireAuth } = require("./middleware/authMiddleware");
-    return requireAuth(req, res, next);
+// Redis adapter for horizontal scaling (no-op if REDIS_URL not configured)
+if (process.env.REDIS_URL) {
+  try {
+    const { default: Redis } = require("ioredis");
+    const pubClient = new Redis(process.env.REDIS_URL);
+    const subClient = pubClient.duplicate();
+    io.adapter(createAdapter(pubClient, subClient));
+    logger.info("Socket.io Redis adapter enabled");
+  } catch (err) {
+    logger.warn("Socket.io Redis adapter failed — running single-node: " + err.message);
   }
-  next();
+}
+
+// Authenticate socket connections with JWT
+io.use((socket, next) => {
+  // 1. Try explicit auth token (legacy / non-browser clients)
+  let token =
+    socket.handshake.auth?.token ||
+    socket.handshake.query?.token;
+
+  // 2. Fall back to httpOnly cookie sent automatically by the browser
+  if (!token) {
+    const cookieHeader = socket.handshake.headers.cookie || "";
+    const match = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);
+    if (match) token = decodeURIComponent(match[1]);
+  }
+
+  if (!token) return next(new Error("Authentication required"));
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = String(decoded.id);
+    socket.userRole = decoded.role || null;
+    next();
+  } catch {
+    next(new Error("Invalid token"));
+  }
 });
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ==================== ROUTES ====================
-const authRoutes = require("./routes/authRoutes");
-const publicHostelRoutes = require("./routes/hostelRoutes");
-const contactRoutes = require("./routes/contact");
-const otpRoutes = require("./routes/otpRoutes");
-const ownerRoutes = require("./routes/ownerRoutes");
-const ownerHostelRoutes = require("./routes/ownerHostelRoutes");
-const roomRoutes = require("./routes/roomRoutes");
-const ruleRoutes = require("./routes/ruleRoutes");
-const studentRoutes = require("./routes/studentRoutes");
-const { studentRouter, ownerRouter } = require("./routes/bookingRoutes");
-const complaintRoutes = require("./routes/complaintRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
-const alertRoutes = require("./routes/alertRoutes");
-const ownerPaymentRoutes = require("./routes/ownerPaymentRoutes");
-const adminRoutes = require("./routes/adminRoutes");
+io.on("connection", async (socket) => {
+  socket.join(`user:${socket.userId}`);
 
-// Public + Auth
-app.use("/api/auth", authRoutes);
-app.use("/api/hostels", publicHostelRoutes);
-app.use("/api/contact", contactRoutes);
-app.use("/api/otp", otpRoutes);
+  if (socket.userRole === "owner") {
+    socket.join(`owner:${socket.userId}`);
+  }
+  if (socket.userRole === "admin") {
+    socket.join("admin");
+  }
+  // Students admitted to a hostel join its room for hostel-scoped broadcasts
+  if (socket.userRole === "student") {
+    try {
+      const Student = require("./models/Student");
+      const student = await Student.findOne({ user: socket.userId }).select("currentHostel");
+      if (student?.currentHostel) {
+        socket.join(`hostel:${student.currentHostel}`);
+        socket.hostelId = String(student.currentHostel);
+      }
+    } catch {
+      // non-critical — socket still works without hostel room
+    }
+  }
 
-// Owner
-app.use("/api/owner", ownerRoutes);
-app.use("/api/owner/hostels", ownerHostelRoutes);
-app.use("/api/owner/rooms", roomRoutes);
-app.use("/api/rules", ruleRoutes);
-
-// Student
-app.use("/api/students", studentRoutes);
-app.use("/api/students", studentRouter);
-app.use("/api/owner/booking-requests", ownerRouter);
-app.use("/api/complaints", complaintRoutes);
-
-// Payments + Notifications
-app.use("/api/payments", paymentRoutes);
-app.use("/api/owner/payment-history", ownerPaymentRoutes);
-app.use("/api", notificationRoutes);
-app.use("/api/alerts", alertRoutes);
-
-// Admin
-app.use("/api/admin", adminRoutes);
-
-// ==================== HEALTH CHECK ====================
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
+  logger.debug(`Socket connected: userId=${socket.userId} role=${socket.userRole}`);
+  socket.on("disconnect", () => {
+    logger.debug(`Socket disconnected: userId=${socket.userId}`);
   });
 });
 
-// ==================== 404 + GLOBAL ERROR HANDLER ====================
-app.use((_req, res) => {
-  res.status(404).json({ error: "Route not found" });
-});
-
-// Sentry error handler must come before our custom error handler
-if (process.env.SENTRY_DSN) {
-  Sentry.setupExpressErrorHandler(app);
-}
-
-app.use(errorHandler);
+// Make io available in controllers via req.app.locals.io
+app.locals.io = io;
 
 // ==================== DATABASE ====================
 mongoose
   .connect(process.env.MONGO_URI, {
-    maxPoolSize: 20,
+    maxPoolSize: 50,
     serverSelectionTimeoutMS: 5000,
   })
   .then(() => logger.info("MongoDB connected"))
@@ -149,7 +106,7 @@ mongoose
 
 // ==================== SERVER ====================
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+const server = httpServer.listen(PORT, () => {
   logger.info(`Server running on port ${PORT} [${process.env.NODE_ENV || "development"}]`);
 
   // Start async email worker (no-op if REDIS_URL is not configured)

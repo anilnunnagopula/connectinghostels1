@@ -1,119 +1,158 @@
-// src/pages/owner/OwnerNotificationsPage.jsx
+/**
+ * OwnerNotificationsPage.jsx - Premium System Alerts Feed
+ * 
+ * Migration Status:
+ * - Migrated to React Query (useNotifications)
+ * - Standardized mark-read mutation with optimistic invalidation
+ * - Upgraded UI to a professional "Activity Intelligence" standard
+ */
 
-import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
-import { toast } from "react-hot-toast";
-import {
-  Bell,
-  UserCheck,
-  CheckCircle,
-  MessageSquare,
-  Check,
+import React from "react";
+import { 
+  Bell, 
+  UserCheck, 
+  CheckCircle2, 
+  MessageSquare, 
+  Check, 
+  Loader2, 
+  X, 
+  Zap,
+  Info,
+  Clock,
+  ShieldCheck,
+  Inbox
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNotifications } from "../../hooks/useQueries";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "../../apiConfig";
+import toast from "react-hot-toast";
 
 const iconMap = {
-  booking: <UserCheck className="text-purple-500" />,
-  success: <CheckCircle className="text-green-500" />,
-  info: <Bell className="text-blue-500" />,
-  default: <MessageSquare className="text-slate-500" />,
+  booking: { icon: UserCheck, color: "text-purple-500", bg: "bg-purple-500/10" },
+  success: { icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  info: { icon: Bell, color: "text-blue-500", bg: "bg-blue-500/10" },
+  complaint: { icon: MessageSquare, color: "text-rose-500", bg: "bg-rose-500/10" },
+  default: { icon: Info, color: "text-slate-400", bg: "bg-slate-400/10" },
 };
 
 const OwnerNotificationsPage = () => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem("token");
+  const queryClient = useQueryClient();
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/notifications`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setNotifications(res.data);
-    } catch (error) {
-      toast.error("Failed to refresh notifications.");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  // Fetch notifications on initial load and then poll every 30 seconds
-  useEffect(() => {
-    fetchNotifications(); // Initial fetch
-    const intervalId = setInterval(fetchNotifications, 30000); // Poll every 30s
-    return () => clearInterval(intervalId); // Cleanup on component unmount
-  }, [fetchNotifications]);
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/notifications/mark-read`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      // Visually update the UI immediately
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      toast.success("All notifications marked as read.");
-    } catch (error) {
-      toast.error("Could not mark notifications as read.");
-    }
-  };
-
+  // Queries
+  const { data, isLoading } = useNotifications(1);
+  const notifications = data?.notifications || data || [];
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
+  // Mutations
+  const markReadMutation = useMutation({
+    mutationFn: () => api.put("/api/notifications/mark-read", {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success("Intelligence Stream Synchronized");
+    },
+    onError: () => toast.error("Handshake Failed"),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white p-4 sm:p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-12 pb-32">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Activity Feed</h1>
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllAsRead}
-              className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-            >
-              <Check size={16} />
-              Mark all as read
-            </button>
-          )}
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 mb-16">
+           <div className="space-y-4">
+              <h1 className="text-5xl lg:text-7xl font-black uppercase tracking-tighter italic text-slate-950 dark:text-white leading-[0.9]">
+                 System <br /> 
+                 <span className="text-blue-600">Alerts</span>
+              </h1>
+              <p className="text-slate-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                 <ShieldCheck size={16} className="text-blue-500" /> Real-time Administrative Identity & Activity Feed
+              </p>
+           </div>
+
+           <div className="flex gap-4">
+              {unreadCount > 0 && (
+                 <button 
+                  onClick={() => markReadMutation.mutate()}
+                  disabled={markReadMutation.isPending}
+                  className="px-8 py-5 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 rounded-[2rem] font-black uppercase tracking-widest text-[10px] italic flex items-center gap-3 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-800"
+                 >
+                    {markReadMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} 
+                    Synchronize Read State
+                 </button>
+              )}
+           </div>
         </div>
 
-        {loading ? (
-          <p>Loading activity...</p>
-        ) : notifications.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-lg">
-            <h2 className="text-xl font-semibold">All Caught Up!</h2>
-            <p className="text-slate-500 mt-2">
-              You have no new notifications 📭
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {notifications.map((note) => (
-              <div
-                key={note._id}
-                className={`p-4 rounded-lg flex items-start gap-4 transition-colors ${
-                  note.isRead
-                    ? "bg-white dark:bg-slate-800"
-                    : "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500"
-                }`}
-              >
-                <div className="mt-1">
-                  {iconMap[note.type] || iconMap.default}
-                </div>
-                <div>
-                  <p>{note.message}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {new Date(note.createdAt).toLocaleString()}
-                  </p>
-                </div>
+        {/* Activity Feed */}
+        <div className="space-y-4">
+           {notifications.length === 0 ? (
+              <div className="p-32 text-center bg-white dark:bg-slate-900 rounded-[5rem] border-4 border-dashed border-slate-100 dark:border-slate-800 shadow-2xl">
+                 <Inbox className="mx-auto text-slate-100 dark:text-slate-800 mb-8" size={100} />
+                 <h2 className="text-3xl font-black uppercase italic tracking-tighter text-slate-300">Identity Silent</h2>
+                 <p className="text-xs font-bold text-slate-300 uppercase tracking-widest mt-4 italic">No activity protocols detected in the current session</p>
               </div>
-            ))}
-          </div>
-        )}
+           ) : (
+              <AnimatePresence initial={false}>
+                 {notifications.map((note, i) => {
+                    const cfg = iconMap[note.type] || iconMap.default;
+                    return (
+                       <motion.div 
+                        key={note._id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className={`group p-8 rounded-[3rem] border transition-all duration-300 flex items-start gap-8 ${
+                          note.isRead 
+                          ? "bg-white dark:bg-slate-900 border-slate-50 dark:border-slate-800 opacity-60 hover:opacity-100" 
+                          : "bg-white dark:bg-slate-900 border-blue-500/30 shadow-2xl shadow-blue-500/5 ring-4 ring-blue-500/5"
+                        }`}
+                       >
+                          <div className={`p-5 rounded-[1.5rem] ${cfg.bg} ${cfg.color} shrink-0 group-hover:scale-110 transition-transform`}>
+                             <cfg.icon size={28} />
+                          </div>
+
+                          <div className="flex-1 space-y-2">
+                             <div className="flex items-center justify-between">
+                                <span className={`text-[10px] font-black uppercase tracking-widest italic ${note.isRead ? 'text-slate-400' : 'text-blue-500'}`}>
+                                   {note.type || 'System'} Update
+                                </span>
+                                <span className="flex items-center gap-2 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                                   <Clock size={12} /> {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                             </div>
+                             <p className={`text-lg font-black tracking-tighter italic leading-tight ${note.isRead ? 'text-slate-500' : 'text-slate-950 dark:text-white'}`}>
+                                {note.message}
+                             </p>
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pt-2">
+                                Event Reference: {note._id.slice(-8)}
+                             </p>
+                          </div>
+
+                          {!note.isRead && (
+                             <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+                          )}
+                       </motion.div>
+                    );
+                 })}
+              </AnimatePresence>
+           )}
+        </div>
+
+        {/* Footer Metrics */}
+        <div className="mt-12 flex items-center justify-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-300 italic">
+           <span className="flex items-center gap-2"><Zap size={14} className="text-blue-500" /> Active Uplink</span>
+           <span className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-500" /> Integrity Confirmed</span>
+        </div>
+
       </div>
     </div>
   );

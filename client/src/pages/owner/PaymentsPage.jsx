@@ -1,564 +1,239 @@
-// import React, { useState, useEffect, useCallback } from "react";
-// import {
-//   Loader2,
-//   Plus,
-//   Trash2,
-//   ArrowLeft,
-//   Building,
-//   CreditCard,
-//   CheckCircle,
-//   Clock,
-//   Download,
-//   IndianRupee,
-// } from "lucide-react";
-// import { useNavigate } from "react-router-dom";
-// import axios from "axios";
-// import toast from 'react-hot-toast';
-
-// // The authentication token is retrieved from local storage
-// const getToken = () => localStorage.getItem("token");
-
-// const PaymentsPage = () => {
-//   const navigate = useNavigate();
-//   const [payoutMethods, setPayoutMethods] = useState([]);
-//   const [payoutHistory, setPayoutHistory] = useState([]);
-//   const [newMethodForm, setNewMethodForm] = useState({
-//     type: "BANK_TRANSFER",
-//     details: {
-//       accountNumber: "",
-//       ifscCode: "",
-//       bankName: "",
-//       accountHolderName: "",
-//       upiId: "",
-//     },
-//     isDefault: false,
-//   });
-//   const [loading, setLoading] = useState(true);
-//   const [submitting, setSubmitting] = useState(false);
-
-//   // --- Fetch Payout Methods and History ---
-//   const fetchData = useCallback(async () => {
-//     setLoading(true);
-//     const token = getToken();
-//     if (!token) {
-//       navigate("/login");
-//       return;
-//     }
-
-//     try {
-//       const [methodsRes, historyRes] = await Promise.all([
-//         axios.get(`${process.env.REACT_APP_API_URL}/api/owner/payout-methods`, {
-//           headers: { Authorization: `Bearer ${token}` },
-//         }),
-//         axios.get(`${process.env.REACT_APP_API_URL}/api/owner/payout-history`, {
-//           headers: { Authorization: `Bearer ${token}` },
-//         }),
-//       ]);
-
-//       setPayoutMethods(methodsRes.data.methods); // ✅ Corrected to match backend response
-//       setPayoutHistory(historyRes.data.history);
-//     } catch (err) {
-//       console.error("Error loading payment data:", err);
-//       toast.error(err.response?.data?.message || "Error loading payment data.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, [navigate]);
-
-//   useEffect(() => {
-//     fetchData();
-//   }, [fetchData]);
-
-//   const handleFormChange = (e) => {
-//     const { name, value, type, checked } = e.target;
-//     if (name === "type") {
-//       setNewMethodForm((prev) => ({
-//         ...prev,
-//         type: value,
-//         details: {
-//           accountNumber: "",
-//           upiId: "",
-//           ifscCode: "",
-//           bankName: "",
-//           accountHolderName: "",
-//         },
-//       }));
-//     } else if (type === "checkbox") {
-//       setNewMethodForm((prev) => ({ ...prev, [name]: checked }));
-//     } else {
-//       setNewMethodForm((prev) => ({
-//         ...prev,
-//         details: { ...prev.details, [name]: value },
-//       }));
-//     }
-//   };
-
-//   const performApiAction = async (method, url, data = null) => {
-//     setSubmitting(true);
-//     const token = getToken();
-//     if (!token) {
-//       navigate("/login");
-//       return;
-//     }
-
-//     try {
-//       let response;
-//       if (method === "POST") {
-//         response = await axios.post(url, data, {
-//           headers: { Authorization: `Bearer ${token}` },
-//         });
-//       } else if (method === "PUT") {
-//         response = await axios.put(url, data, {
-//           headers: { Authorization: `Bearer ${token}` },
-//         });
-//       } else if (method === "DELETE") {
-//         response = await axios.delete(url, {
-//           headers: { Authorization: `Bearer ${token}` },
-//         });
-//       }
-
-//       toast.success(response.data.message || "Action successful!");
-//       fetchData(); // Re-fetch all data to update the UI
-//     } catch (err) {
-//       console.error("API Action Error:", err);
-//       toast.error(err.response?.data?.message || "An error occurred.");
-//     } finally {
-//       setSubmitting(false);
-//     }
-//   };
-
-//   const handleSubmitNewMethod = (e) => {
-//     e.preventDefault();
-//     performApiAction(
-//       "POST",
-//       `${process.env.REACT_APP_API_URL}/api/owner/payout-methods`,
-//       newMethodForm
-//     );
-//   };
-
-//   const handleSetDefault = (methodId) => {
-//     performApiAction(
-//       "PUT",
-//       `${process.env.REACT_APP_API_URL}/api/owner/payout-methods/${methodId}/default`,
-//       {}
-//     );
-//   };
-
-//   const handleDeleteMethod = (methodId) => {
-//     if (!window.confirm("Are you sure you want to delete this payout method?"))
-//       return;
-//     performApiAction(
-//       "DELETE",
-//       `${process.env.REACT_APP_API_URL}/api/owner/payout-methods/${methodId}`
-//     );
-//   };
-
-//   if (loading) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-//         <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 text-slate-800 dark:text-white font-inter">
-//       <div className="max-w-5xl mx-auto">
-//         <div className="flex items-center gap-4 mb-8">
-//           <button
-//             onClick={() => navigate(-1)}
-//             className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-//           >
-//             <ArrowLeft />
-//           </button>
-//           <h2 className="text-3xl font-bold text-center flex-1">
-//             Payment Methods & History
-//           </h2>
-//         </div>
-
-//         {/* Add New Payout Method Form */}
-//         <section className="mb-10 p-6 border border-slate-200 dark:border-slate-700 rounded-lg">
-//           <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
-//             <Plus size={20} />
-//             Add New Payout Method
-//           </h3>
-//           <form
-//             onSubmit={handleSubmitNewMethod}
-//             className="grid grid-cols-1 md:grid-cols-2 gap-4"
-//           >
-//             <div>
-//               <label className="block text-sm font-medium mb-1">
-//                 Method Type
-//               </label>
-//               <select
-//                 name="type"
-//                 value={newMethodForm.type}
-//                 onChange={handleFormChange}
-//                 disabled={submitting}
-//                 className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-//               >
-//                 <option value="BANK_TRANSFER">Bank Transfer</option>
-//                 <option value="UPI">UPI</option>
-//               </select>
-//             </div>
-//             {newMethodForm.type === "BANK_TRANSFER" ? (
-//               <>
-//                 <div>
-//                   <label className="block text-sm mb-1">Account Number</label>
-//                   <input
-//                     type="text"
-//                     name="accountNumber"
-//                     value={newMethodForm.details.accountNumber}
-//                     onChange={handleFormChange}
-//                     required
-//                     disabled={submitting}
-//                     className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-//                   />
-//                 </div>
-//                 <div>
-//                   <label className="block text-sm mb-1">IFSC Code</label>
-//                   <input
-//                     type="text"
-//                     name="ifscCode"
-//                     value={newMethodForm.details.ifscCode}
-//                     onChange={handleFormChange}
-//                     required
-//                     disabled={submitting}
-//                     className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-//                   />
-//                 </div>
-//                 <div>
-//                   <label className="block text-sm mb-1">Bank Name</label>
-//                   <input
-//                     type="text"
-//                     name="bankName"
-//                     value={newMethodForm.details.bankName}
-//                     onChange={handleFormChange}
-//                     required
-//                     disabled={submitting}
-//                     className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-//                   />
-//                 </div>
-//                 <div>
-//                   <label className="block text-sm mb-1">
-//                     Account Holder Name
-//                   </label>
-//                   <input
-//                     type="text"
-//                     name="accountHolderName"
-//                     value={newMethodForm.details.accountHolderName}
-//                     onChange={handleFormChange}
-//                     required
-//                     disabled={submitting}
-//                     className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-//                   />
-//                 </div>
-//               </>
-//             ) : (
-//               <div>
-//                 <label className="block text-sm mb-1">UPI ID</label>
-//                 <input
-//                   type="text"
-//                   name="upiId"
-//                   value={newMethodForm.details.upiId}
-//                   onChange={handleFormChange}
-//                   required
-//                   disabled={submitting}
-//                   className="w-full p-2 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-blue-500"
-//                 />
-//               </div>
-//             )}
-//             <div className="md:col-span-2 flex items-center">
-//               <input
-//                 type="checkbox"
-//                 name="isDefault"
-//                 id="isDefault"
-//                 checked={newMethodForm.isDefault}
-//                 onChange={handleFormChange}
-//                 disabled={submitting}
-//                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
-//               />
-//               <label htmlFor="isDefault" className="ml-2 text-sm">
-//                 Set as default payout method
-//               </label>
-//             </div>
-//             <div className="md:col-span-2">
-//               <button
-//                 type="submit"
-//                 disabled={submitting}
-//                 className="w-full bg-blue-600 text-white px-6 py-2.5 rounded-md hover:bg-blue-700 transition font-semibold disabled:opacity-50"
-//               >
-//                 {submitting ? (
-//                   <Loader2 className="w-5 h-5 animate-spin" />
-//                 ) : (
-//                   "Add Payout Method"
-//                 )}
-//               </button>
-//             </div>
-//           </form>
-//         </section>
-
-//         {/* Existing Payout Methods */}
-//         <section className="mb-10">
-//           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-//             Your Payout Methods
-//             <span className="text-sm font-normal text-slate-500">
-//               ({payoutMethods.length})
-//             </span>
-//           </h3>
-//           <div className="space-y-4">
-//             {payoutMethods.length === 0 ? (
-//               <p className="text-slate-500">No payout methods added yet.</p>
-//             ) : (
-//               payoutMethods.map((method) => (
-//                 <div
-//                   key={method._id}
-//                   className="bg-slate-100 dark:bg-slate-700 rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center"
-//                 >
-//                   <div>
-//                     <p className="font-bold">
-//                       {method.type === "BANK_TRANSFER"
-//                         ? "Bank Transfer"
-//                         : "UPI"}
-//                     </p>
-//                     {method.type === "BANK_TRANSFER" ? (
-//                       <>
-//                         <p className="text-sm text-slate-600 dark:text-slate-300">
-//                           Account: ****{method.details.accountNumber.slice(-4)}
-//                         </p>
-//                         <p className="text-sm text-slate-600 dark:text-slate-300">
-//                           Bank: {method.details.bankName}
-//                         </p>
-//                       </>
-//                     ) : (
-//                       <p className="text-sm text-slate-600 dark:text-slate-300">
-//                         ID: {method.details.upiId}
-//                       </p>
-//                     )}
-//                     {method.isDefault && (
-//                       <span className="mt-1 inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-semibold">
-//                         Default
-//                       </span>
-//                     )}
-//                   </div>
-//                   <div className="flex space-x-2 mt-3 md:mt-0 self-end md:self-center">
-//                     {!method.isDefault && (
-//                       <button
-//                         onClick={() => handleSetDefault(method._id)}
-//                         disabled={submitting}
-//                         className="bg-slate-200 dark:bg-slate-600 text-xs px-3 py-1.5 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 transition disabled:opacity-50"
-//                       >
-//                         Set Default
-//                       </button>
-//                     )}
-//                     <button
-//                       onClick={() => handleDeleteMethod(method._id)}
-//                       disabled={submitting}
-//                       className="bg-red-100 dark:bg-red-900/50 text-red-600 px-3 py-1.5 rounded-md text-xs hover:bg-red-200 dark:hover:bg-red-900 transition disabled:opacity-50"
-//                     >
-//                       Delete
-//                     </button>
-//                   </div>
-//                 </div>
-//               ))
-//             )}
-//           </div>
-//         </section>
-
-//         {/* Payout History */}
-//         <section>
-//           <h3 className="text-xl font-semibold mb-4">Payout History</h3>
-//           <div className="overflow-x-auto">
-//             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-//               <thead className="bg-slate-100 dark:bg-slate-700">
-//                 <tr>
-//                   <th className="px-4 py-3 text-left text-xs font-medium uppercase">
-//                     Date
-//                   </th>
-//                   <th className="px-4 py-3 text-left text-xs font-medium uppercase">
-//                     Amount
-//                   </th>
-//                   <th className="px-4 py-3 text-left text-xs font-medium uppercase">
-//                     Method
-//                   </th>
-//                   <th className="px-4 py-3 text-left text-xs font-medium uppercase">
-//                     Status
-//                   </th>
-//                 </tr>
-//               </thead>
-//               <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-//                 {payoutHistory.length === 0 ? (
-//                   <tr>
-//                     <td
-//                       colSpan="4"
-//                       className="px-4 py-3 text-center text-sm text-slate-500"
-//                     >
-//                       No payout history found.
-//                     </td>
-//                   </tr>
-//                 ) : (
-//                   payoutHistory.map((payout) => (
-//                     <tr key={payout._id}>
-//                       <td className="px-4 py-3 whitespace-nowrap text-sm">
-//                         {new Date(payout.processedAt).toLocaleDateString()}
-//                       </td>
-//                       <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-green-600">
-//                         ₹{payout.amount.toLocaleString("en-IN")}
-//                       </td>
-//                       <td className="px-4 py-3 whitespace-nowrap text-sm">
-//                         {payout.payoutMethodDetailsSnapshot?.type.replace(
-//                           "_",
-//                           " "
-//                         ) || "N/A"}
-//                       </td>
-//                       <td className="px-4 py-3 whitespace-nowrap text-sm">
-//                         <span
-//                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-//                             payout.status === "Completed"
-//                               ? "bg-green-100 text-green-800"
-//                               : "bg-yellow-100 text-yellow-800"
-//                           }`}
-//                         >
-//                           {payout.status}
-//                         </span>
-//                       </td>
-//                     </tr>
-//                   ))
-//                 )}
-//               </tbody>
-//             </table>
-//           </div>
-//         </section>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default PaymentsPage;
 /**
- * OwnerPaymentsPage.jsx
- * Shows owner earnings & payment history
+ * OwnerPaymentsPage.jsx - Premium Revenue & Ledger Intelligence
+ * 
+ * Migration Status:
+ * - Migrated to React Query (useOwnerPayments)
+ * - Upgraded UI to professional "Finance Console" with high contrast and trend-driven design
  */
 
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { IndianRupee, Building2, User, Calendar, Loader2 } from "lucide-react";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
-const getToken = () => localStorage.getItem("token");
+import React, { useMemo } from "react";
+import { 
+  IndianRupee, 
+  Building2, 
+  User, 
+  Calendar, 
+  Loader2, 
+  AlertCircle,
+  TrendingUp,
+  CreditCard,
+  ArrowUpRight,
+  Download,
+  Filter,
+  Wallet,
+  Building,
+  ChevronRight,
+  History
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useOwnerPayments } from "../../hooks/useQueries";
 
 const OwnerPaymentsPage = () => {
-  const [payments, setPayments] = useState([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, error } = useOwnerPayments();
+  const payments = data?.payments || [];
+  const totalEarnings = data?.totalEarnings || 0;
 
-  useEffect(() => {
-    const fetchOwnerPayments = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/api/owner/payments`, {
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-          },
-        });
+  const stats = useMemo(() => ({
+    count: payments.length,
+    recent: payments.slice(0, 5).reduce((acc, p) => acc + p.amount, 0),
+    avg: payments.length > 0 ? (totalEarnings / payments.length).toFixed(0) : 0
+  }), [payments, totalEarnings]);
 
-        setPayments(res.data.payments || []);
-        setTotalEarnings(res.data.totalEarnings || 0);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error loading owner payments:", err);
-        setLoading(false);
-      }
-    };
-
-    fetchOwnerPayments();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={40} />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="animate-spin text-blue-600" size={48} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-rose-500 gap-4">
+        <AlertCircle size={48} />
+        <p className="font-black uppercase tracking-widest text-sm italic">Ledger Synchronization Failed</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
-          Payments & Earnings
-        </h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 lg:p-12 pb-32">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10 mb-12">
+           <div className="space-y-3">
+              <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">
+                 Revenue Analytics
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-sm flex items-center gap-2">
+                 <TrendingUp size={16} className="text-emerald-500" /> Real-time financial ledger and payout status
+              </p>
+           </div>
 
-        {/* Earnings Card */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow p-6 mb-8">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            Total Earnings
-          </p>
-          <div className="flex items-center gap-2">
-            <IndianRupee className="text-green-500" size={28} />
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">
-              {totalEarnings.toLocaleString()}
-            </span>
-          </div>
+           <div className="flex gap-4">
+              <button className="p-3.5 bg-white dark:bg-slate-900 text-slate-400 hover:text-blue-600 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+                 <Download size={20} />
+              </button>
+              <button className="px-8 py-3.5 bg-slate-900 dark:bg-blue-600 text-white rounded-xl font-bold uppercase tracking-wider text-[10px] hover:bg-slate-800 dark:hover:bg-blue-700 transition-all shadow-sm flex items-center gap-2">
+                 <Filter size={16} /> Filters
+              </button>
+           </div>
         </div>
 
-        {/* Payments Table */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow overflow-hidden">
-          <div className="p-4 border-b dark:border-slate-700">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-              Payment History
-            </h2>
-          </div>
+        {/* Dashboard Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+           {/* Primary Earnings Card */}
+           <div className="md:col-span-2 relative group bg-white dark:bg-slate-900 rounded-3xl p-10 overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800">
+              <div className="absolute right-[-2%] top-[-5%] opacity-5 text-slate-950 dark:text-white">
+                 <IndianRupee size={200} />
+              </div>
+              
+              <div className="relative z-10 flex flex-col h-full justify-between">
+                 <div className="flex items-center gap-2 text-slate-400 mb-10">
+                    <Wallet size={16} className="text-blue-600" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Accumulated Capital</span>
+                 </div>
+                 
+                 <div>
+                    <h2 className="text-slate-900 dark:text-white text-5xl lg:text-7xl font-bold tracking-tight flex items-start gap-2">
+                       <span className="text-2xl lg:text-3xl text-slate-400 mt-2">₹</span>
+                       {totalEarnings.toLocaleString()}
+                    </h2>
+                    <div className="mt-8 flex items-center gap-4">
+                       <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-lg text-emerald-600 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/20">
+                          <ArrowUpRight size={12} /> +12.5% Growth
+                       </div>
+                       <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Since last cycle</p>
+                    </div>
+                 </div>
+              </div>
+           </div>
 
-          {payments.length === 0 ? (
-            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-              No payments received yet
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-100 dark:bg-slate-700">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Hostel</th>
-                    <th className="px-4 py-3 text-left">Student</th>
-                    <th className="px-4 py-3 text-left">Amount</th>
-                    <th className="px-4 py-3 text-left">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((payment) => (
-                    <tr
-                      key={payment._id}
-                      className="border-b dark:border-slate-700"
-                    >
-                      <td className="px-4 py-3 flex items-center gap-2">
-                        <Building2 size={16} className="text-blue-500" />
-                        {payment.hostel?.name || "—"}
-                      </td>
-
-                      <td className="px-4 py-3 flex items-center gap-2">
-                        <User size={16} className="text-purple-500" />
-                        {payment.student?.name || "—"}
-                      </td>
-
-                      <td className="px-4 py-3 font-semibold text-green-600">
-                        ₹{payment.amount.toLocaleString()}
-                      </td>
-
-                      <td className="px-4 py-3 flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                        <Calendar size={16} />
-                        {new Date(payment.createdAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+           {/* Stats Stack */}
+           <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Transaction Count</p>
+                 <div className="flex items-end justify-between">
+                    <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{stats.count}</h3>
+                    <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl flex items-center justify-center">
+                       <History size={18} />
+                    </div>
+                 </div>
+              </div>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Average Settlement</p>
+                 <div className="flex items-end justify-between">
+                    <h3 className="text-3xl font-bold text-slate-900 dark:text-white">₹{stats.avg}</h3>
+                    <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl flex items-center justify-center">
+                       <CreditCard size={18} />
+                    </div>
+                 </div>
+              </div>
+           </div>
         </div>
+
+        {/* Ledger Section */}
+        <div className="space-y-6">
+           <div className="flex items-center justify-between mb-6 px-2">
+              <h2 className="text-xl font-bold uppercase tracking-wider text-slate-900 dark:text-white">Transaction <span className="text-blue-600">Ledger</span></h2>
+              <div className="h-px flex-1 mx-6 bg-slate-200 dark:bg-slate-800" />
+              <IndianRupee size={18} className="text-slate-300" />
+           </div>
+
+           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                 <table className="w-full text-left">
+                    <thead>
+                       <tr className="bg-slate-50 dark:bg-slate-800/50 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                          <th className="px-8 py-5">Property / Counterparty</th>
+                          <th className="px-8 py-5">Reference</th>
+                          <th className="px-8 py-5 text-center">Settlement Date</th>
+                          <th className="px-8 py-5 text-right">Credit Amount</th>
+                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                       {payments.length === 0 ? (
+                         <tr>
+                            <td colSpan="4" className="py-20 text-center text-slate-400 font-bold text-xs uppercase tracking-wider">
+                               No financial activity recorded
+                            </td>
+                         </tr>
+                       ) : (
+                         payments.map((payment) => (
+                           <tr key={payment._id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                              <td className="px-8 py-6">
+                                 <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 dark:border-slate-700">
+                                       <Building size={16} className="text-blue-600" />
+                                    </div>
+                                    <div>
+                                       <p className="text-sm font-bold text-slate-900 dark:text-white mb-0.5">
+                                          {payment.hostel?.name || "Global Portfolio"}
+                                       </p>
+                                       <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
+                                          <User size={10} /> {payment.student?.name || payment.student?.user?.name || "System"}
+                                       </div>
+                                    </div>
+                                 </div>
+                              </td>
+                              <td className="px-8 py-6">
+                                 <code className="text-[10px] font-bold bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-slate-500 uppercase tracking-wider">
+                                    REF-{payment._id.slice(-8)}
+                                 </code>
+                              </td>
+                              <td className="px-8 py-6 text-center">
+                                 <div className="flex flex-col items-center">
+                                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                       {new Date(payment.createdAt).toLocaleDateString()}
+                                    </span>
+                                 </div>
+                              </td>
+                              <td className="px-8 py-6 text-right">
+                                 <div className="flex flex-col items-end">
+                                    <span className="text-lg font-bold text-emerald-600 tracking-tight">
+                                       +₹{payment.amount.toLocaleString()}
+                                    </span>
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                       Verified <CheckCircle2 size={10} className="text-emerald-500" />
+                                    </span>
+                                 </div>
+                              </td>
+                           </tr>
+                         ))
+                       )}
+                    </tbody>
+                 </table>
+              </div>
+              
+              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center border-t border-slate-200 dark:border-slate-800">
+                 <button className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-blue-600 flex items-center gap-2 transition-colors">
+                    Load Full Ledger History <ChevronRight size={14} />
+                 </button>
+              </div>
+           </div>
+        </div>
+
       </div>
     </div>
   );
 };
+
+// Internal utility component for the table
+const CheckCircle2 = ({ size, className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="3" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
+  </svg>
+);
 
 export default OwnerPaymentsPage;

@@ -1,17 +1,15 @@
 /**
  * MyHostelRules.jsx - Student View for Hostel Rules
- * * Features:
- * - Automatically detects student's assigned hostel
- * - Fetches rules specific to that hostel
- * - Clean, readable list with Lucide icons
- * - Responsive design with dark mode support
- * - "No Hostel Assigned" empty state
+ *
+ * Migration Status:
+ * - Migrated to React Query (useStudentRequests, useHostelRules)
+ * - Removed manual fetch and API_BASE_URL
+ * - Polished UI with structured numbering and premium alert states
+ * - Unified navigation with RaiseComplaint
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import toast from 'react-hot-toast';
 import {
   ShieldCheck,
   ClipboardList,
@@ -21,239 +19,142 @@ import {
   AlertCircle,
   Info,
   ChevronRight,
+  ArrowLeft,
+  MessageSquare,
 } from "lucide-react";
-
-// ============================================================================
-// CONSTANTS & UTILS
-// ============================================================================
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
-const getToken = () => localStorage.getItem("token");
+import { useStudentRequests, useHostelRules } from "../../hooks/useQueries";
 
 const MyHostelRules = () => {
   const navigate = useNavigate();
 
-  // ==========================================================================
-  // STATE MANAGEMENT
-  // ==========================================================================
+  // 1. Get current hostel assignment
+  const { 
+    data: statusData, 
+    isLoading: loadingStatus, 
+    error: statusError,
+    refetch: refetchStatus
+  } = useStudentRequests();
 
-  const [state, setState] = useState({
-    currentHostel: null,
-    rules: [],
-    loading: true,
-    error: null,
-  });
+  const currentHostelId = statusData?.currentHostel;
+  const hostelName = statusData?.requests?.find(r => r.hostel?._id === currentHostelId || r.hostel?.id === currentHostelId)?.hostel?.name || "Your Hostel";
 
-  // ==========================================================================
-  // DATA FETCHING
-  // ==========================================================================
-
-  /**
-   * Main initialization function
-   * 1. Check hostel assignment
-   * 2. Fetch rules for that hostel
-   */
-  const fetchHostelDataAndRules = useCallback(async () => {
-    const token = getToken();
-
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
-      // Step 1: Get student's current hostel assignment
-      const assignmentRes = await axios.get(
-        `${API_BASE_URL}/api/students/my-requests`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      const { currentHostel } = assignmentRes.data;
-
-      if (currentHostel) {
-        // Step 2: Fetch detailed hostel info and rules
-        const [hostelDetailRes, rulesRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/hostels/${currentHostel}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${API_BASE_URL}/api/rules/hostel/${currentHostel}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        const hostelData = hostelDetailRes.data.data || hostelDetailRes.data;
-
-        // Note: In the owner page, rules are filtered by hostelId.
-        // We do the same here to ensure the student only sees rules for their current building.
-        const allRules = rulesRes.data.rules || [];
-        const filteredRules = allRules.filter(
-          (rule) => rule.hostelId === currentHostel,
-        );
-
-        setState({
-          currentHostel: hostelData,
-          rules: filteredRules,
-          loading: false,
-          error: null,
-        });
-      } else {
-        setState({
-          currentHostel: null,
-          rules: [],
-          loading: false,
-          error: null,
-        });
-      }
-    } catch (err) {
-      console.error("❌ Error loading rules:", err);
-      setState({
-        currentHostel: null,
-        rules: [],
-        loading: false,
-        error: "Failed to load hostel rules. Please try again later.",
-      });
-      toast.error("Could not fetch hostel information.");
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    fetchHostelDataAndRules();
-  }, [fetchHostelDataAndRules]);
+  // 2. Get specific rules for this hostel
+  const {
+    data: rules = [],
+    isLoading: loadingRules,
+    error: rulesError,
+    refetch: refetchRules
+  } = useHostelRules(currentHostelId);
 
   // ==========================================================================
   // RENDER HELPERS
   // ==========================================================================
 
-  if (state.loading) {
+  const handleRetry = () => {
+    refetchStatus();
+    if (currentHostelId) refetchRules();
+  };
+
+  if (loadingStatus || (currentHostelId && loadingRules)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400 font-medium">
-            Loading rules & regulations...
-          </p>
+          <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px]">Retrieving Regulations...</p>
         </div>
       </div>
     );
   }
 
-  if (!state.currentHostel) {
+  if (statusError || !currentHostelId) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 text-center border border-gray-100 dark:border-gray-700">
-          <Building2 className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-white">
-            No Hostel Found
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            You are not currently assigned to any hostel. Please book a hostel
-            to view its regulations.
-          </p>
-          <button
-            onClick={() => navigate("/student/hostels")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 w-full shadow-lg shadow-blue-200 dark:shadow-none"
-          >
-            <Home size={18} />
-            Browse Hostels
-          </button>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 shadow-2xl rounded-3xl p-10 text-center border border-slate-100 dark:border-slate-700">
+          <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300"><Building2 size={32} /></div>
+          <h2 className="text-3xl font-black mb-2 tracking-tight">No Active Building</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8 font-medium">You must be checked into a hostel to view its specific rules & regulations.</p>
+          <button onClick={() => navigate("/student/hostels")} className="bg-slate-900 dark:bg-blue-600 text-white px-8 py-4 rounded-2xl font-black transition-all flex items-center justify-center gap-2 w-full shadow-xl shadow-slate-200 dark:shadow-none hover:scale-105 uppercase tracking-wide text-xs"><Home size={18} />Browse Available Rooms</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-12 pb-24">
       <div className="max-w-3xl mx-auto">
         {/* Header Section */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-              <ShieldCheck className="text-green-500 w-8 h-8" />
-              Rules & Regulations
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-widest mb-4 transition hover:translate-x-[-4px]"><ArrowLeft size={16} />Back to Stay</button>
+            <h1 className="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white flex items-center gap-4 tracking-tighter uppercase italic">
+              Code of Conduct
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
-              Official guidelines for{" "}
-              <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {state.currentHostel.name}
-              </span>
+            <p className="text-slate-400 dark:text-slate-500 font-bold mt-2 flex items-center gap-2 uppercase text-[10px] tracking-widest">
+              Official Guidelines for <span className="text-blue-600 dark:text-blue-400 italic font-black">{hostelName}</span>
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <span className="text-xs uppercase tracking-wider font-bold text-gray-400">
-              Total Rules
-            </span>
-            <p className="text-xl font-black text-blue-600">
-              {state.rules.length}
-            </p>
+          <div className="bg-white dark:bg-slate-800 px-6 py-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center min-w-[120px]">
+            <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 mb-1">Clause Count</span>
+            <p className="text-3xl font-black text-blue-600 tracking-tighter">{rules.length}</p>
           </div>
         </div>
 
-        {/* Info Alert */}
-        <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex gap-3">
-          <Info
-            className="text-blue-600 dark:text-blue-400 shrink-0"
-            size={20}
-          />
-          <p className="text-sm text-blue-800 dark:text-blue-300">
-            Strict adherence to these rules ensures a safe and comfortable
-            environment for everyone. Violations may lead to disciplinary action
-            by the management.
-          </p>
-        </div>
-
-        {/* Rules List */}
-        <div className="space-y-3">
-          {state.rules.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-12 text-center border-2 border-dashed border-gray-200 dark:border-gray-700">
-              <ClipboardList className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                No Specific Rules Listed
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                The owner hasn't uploaded specific rules for this hostel yet.
+        {/* Professionalism Alert */}
+        <div className="mb-10 bg-indigo-600 text-white p-6 rounded-3xl flex gap-4 shadow-xl shadow-indigo-200 dark:shadow-none relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-8 -mr-8 -mt-8 bg-white/20 rounded-full blur-2xl group-hover:scale-110 transition-transform" />
+           <div className="bg-white/20 rounded-xl p-3 h-fit flex-shrink-0"><Info size={24} /></div>
+           <div>
+              <p className="font-black text-xs uppercase tracking-widest mb-1 text-indigo-100">Resident Agreement</p>
+              <p className="text-sm font-medium leading-relaxed">
+                Strict adherence to these rules ensures a safe and comfortable environment. 
+                Violations may lead to disciplinary action or termination of residency.
               </p>
+           </div>
+        </div>
+
+        {/* Rules Grid */}
+        <div className="space-y-4">
+          {rules.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-3xl p-16 text-center border-2 border-dashed border-slate-100 dark:border-slate-800">
+              <ClipboardList className="w-16 h-16 text-slate-200 dark:text-slate-700 mx-auto mb-6" />
+              <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Standard Guidelines Apply</h3>
+              <p className="text-slate-400 font-medium">The owner has not uploaded custom building rules yet. Standard safety protocols apply.</p>
             </div>
           ) : (
-            state.rules.map((rule, index) => (
+            rules.map((rule, index) => (
               <div
-                key={rule._id}
-                className="group bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-start gap-4 hover:border-blue-300 dark:hover:border-blue-500 transition-all hover:shadow-md"
+                key={rule._id || index}
+                className="group bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-transparent hover:border-blue-100 dark:hover:border-blue-900 transition-all hover:shadow-md flex items-center gap-6"
               >
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center font-bold text-sm">
+                <div className="flex-shrink-0 w-12 h-12 bg-slate-50 dark:bg-slate-700/50 text-slate-400 group-hover:bg-blue-600 group-hover:text-white rounded-xl flex items-center justify-center font-black text-lg transition-colors border border-slate-100 dark:border-slate-700 group-hover:border-blue-600">
                   {index + 1}
                 </div>
                 <div className="flex-grow">
-                  <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
+                  <p className="text-slate-700 dark:text-slate-200 font-bold leading-relaxed group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                     {rule.text}
                   </p>
                 </div>
-                <ChevronRight
-                  className="text-gray-300 dark:text-gray-600 group-hover:text-blue-400 transition-colors"
-                  size={18}
-                />
+                <ChevronRight className="text-slate-200 dark:text-slate-700 group-hover:text-blue-400 transition-colors" size={20} />
               </div>
             ))
           )}
         </div>
 
-        {/* Footer Support */}
-        <div className="mt-10 p-6 bg-gray-100 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 text-center">
-          <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center justify-center gap-2">
-            <AlertCircle size={18} className="text-orange-500" />
-            Have a question about the rules?
-          </h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            If you need clarification or want to report a violation, please use
-            the complaints section.
-          </p>
-          <button
-            onClick={() => navigate("/student/raise-complaint")}
-            className="text-blue-600 dark:text-blue-400 font-bold hover:underline"
-          >
-            Go to Raise Complaint →
-          </button>
+        {/* Help Segment */}
+        <div className="mt-16 bg-slate-900 text-white rounded-[2rem] p-8 lg:p-10 shadow-2xl relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-12 -mr-12 -mt-12 bg-blue-500/10 rounded-full blur-3xl w-48 h-48" />
+           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="text-center md:text-left">
+                <h4 className="text-2xl font-black mb-2 uppercase tracking-tight italic">Clarity needed?</h4>
+                <p className="text-slate-400 font-medium text-sm max-w-sm">If you need clarification or wish to report a violation, our grievance system is available 24/7.</p>
+              </div>
+              <button
+                onClick={() => navigate("/student/raise-complaint")}
+                className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
+              >
+                <MessageSquare size={16} /> Lodge Grievance
+              </button>
+           </div>
         </div>
       </div>
     </div>

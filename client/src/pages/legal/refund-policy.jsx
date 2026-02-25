@@ -5,13 +5,13 @@ const RefundPolicy = () => {
     window.scrollTo(0, 0);
   }, []);
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           ConnectingHostels Refund & Cancellation Policy
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           At <strong>ConnectingHostels</strong>, we strive to facilitate a
           transparent and fair experience for both students seeking
           accommodation and hostel owners listing their properties. This Refund
@@ -20,7 +20,7 @@ const RefundPolicy = () => {
           our platform. Please read this policy carefully before making any
           bookings or payments.
         </p>
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           <strong>Important Note:</strong> ConnectingHostels acts as a platform
           to connect students with hostel owners. We are not the direct provider
           of accommodation. Unless explicitly stated, this policy primarily
@@ -31,7 +31,7 @@ const RefundPolicy = () => {
           confirm these directly with the hostel.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           1. Booking Confirmation & Payments
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -55,7 +55,7 @@ const RefundPolicy = () => {
               1.3. Payment Types:
             </strong>{" "}
             Payments made via ConnectingHostels may include:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>
                 **ConnectingHostels Service Fee:** A fee charged by us for using
                 our platform (if applicable).
@@ -69,10 +69,10 @@ const RefundPolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           2. Cancellation by Students
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Students can initiate a cancellation request through their
           ConnectingHostels account. The refund eligibility for the
           "Advance/Booking Deposit to Hostel" (collected on behalf of the
@@ -85,7 +85,7 @@ const RefundPolicy = () => {
             </strong>
             If a confirmed booking is canceled by the student at least **72
             hours (3 days)** prior to the scheduled check-in date/time:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>**ConnectingHostels Service Fee:** Non-refundable.</li>
               <li>
                 **Advance/Booking Deposit to Hostel:** 100% of the deposit will
@@ -99,7 +99,7 @@ const RefundPolicy = () => {
             </strong>
             If a confirmed booking is canceled by the student **less than 72
             hours (3 days)** prior to the scheduled check-in date/time:
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>**ConnectingHostels Service Fee:** Non-refundable.</li>
               <li>
                 **Advance/Booking Deposit to Hostel:** A cancellation fee of
@@ -114,7 +114,7 @@ const RefundPolicy = () => {
             </strong>
             If a student cancels on or after the scheduled check-in date/time,
             or does not show up for the booking (no-show):
-            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+            <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
               <li>**ConnectingHostels Service Fee:** Non-refundable.</li>
               <li>
                 **Advance/Booking Deposit to Hostel:** No refund on the initial
@@ -137,10 +137,10 @@ const RefundPolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           3. Vacating Policy (After Moving In)
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           This section applies once a student has successfully moved into a
           hostel booked through our platform.
         </p>
@@ -183,10 +183,10 @@ const RefundPolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           4. Cancellation by Hostel Owners
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           In the rare event that a hostel owner cancels a confirmed booking:
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -215,7 +215,7 @@ const RefundPolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           5. Refund Processing Timeline
         </h2>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -244,10 +244,10 @@ const RefundPolicy = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           6. Force Majeure / Exceptional Circumstances
         </h2>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           In cases of unforeseeable circumstances beyond the control of either
           the student, hostel owner, or ConnectingHostels (e.g., natural
           disasters, pandemics, government restrictions, severe civil unrest),
@@ -257,10 +257,10 @@ const RefundPolicy = () => {
           necessary.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           7. Contact & Grievance Redressal
         </h2>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           For any questions, concerns, or issues related to refunds or
           cancellations, please reach out to our support team:
         </p>
@@ -273,11 +273,11 @@ const RefundPolicy = () => {
             anilnunnagopula15@gmail.com
           </a>
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderbad-501506, Telanagana, India
         </p>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We aim to resolve all queries efficiently. For detailed dispute
           resolution procedures, please refer to our main{" "}
           <a
@@ -289,7 +289,7 @@ const RefundPolicy = () => {
           .
         </p>
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July, 2025
         </p>
       </div>

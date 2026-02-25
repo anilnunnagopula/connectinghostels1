@@ -1,14 +1,140 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Connecting Hostels</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- ── Favicon & PWA ────────────────────────────────────── -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/Hostel.jpg" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ConnectingHostels" />
+
+    <!-- ── Primary SEO ──────────────────────────────────────── -->
+    <title>ConnectingHostels — Find Hostels &amp; PG Near CVR College, Mangalpally, Hyderabad</title>
+    <meta
+      name="description"
+      content="Discover verified hostels, PG accommodations and rooms near CVR College, Mangalpally, Ibrahimpatnam and Sheriguda, Hyderabad. Compare prices, amenities and book instantly online."
+    />
+    <meta
+      name="keywords"
+      content="hostels near CVR College, PG Mangalpally, student hostel Hyderabad, PG near CVR College, boys hostel Mangalpally, girls hostel Hyderabad, rooms near Ibrahimpatnam, Sheriguda hostel, ConnectingHostels, hostel booking Hyderabad, student accommodation Telangana"
+    />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="author" content="ConnectingHostels" />
+    <meta name="copyright" content="ConnectingHostels" />
+    <meta name="language" content="en-IN" />
+    <meta name="geo.region" content="IN-TG" />
+    <meta name="geo.placename" content="Mangalpally, Hyderabad, Telangana" />
+    <meta name="geo.position" content="17.358;78.522" />
+    <meta name="ICBM" content="17.358, 78.522" />
+    <link rel="canonical" href="https://connectinghostels1.netlify.app/" />
+
+    <!-- ── Open Graph (Facebook / WhatsApp / LinkedIn) ──────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ConnectingHostels" />
+    <meta
+      property="og:title"
+      content="ConnectingHostels — Find Hostels &amp; PG Near CVR College, Mangalpally"
+    />
+    <meta
+      property="og:description"
+      content="Discover and book verified hostels &amp; PG rooms near CVR College, Mangalpally, Hyderabad. Compare prices, amenities and book instantly."
+    />
+    <meta property="og:url" content="https://connectinghostels1.netlify.app/" />
+    <meta
+      property="og:image"
+      content="https://connectinghostels1.netlify.app/Hostel.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ConnectingHostels — student hostel platform near CVR College, Hyderabad" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- ── Twitter Card ──────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@connectinghostels" />
+    <meta
+      name="twitter:title"
+      content="ConnectingHostels — Find Hostels &amp; PG Near CVR College"
+    />
+    <meta
+      name="twitter:description"
+      content="Discover verified hostels &amp; PG rooms near CVR College, Mangalpally, Hyderabad. Compare prices and book instantly."
+    />
+    <meta
+      name="twitter:image"
+      content="https://connectinghostels1.netlify.app/Hostel.jpg"
+    />
+    <meta name="twitter:image:alt" content="ConnectingHostels platform" />
+
+    <!-- ── Preconnect hints ──────────────────────────────────── -->
+    <link rel="preconnect" href="https://checkout.razorpay.com" />
+    <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+
+    <!-- ── JSON-LD: Organization ─────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ConnectingHostels",
+      "alternateName": "CH",
+      "url": "https://connectinghostels1.netlify.app",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://connectinghostels1.netlify.app/Hostel.jpg",
+        "width": 512,
+        "height": 512
+      },
+      "description": "Find verified hostels & PG accommodations near CVR College, Mangalpally, Hyderabad, Telangana.",
+      "telephone": "+91-93988-28248",
+      "email": "anilnunnagopula15@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "CVR College Road",
+        "addressLocality": "Mangalpally",
+        "addressRegion": "Telangana",
+        "postalCode": "501301",
+        "addressCountry": "IN"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+91-93988-28248",
+        "contactType": "customer support",
+        "areaServed": "IN",
+        "availableLanguage": ["English", "Telugu"]
+      }
+    }
+    </script>
+
+    <!-- ── JSON-LD: WebSite + SearchAction ───────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "ConnectingHostels",
+      "url": "https://connectinghostels1.netlify.app",
+      "description": "Find verified hostels and PG rooms near CVR College, Mangalpally, Hyderabad.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://connectinghostels1.netlify.app/student/hostels?search={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- ── Razorpay ──────────────────────────────────────────── -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </head>
-  <body class="dark:bg-gray-900 dark:text-white">
+  <body>
     <div id="root"></div>
   </body>
 </html>

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil, Eye, Trash2, MapPin, Bed, Users } from "lucide-react";
+import { Pencil, Eye, Trash2, MapPin, Bed } from "lucide-react";
 import { API_BASE_URL } from "../../apiConfig";
 
 /**
@@ -52,10 +52,10 @@ const HostelCard = ({ hostel, onDelete }) => {
         return "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300";
       case "Boys":
         return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
-      case "Co-Live":
+      case "Co-ed":
         return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
       default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
+        return "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300";
     }
   };
 

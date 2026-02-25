@@ -1,27 +1,15 @@
 /**
  * MyRoomDetails.jsx - Student Room Information Dashboard
  *
- * Features:
- * - Display current room details (room number, floor, type)
- * - Show roommate information (name, contact)
- * - Display room amenities and facilities
- * - Show hostel information
- * - Quick actions (Pay Rent, Raise Complaint, View Rules)
- * - Responsive design with dark mode support
- * - Loading and error states
- * - Real-time data from backend API
- *
- * Performance Optimizations:
- * - Memoized computed values
- * - useCallback for handlers
- * - Proper cleanup with abort controllers
- * - Optimized re-renders
+ * Migration Status:
+ * - Migrated to React Query (useStudentRequests, useRoommates)
+ * - Removed manual fetch and status logic
+ * - Enhanced UI for a premium, card-based resident experience
+ * - Unified quick actions with MyHostel and MyBookings
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import toast from 'react-hot-toast';
 import {
   BedDouble,
   Users,
@@ -34,673 +22,209 @@ import {
   Tv,
   Wind,
   Droplet,
-  Bed,
   Home,
   Loader2,
   AlertCircle,
   IndianRupee,
-  MessageSquareWarning,
+  MessageSquare,
   FileText,
   ArrowLeft,
   User,
   Hash,
   Layers,
   CheckCircle,
-  XCircle,
   Calendar,
 } from "lucide-react";
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+import { useStudentRequests, useRoommates, useHostelDetail } from "../../hooks/useQueries";
+import toast from 'react-hot-toast';
 
 // Amenity icons mapping
 const AMENITY_ICONS = {
-  WiFi: { icon: <Wifi size={20} />, color: "text-blue-500" },
-  Food: { icon: <Utensils size={20} />, color: "text-orange-500" },
-  Mess: { icon: <Utensils size={20} />, color: "text-orange-500" },
-  TV: { icon: <Tv size={20} />, color: "text-purple-500" },
-  AC: { icon: <Wind size={20} />, color: "text-cyan-500" },
-  "Air Conditioning": { icon: <Wind size={20} />, color: "text-cyan-500" },
-  Laundry: { icon: <Droplet size={20} />, color: "text-blue-400" },
-  Geyser: { icon: <Droplet size={20} />, color: "text-red-400" },
-  "Hot Water": { icon: <Droplet size={20} />, color: "text-red-400" },
-  Parking: { icon: <Building2 size={20} />, color: "text-slate-500" },
-  Security: { icon: <Home size={20} />, color: "text-green-500" },
-  "24/7 Security": { icon: <Home size={20} />, color: "text-green-500" },
+  WiFi: { icon: <Wifi size={20} />, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
+  Food: { icon: <Utensils size={20} />, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-900/20" },
+  Mess: { icon: <Utensils size={20} />, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-900/20" },
+  TV: { icon: <Tv size={20} />, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
+  AC: { icon: <Wind size={20} />, color: "text-cyan-500", bg: "bg-cyan-50 dark:bg-cyan-900/20" },
+  "Air Conditioning": { icon: <Wind size={20} />, color: "text-cyan-500", bg: "bg-cyan-50 dark:bg-cyan-900/20" },
+  Laundry: { icon: <Droplet size={20} />, color: "text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
+  Geyser: { icon: <Droplet size={20} />, color: "text-red-400", bg: "bg-red-50 dark:bg-red-900/20" },
+  Parking: { icon: <Building2 size={20} />, color: "text-slate-500", bg: "bg-slate-50 dark:bg-slate-900/20" },
+  Security: { icon: <CheckCircle size={20} />, color: "text-green-500", bg: "bg-green-50 dark:bg-green-900/20" },
 };
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-const getToken = () => localStorage.getItem("token");
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
 
 const MyRoomDetails = () => {
   const navigate = useNavigate();
 
-  // ==========================================================================
-  // STATE MANAGEMENT
-  // ==========================================================================
+  // Queries
+  const { data: statusData, isLoading: loadingStatus, error: statusError } = useStudentRequests();
+  const { data: roommates = [], isLoading: loadingRoommates } = useRoommates();
+  
+  const currentHostelId = statusData?.currentHostel;
+  const { data: hostel, isLoading: loadingHostel } = useHostelDetail(currentHostelId);
 
-  const [state, setState] = useState({
-    roomData: null,
-    loading: true,
-    error: null,
-  });
-
-  // ==========================================================================
-  // DATA FETCHING
-  // ==========================================================================
-
-  /**
-   * Fetches student's room details and roommates information
-   */
-  const fetchRoomDetails = useCallback(async () => {
-    const token = getToken();
-
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    const abortController = new AbortController();
-
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-
-      // Fetch student's current hostel and room info
-      const response = await axios.get(
-        `${API_BASE_URL}/api/students/my-requests`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: abortController.signal,
-        },
-      );
-
-      console.log("📊 Room data response:", response.data);
-
-      const currentHostel = response.data.currentHostel;
-
-      if (!currentHostel) {
-        setState({
-          roomData: null,
-          loading: false,
-          error: "You are not currently staying in any hostel.",
-        });
-        return;
-      }
-
-      // Fetch roommates (students in the same room)
-      // This endpoint needs to be created in backend
-      let roommates = [];
-      try {
-        const roommatesResponse = await axios.get(
-          `${API_BASE_URL}/api/students/my-roommates`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-            signal: abortController.signal,
-          },
-        );
-        roommates = roommatesResponse.data.roommates || [];
-      } catch (err) {
-        console.log("⚠️ Roommates endpoint not available:", err.message);
-        // Continue without roommates data
-      }
-
-      setState({
-        roomData: {
-          hostel: currentHostel,
-          roommates: roommates,
-        },
-        loading: false,
-        error: null,
-      });
-    } catch (err) {
-      if (err.name === "CanceledError" || err.code === "ERR_CANCELED") {
-        return;
-      }
-
-      console.error("❌ Error fetching room details:", err);
-
-      // Handle 404 gracefully
-      if (err.response?.status === 404) {
-        setState({
-          roomData: null,
-          loading: false,
-          error: "You are not currently staying in any hostel.",
-        });
-        return;
-      }
-
-      setState({
-        roomData: null,
-        loading: false,
-        error: err.response?.data?.message || "Failed to fetch room details.",
-      });
-
-      toast.error(
-        err.response?.data?.message || "Failed to fetch room details.",
-      );
-    }
-
-    return () => abortController.abort();
-  }, [navigate]);
-
-  useEffect(() => {
-    fetchRoomDetails();
-  }, [fetchRoomDetails]);
-
-  // ==========================================================================
-  // COMPUTED VALUES
-  // ==========================================================================
-
-  /**
-   * Extract room amenities from hostel features
-   */
-  const roomAmenities = useMemo(() => {
-    if (!state.roomData?.hostel?.features) return [];
-    return state.roomData.hostel.features;
-  }, [state.roomData]);
-
-  /**
-   * Count total roommates (including self)
-   */
-  const totalOccupants = useMemo(() => {
-    return (state.roomData?.roommates?.length || 0) + 1; // +1 for current student
-  }, [state.roomData]);
-
-  // ==========================================================================
-  // EVENT HANDLERS
-  // ==========================================================================
-
-  const handleNavigate = useCallback(
-    (path) => {
-      navigate(path);
-    },
-    [navigate],
+  // Derive approved request for room specifics
+  const approvedRequest = useMemo(() => 
+    statusData?.requests?.find(r => r.status === "Approved" && (r.hostel?._id === currentHostelId || r.hostel?.id === currentHostelId)),
+    [statusData, currentHostelId]
   );
-
-  const handleGoBack = useCallback(() => {
-    navigate(-1);
-  }, [navigate]);
-
-  const handleRetry = useCallback(() => {
-    fetchRoomDetails();
-  }, [fetchRoomDetails]);
-
-  const handleContactRoommate = useCallback((phone) => {
-    if (phone) {
-      window.location.href = `tel:${phone}`;
-    }
-  }, []);
-
-  const handleEmailRoommate = useCallback((email) => {
-    if (email) {
-      window.location.href = `mailto:${email}`;
-    }
-  }, []);
 
   // ==========================================================================
   // RENDER HELPERS
   // ==========================================================================
 
-  /**
-   * Renders loading state
-   */
-  const renderLoading = () => (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-        <p className="text-slate-600 dark:text-slate-400">
-          Loading room details...
-        </p>
-      </div>
-    </div>
-  );
-
-  /**
-   * Renders error state (no hostel)
-   */
-  const renderError = () => (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-      <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg max-w-md text-center">
-        <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-2 text-slate-800 dark:text-white">
-          No Active Room
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">{state.error}</p>
-        <button
-          onClick={() => handleNavigate("/student/hostels")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition mb-3 w-full"
-        >
-          Browse Hostels
-        </button>
-        <button
-          onClick={handleRetry}
-          className="bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white px-6 py-3 rounded-lg font-semibold transition w-full"
-        >
-          Try Again
-        </button>
-      </div>
-    </div>
-  );
-
-  /**
-   * Renders page header
-   */
-  const renderHeader = () => (
-    <div className="mb-6">
-      <button
-        onClick={handleGoBack}
-        className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-4 transition"
-      >
-        <ArrowLeft size={20} />
-        <span>Back</span>
-      </button>
-      <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
-        My Room Details
-      </h1>
-      <p className="text-slate-600 dark:text-slate-400 mt-2">
-        View your room information and roommates
-      </p>
-    </div>
-  );
-
-  /**
-   * Renders hostel and room information card
-   */
-  const renderRoomInfo = () => {
-    const hostel = state.roomData.hostel;
-
+  if (loadingStatus || loadingHostel || loadingRoommates) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white">
-          <Home size={22} className="text-blue-500" />
-          Room Information
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Hostel Name */}
-          <div className="flex items-start gap-3">
-            <Building2 className="text-blue-500 mt-1" size={20} />
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Hostel Name
-              </p>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {hostel.name}
-              </p>
-            </div>
-          </div>
-
-          {/* Location */}
-          <div className="flex items-start gap-3">
-            <MapPin className="text-red-500 mt-1" size={20} />
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Location
-              </p>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {hostel.location || hostel.locality || "N/A"}
-              </p>
-            </div>
-          </div>
-
-          {/* Room Number */}
-          <div className="flex items-start gap-3">
-            <Hash className="text-purple-500 mt-1" size={20} />
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Room Number
-              </p>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {hostel.roomNumber || "Not Assigned"}
-              </p>
-            </div>
-          </div>
-
-          {/* Floor */}
-          <div className="flex items-start gap-3">
-            <Layers className="text-green-500 mt-1" size={20} />
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Floor
-              </p>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {hostel.floor || hostel.floors || "N/A"}
-              </p>
-            </div>
-          </div>
-
-          {/* Room Type */}
-          <div className="flex items-start gap-3">
-            <BedDouble className="text-indigo-500 mt-1" size={20} />
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Room Type
-              </p>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {hostel.type || hostel.roomType || "Standard"}
-              </p>
-            </div>
-          </div>
-
-          {/* Occupancy */}
-          <div className="flex items-start gap-3">
-            <Users className="text-orange-500 mt-1" size={20} />
-            <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Occupancy
-              </p>
-              <p className="font-semibold text-slate-900 dark:text-white">
-                {totalOccupants} {totalOccupants === 1 ? "Person" : "People"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Admission Date */}
-        {hostel.admissionDate && (
-          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-              <Calendar size={16} />
-              <span>
-                Staying since:{" "}
-                {new Date(hostel.admissionDate).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  /**
-   * Renders amenities card
-   */
-  const renderAmenities = () => {
-    if (roomAmenities.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white">
-          <CheckCircle size={22} className="text-green-500" />
-          Room Amenities
-        </h2>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {roomAmenities.map((amenity, index) => {
-            const amenityConfig = AMENITY_ICONS[amenity] || {
-              icon: <CheckCircle size={20} />,
-              color: "text-slate-500",
-            };
-
-            return (
-              <div
-                key={index}
-                className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
-              >
-                <div className={amenityConfig.color}>{amenityConfig.icon}</div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  {amenity}
-                </span>
-              </div>
-            );
-          })}
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs">Syncing Room Data...</p>
         </div>
       </div>
     );
-  };
-
-  /**
-   * Renders roommates section
-   */
-  const renderRoommates = () => {
-    const roommates = state.roomData.roommates || [];
-
-    return (
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white">
-          <Users size={22} className="text-purple-500" />
-          Roommates ({roommates.length})
-        </h2>
-
-        {roommates.length > 0 ? (
-          <div className="space-y-4">
-            {roommates.map((roommate, index) => (
-              <div
-                key={roommate._id || index}
-                className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg"
-              >
-                <div className="flex items-center gap-4">
-                  {/* Avatar */}
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {roommate.name?.charAt(0).toUpperCase() || "?"}
-                  </div>
-
-                  {/* Info */}
-                  <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-white">
-                      {roommate.name || "Unknown"}
-                    </h3>
-                    <div className="flex items-center gap-4 mt-1">
-                      {roommate.email && (
-                        <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                          <Mail size={12} />
-                          {roommate.email}
-                        </span>
-                      )}
-                      {roommate.phone && (
-                        <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                          <Phone size={12} />
-                          {roommate.phone}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Actions */}
-                <div className="flex gap-2">
-                  {roommate.phone && (
-                    <button
-                      onClick={() => handleContactRoommate(roommate.phone)}
-                      className="p-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition"
-                      aria-label="Call"
-                    >
-                      <Phone size={16} />
-                    </button>
-                  )}
-                  {roommate.email && (
-                    <button
-                      onClick={() => handleEmailRoommate(roommate.email)}
-                      className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
-                      aria-label="Email"
-                    >
-                      <Mail size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-            <User className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-500 dark:text-slate-400">
-              No roommates found. You might have a single room!
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  /**
-   * Renders quick actions section
-   */
-  const renderQuickActions = () => (
-    <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg p-6">
-      <h2 className="text-xl font-bold mb-4 text-white">Quick Actions</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
-          onClick={() => handleNavigate("/student/payments")}
-          className="flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-3 rounded-lg font-semibold transition"
-        >
-          <IndianRupee size={18} />
-          Pay Rent
-        </button>
-        <button
-          onClick={() => handleNavigate("/student/raise-complaint")}
-          className="flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-3 rounded-lg font-semibold transition"
-        >
-          <MessageSquareWarning size={18} />
-          Complaint
-        </button>
-        <button
-          onClick={() => handleNavigate("/student/notifications")}
-          className="flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-3 rounded-lg font-semibold transition"
-        >
-          <FileText size={18} />
-          Notifications
-        </button>
-      </div>
-    </div>
-  );
-
-  // ==========================================================================
-  // MAIN RENDER
-  // ==========================================================================
-
-  if (state.loading) {
-    return renderLoading();
   }
 
-  if (state.error || !state.roomData) {
-    return renderError();
+  if (statusError || !currentHostelId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+        <div className="bg-white dark:bg-slate-800 p-10 rounded-[2.5rem] shadow-2xl max-w-md text-center border border-slate-100 dark:border-slate-700">
+          <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto mb-6"><AlertCircle className="text-amber-500" size={40} /></div>
+          <h2 className="text-3xl font-black mb-2 tracking-tight">Access Denied</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8 font-medium">You must be an active resident to view room information.</p>
+          <div className="flex flex-col gap-3">
+             <button onClick={() => navigate("/student/hostels")} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black transition shadow-lg shadow-blue-100">Find a Room</button>
+             <button onClick={() => navigate(-1)} className="text-slate-500 font-bold px-8 py-4">Go Back</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 sm:p-6 lg:p-12 pb-24">
       <div className="max-w-5xl mx-auto">
-        {renderHeader()}
-        {renderRoomInfo()}
-        {renderAmenities()}
-        {renderRoommates()}
-        {renderQuickActions()}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div>
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest mb-4 transition hover:translate-x-[-4px]"><ArrowLeft size={16} />Back to Dashboard</button>
+            <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">Your Sanctuary</h1>
+            <p className="text-slate-400 dark:text-slate-500 font-bold mt-2">Manage your living space and connect with roommates</p>
+          </div>
+          <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl font-black text-sm tracking-widest uppercase shadow-xl shadow-slate-200 dark:shadow-none flex items-center gap-2 italic"><Hash size={18} /> Room {approvedRequest?.roomNumber || "000"}</div>
+        </div>
+
+        {/* Room Info Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Main Stats Card */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-xl shadow-blue-900/5 p-8 lg:p-10 border border-slate-100 dark:border-slate-700/50">
+               <div className="flex items-center gap-4 mb-8">
+                  <div className="p-4 bg-blue-600 text-white rounded-3xl shadow-lg shadow-blue-200 dark:shadow-none"><Home size={28} /></div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight">{hostel?.name || "Premium Hostel"}</h2>
+                    <p className="text-slate-400 font-bold text-sm flex items-center gap-1"><MapPin size={14} className="text-blue-500" /> {hostel?.location}</p>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assignment</p>
+                    <p className="text-lg font-black">{approvedRequest?.roomNumber || "TBD"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Position</p>
+                    <p className="text-lg font-black">{approvedRequest?.floor || "Ground"} Floor</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Capacity</p>
+                    <p className="text-lg font-black">{(roommates.length + 1)} Residents</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Type</p>
+                    <p className="text-lg font-black">Admitted</p>
+                  </div>
+               </div>
+               
+               <div className="mt-10 pt-10 border-t border-slate-50 dark:border-slate-700/50">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-300 mb-6 flex items-center gap-2"><Layers size={16} /> Included Amenities</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {hostel?.features?.length > 0 ? (
+                      hostel.features.map((f, i) => {
+                         const cfg = AMENITY_ICONS[f] || { icon: <CheckCircle size={16} />, color: "text-slate-400", bg: "bg-slate-50 dark:bg-slate-900/30" };
+                         return (
+                           <div key={i} className={`flex items-center gap-2 ${cfg.bg} ${cfg.color} px-4 py-2 rounded-xl font-bold text-sm border border-transparent hover:border-current transition-colors cursor-default`}>
+                             {cfg.icon} <span>{f}</span>
+                           </div>
+                         );
+                      })
+                    ) : <p className="text-slate-400 italic font-medium">No amenities listed</p>}
+                  </div>
+               </div>
+            </div>
+
+            {/* Roommates Card */}
+            <div className="bg-slate-900 text-white rounded-[2.5rem] shadow-2xl p-8 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 p-12 -mr-12 -mt-12 bg-blue-500/20 rounded-full blur-3xl w-48 h-48 group-hover:scale-125 transition-transform duration-1000" />
+               <div className="relative z-10 h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-8">
+                     <h3 className="text-2xl font-black tracking-tight uppercase italic">Roommates</h3>
+                     <Users size={24} className="text-blue-400" />
+                  </div>
+
+                  <div className="space-y-6 flex-1">
+                    {roommates.length > 0 ? roommates.map((r, i) => (
+                      <div key={r.id || i} className="flex items-center gap-4 group/mate">
+                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center font-black text-blue-400 group-hover/mate:bg-blue-600 group-hover/mate:text-white transition-all duration-300 uppercase tracking-tighter shadow-lg">{r.name?.charAt(0) || "?"}</div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-black text-sm truncate uppercase tracking-tight">{r.name}</p>
+                          <div className="flex gap-3 mt-1 opacity-60 group-hover/mate:opacity-100 transition-opacity">
+                             {r.phone && <a href={`tel:${r.phone}`} className="hover:text-blue-400 transition-colors"><Phone size={12} /></a>}
+                             {r.email && <a href={`mailto:${r.email}`} className="hover:text-blue-400 transition-colors"><Mail size={12} /></a>}
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="flex flex-col items-center justify-center h-full text-center py-10">
+                        <User size={40} className="text-white/10 mb-4" />
+                        <p className="text-white/40 font-bold text-sm tracking-wide">SOLO RESIDENCY<br/><span className="text-[10px] font-black uppercase">No roommates currently assigned</span></p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-8 pt-8 border-t border-white/5 flex items-center justify-between">
+                     <p className="text-[10px] font-black uppercase tracking-widest text-white/30 italic">Connect Privately</p>
+                     <p className="text-xs font-bold text-blue-400">{roommates.length} Connections</p>
+                  </div>
+               </div>
+            </div>
+        </div>
+
+        {/* Action Belt */}
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-[2rem] shadow-lg border border-slate-100 dark:border-slate-700/50 flex flex-wrap gap-4 items-center">
+            <div className="flex-1 min-w-[200px] flex items-center gap-4 pl-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest italic border-l-4 border-blue-600">
+               Essential Controls for Current Resident
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button 
+                onClick={() => navigate("/student/payments")} 
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100 dark:shadow-none hover:scale-105 transition active:scale-95"
+              >
+                <IndianRupee size={16} /> Rent Pay
+              </button>
+              <button 
+                onClick={() => navigate("/student/raise-complaint")} 
+                className="flex items-center gap-2 px-6 py-3 bg-rose-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-100 dark:shadow-none hover:scale-105 transition active:scale-95"
+              >
+                <MessageSquare size={16} /> Raise Issue
+              </button>
+              <button 
+                onClick={() => navigate("/student/my-hostel-rules")} 
+                className="flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition"
+              >
+                <FileText size={16} /> Rules History
+              </button>
+            </div>
+        </div>
       </div>
     </div>
   );
 };
 
 export default MyRoomDetails;
-
-/**
- * ============================================================================
- * BACKEND API REQUIREMENTS
- * ============================================================================
- *
- * This component requires the following endpoints:
- *
- * 1. GET /api/students/my-requests
- *    - Returns currentHostel with room details
- *    - Response format:
- *    {
- *      currentHostel: {
- *        _id: "...",
- *        name: "Hostel Name",
- *        location: "Address",
- *        roomNumber: "101",
- *        floor: "1st Floor",
- *        type: "Boys Hostel",
- *        features: ["WiFi", "AC", "Food"],
- *        admissionDate: "2024-01-01"
- *      }
- *    }
- *
- * 2. GET /api/students/my-roommates (OPTIONAL - needs to be created)
- *    - Returns list of students in the same room
- *    - Response format:
- *    {
- *      roommates: [
- *        {
- *          _id: "...",
- *          name: "Student Name",
- *          email: "student@example.com",
- *          phone: "1234567890"
- *        }
- *      ]
- *    }
- *
- * ============================================================================
- * BACKEND CONTROLLER TO CREATE (Optional)
- * ============================================================================
- *
- * // controllers/studentController.js
- *
- * exports.getMyRoommates = async (req, res) => {
- *   try {
- *     const userId = req.user.id;
- *
- *     // Find current student
- *     const currentStudent = await Student.findOne({ user: userId });
- *
- *     if (!currentStudent || !currentStudent.currentHostel || !currentStudent.roomNumber) {
- *       return res.status(404).json({
- *         success: false,
- *         message: "You are not currently in a room"
- *       });
- *     }
- *
- *     // Find other students in the same room
- *     const roommates = await Student.find({
- *       currentHostel: currentStudent.currentHostel,
- *       roomNumber: currentStudent.roomNumber,
- *       _id: { $ne: currentStudent._id }, // Exclude self
- *       status: "Active"
- *     }).select("name email phone");
- *
- *     res.status(200).json({
- *       success: true,
- *       roommates
- *     });
- *   } catch (err) {
- *     console.error("Error fetching roommates:", err);
- *     res.status(500).json({
- *       success: false,
- *       message: "Failed to fetch roommates"
- *     });
- *   }
- * };
- *
- * // Add to routes/studentRoutes.js:
- * router.get("/my-roommates", requireAuth, requireStudent, studentController.getMyRoommates);
- *
- * ============================================================================
- * FEATURES
- * ============================================================================
- *
- * ✅ Production Ready Design
- * ✅ Fully Responsive (Mobile, Tablet, Desktop)
- * ✅ Dark Mode Support
- * ✅ Loading States
- * ✅ Error Handling
- * ✅ Empty States
- * ✅ Real API Integration
- * ✅ Contact Roommates (Call/Email)
- * ✅ Quick Actions (Pay Rent, Complaint, Notifications)
- * ✅ Beautiful UI with Icons
- * ✅ Optimized Performance
- * ✅ Accessibility (aria-labels, keyboard navigation)
- *
- * ============================================================================
- */

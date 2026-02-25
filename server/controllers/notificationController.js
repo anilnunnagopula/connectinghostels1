@@ -1,85 +1,56 @@
-/**
- * FIXED notificationController.js - Replace ALL exports in your existing file
- *
- * KEY FIX: All functions now properly convert User._id → Student._id
- */
-
 const Notification = require("../models/Notification");
 const Student = require("../models/Student");
+const logger = require("../middleware/logger");
 
 /**
- * @desc    Get all notifications for logged-in student
- * @route   GET /api/student/notifications
+ * @desc    Get all notifications for logged-in student (paginated)
+ * @route   GET /api/student/notifications?page=1&limit=20
  * @access  Private (Student only)
  */
 exports.getStudentNotifications = async (req, res) => {
   try {
-    const userId = req.user.id; // This is User._id from auth token
+    const userId = req.user.id;
 
-    console.log(`📍 Fetching notifications for user: ${userId}`);
-
-    // ✅ CRITICAL FIX: Find the Student document first
     const student = await Student.findOne({ user: userId });
-
     if (!student) {
-      console.log("❌ No student profile found for user:", userId);
       return res.status(404).json({
         success: false,
-        message:
-          "Student profile not found. Please complete your profile first.",
+        message: "Student profile not found. Please complete your profile first.",
       });
     }
 
-    const studentId = student._id; // ✅ NOW we have the correct Student._id
-    console.log(`✅ Found student: ${studentId} (${student.name})`);
+    const { type, isRead } = req.query;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const skip = (page - 1) * limit;
 
-    // Optional query parameters for filtering
-    const { type, isRead, limit = 50, page = 1 } = req.query;
+    const query = { recipientStudent: student._id };
+    if (type && type !== "all") query.type = type;
+    if (isRead !== undefined) query.isRead = isRead === "true";
 
-    // Build query using Student._id
-    const query = { recipientStudent: studentId };
-
-    if (type && type !== "all") {
-      query.type = type;
-    }
-
-    if (isRead !== undefined) {
-      query.isRead = isRead === "true";
-    }
-
-    // Calculate pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    // Fetch notifications
-    const notifications = await Notification.find(query)
-      .populate("recipientHostel", "name location")
-      .populate("sender", "name")
-      .sort({ createdAt: -1 }) // Most recent first
-      .limit(parseInt(limit))
-      .skip(skip);
-
-    // Get total count for pagination
-    const total = await Notification.countDocuments(query);
-
-    console.log(
-      `✅ Found ${notifications.length} notifications (${total} total)`,
-    );
+    const [notifications, total] = await Promise.all([
+      Notification.find(query)
+        .populate("recipientHostel", "name location")
+        .populate("sender", "name")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Notification.countDocuments(query),
+    ]);
 
     res.status(200).json({
       success: true,
       count: notifications.length,
       total,
-      page: parseInt(page),
-      pages: Math.ceil(total / parseInt(limit)),
+      page,
+      pages: Math.ceil(total / limit),
       notifications,
     });
   } catch (err) {
-    console.error("❌ Error fetching notifications:", err);
-    console.error("Full error:", err.stack);
+    logger.error("Error fetching notifications: " + err.message);
     res.status(500).json({
       success: false,
       message: "Failed to fetch notifications.",
-      error: err.message,
     });
   }
 };
@@ -94,48 +65,28 @@ exports.markAsRead = async (req, res) => {
     const userId = req.user.id;
     const notificationId = req.params.id;
 
-    // ✅ FIX: Get Student._id first
     const student = await Student.findOne({ user: userId });
-
     if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student profile not found.",
-      });
+      return res.status(404).json({ success: false, message: "Student profile not found." });
     }
 
-    const studentId = student._id;
-
-    // Find notification and verify it belongs to this student
     const notification = await Notification.findOne({
       _id: notificationId,
-      recipientStudent: studentId, // ✅ Now using correct Student._id
+      recipientStudent: student._id,
     });
 
     if (!notification) {
-      return res.status(404).json({
-        success: false,
-        message: "Notification not found.",
-      });
+      return res.status(404).json({ success: false, message: "Notification not found." });
     }
 
-    // Update isRead status
     notification.isRead = true;
     notification.readAt = new Date();
     await notification.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Notification marked as read.",
-      data: notification,
-    });
+    res.status(200).json({ success: true, message: "Notification marked as read.", data: notification });
   } catch (err) {
-    console.error("❌ Error marking notification as read:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to mark notification as read.",
-      error: err.message,
-    });
+    logger.error("Error marking notification as read: " + err.message);
+    res.status(500).json({ success: false, message: "Failed to mark notification as read." });
   }
 };
 
@@ -148,46 +99,24 @@ exports.markAllAsRead = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // ✅ FIX: Get Student._id first
     const student = await Student.findOne({ user: userId });
-
     if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student profile not found.",
-      });
+      return res.status(404).json({ success: false, message: "Student profile not found." });
     }
 
-    const studentId = student._id;
-
-    // Update all unread notifications for this student
     const result = await Notification.updateMany(
-      {
-        recipientStudent: studentId, // ✅ Now using correct Student._id
-        isRead: false,
-      },
-      {
-        $set: {
-          isRead: true,
-          readAt: new Date(),
-        },
-      },
+      { recipientStudent: student._id, isRead: false },
+      { $set: { isRead: true, readAt: new Date() } },
     );
 
     res.status(200).json({
       success: true,
       message: `${result.modifiedCount} notification(s) marked as read.`,
-      data: {
-        markedCount: result.modifiedCount,
-      },
+      data: { markedCount: result.modifiedCount },
     });
   } catch (err) {
-    console.error("❌ Error marking all as read:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to mark all notifications as read.",
-      error: err.message,
-    });
+    logger.error("Error marking all notifications as read: " + err.message);
+    res.status(500).json({ success: false, message: "Failed to mark all notifications as read." });
   }
 };
 
@@ -200,37 +129,21 @@ exports.clearAll = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // ✅ FIX: Get Student._id first
     const student = await Student.findOne({ user: userId });
-
     if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student profile not found.",
-      });
+      return res.status(404).json({ success: false, message: "Student profile not found." });
     }
 
-    const studentId = student._id;
-
-    // Delete all notifications for this student
-    const result = await Notification.deleteMany({
-      recipientStudent: studentId, // ✅ Now using correct Student._id
-    });
+    const result = await Notification.deleteMany({ recipientStudent: student._id });
 
     res.status(200).json({
       success: true,
       message: `${result.deletedCount} notification(s) cleared.`,
-      data: {
-        deletedCount: result.deletedCount,
-      },
+      data: { deletedCount: result.deletedCount },
     });
   } catch (err) {
-    console.error("❌ Error clearing notifications:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to clear notifications.",
-      error: err.message,
-    });
+    logger.error("Error clearing notifications: " + err.message);
+    res.status(500).json({ success: false, message: "Failed to clear notifications." });
   }
 };
 
@@ -243,34 +156,20 @@ exports.getUnreadCount = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // ✅ FIX: Get Student._id first
     const student = await Student.findOne({ user: userId });
-
     if (!student) {
-      return res.status(200).json({
-        success: true,
-        count: 0, // Return 0 if no student profile
-      });
+      return res.status(200).json({ success: true, count: 0 });
     }
 
-    const studentId = student._id;
-
     const count = await Notification.countDocuments({
-      recipientStudent: studentId, // ✅ Now using correct Student._id
+      recipientStudent: student._id,
       isRead: false,
     });
 
-    res.status(200).json({
-      success: true,
-      count,
-    });
+    res.status(200).json({ success: true, count });
   } catch (err) {
-    console.error("❌ Error getting unread count:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to get unread count.",
-      error: err.message,
-    });
+    logger.error("Error getting unread count: " + err.message);
+    res.status(500).json({ success: false, message: "Failed to get unread count." });
   }
 };
 
@@ -284,42 +183,24 @@ exports.deleteNotification = async (req, res) => {
     const userId = req.user.id;
     const notificationId = req.params.id;
 
-    // ✅ FIX: Get Student._id first
     const student = await Student.findOne({ user: userId });
-
     if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student profile not found.",
-      });
+      return res.status(404).json({ success: false, message: "Student profile not found." });
     }
 
-    const studentId = student._id;
-
-    // Find and delete notification
     const notification = await Notification.findOneAndDelete({
       _id: notificationId,
-      recipientStudent: studentId, // ✅ Now using correct Student._id
+      recipientStudent: student._id,
     });
 
     if (!notification) {
-      return res.status(404).json({
-        success: false,
-        message: "Notification not found.",
-      });
+      return res.status(404).json({ success: false, message: "Notification not found." });
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Notification deleted successfully.",
-    });
+    res.status(200).json({ success: true, message: "Notification deleted successfully." });
   } catch (err) {
-    console.error("❌ Error deleting notification:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete notification.",
-      error: err.message,
-    });
+    logger.error("Error deleting notification: " + err.message);
+    res.status(500).json({ success: false, message: "Failed to delete notification." });
   }
 };
 

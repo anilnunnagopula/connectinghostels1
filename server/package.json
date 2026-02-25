@@ -4,24 +4,38 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --forceExit --detectOpenHandles",
     "start": "node index.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ],
+    "globalSetup": "<rootDir>/__tests__/globalSetup.js",
+    "globalTeardown": "<rootDir>/__tests__/globalTeardown.js",
+    "testTimeout": 30000
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.995.0",
+    "@logtail/node": "^0.5.6",
+    "@logtail/winston": "^0.5.6",
     "@sentry/node": "^10.39.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.70.0",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csrf-csrf": "^4.0.3",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "express-async-errors": "^3.1.1",
+    "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.1",
     "google-auth-library": "^10.5.0",
@@ -29,15 +43,19 @@
     "ioredis": "^5.9.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.1",
-    "mongoose-sanitize": "^1.5.0",
     "multer": "^2.0.1",
     "multer-s3": "^3.0.1",
     "nodemailer": "^7.0.13",
     "razorpay": "^2.9.6",
+    "socket.io": "^4.8.3",
     "twilio": "^5.7.1",
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@jest/globals": "^30.2.0",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^11.0.1",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.2.2"
   }
 }

@@ -7,13 +7,13 @@ const CommunityGuidelines = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           ConnectingHostels Community Guidelines
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           Welcome to the <strong>ConnectingHostels</strong> community! These
           guidelines are designed to foster a safe, respectful, and productive
           environment for all users, including students seeking accommodation
@@ -35,10 +35,10 @@ const CommunityGuidelines = () => {
           .
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           1. Respect Everyone 🫶
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Our community thrives on mutual respect. Treat others as you would
           like to be treated.
         </p>
@@ -79,10 +79,10 @@ const CommunityGuidelines = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           2. Keep It Real 🧾 (Accuracy and Authenticity)
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Trust is the foundation of our community. All information shared must
           be honest and accurate.
         </p>
@@ -121,10 +121,10 @@ const CommunityGuidelines = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           3. Use the Platform Responsibly ⚖️
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Help us maintain the integrity and security of our Service.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -163,10 +163,10 @@ const CommunityGuidelines = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           4. Reporting & Moderation 🚨
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We rely on our community to help us maintain a positive environment.
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -201,10 +201,10 @@ const CommunityGuidelines = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           5. Consequences of Violations
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Violations of these Community Guidelines can lead to various actions:
         </p>
         <ul className="list-disc pl-6 space-y-3 mb-6">
@@ -229,14 +229,14 @@ const CommunityGuidelines = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           6. Feedback Welcome 💬
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           We are committed to continuously improving our community and platform.
           Your feedback is valuable.
         </p>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           If you have suggestions, questions about these guidelines, or
           encounter any issues, please email us at{" "}
           <a
@@ -247,18 +247,18 @@ const CommunityGuidelines = () => {
           </a>
           .
         </p>
-        <p className="mb-8 text-gray-700 dark:text-gray-300">
+        <p className="mb-8 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
           ConnectingHostels - Hyderabad-501506, Telangana, India
         </p>
 
-        <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+        <p className="mt-12 text-sm text-gray-500 dark:text-slate-400 italic text-center">
           These Community Guidelines are an integral part of our commitment to
           user safety and platform integrity. We reserve the right to update or
           modify them at any time.
         </p>
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July , 2025
         </p>
       </div>

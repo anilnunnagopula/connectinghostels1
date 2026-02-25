@@ -45,15 +45,15 @@
 //     ];
 
 //     return (
-//         <aside className={`w-64 bg-white dark:bg-gray-800 shadow-lg flex-col justify-between lg:flex transition-all duration-300 z-20 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
+//         <aside className={`w-64 bg-white dark:bg-slate-800 shadow-lg flex-col justify-between lg:flex transition-all duration-300 z-20 ${isSidebarOpen ? 'flex' : 'hidden'}`}>
 //             <div>
-//                 <div className="flex items-center justify-center h-20 border-b dark:border-gray-700">
+//                 <div className="flex items-center justify-center h-20 border-b dark:border-slate-700">
 //                     <div className="bg-[#4A90E2] text-white text-2xl font-bold rounded-lg w-12 h-12 flex items-center justify-center">CH</div>
-//                     <span className="ml-3 text-xl font-semibold text-gray-700 dark:text-gray-200">Connecting Hostels</span>
+//                     <span className="ml-3 text-xl font-semibold text-gray-700 dark:text-slate-200">Connecting Hostels</span>
 //                 </div>
 //                 <nav className="mt-6 flex-1 px-3">
 //                     {navItems.map(item => (
-//                         <a key={item.name} href="#" className={`flex items-center px-4 py-2.5 mt-2 rounded-lg transition-colors ${item.active ? 'bg-[#4A90E2] text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>
+//                         <a key={item.name} href="#" className={`flex items-center px-4 py-2.5 mt-2 rounded-lg transition-colors ${item.active ? 'bg-[#4A90E2] text-white' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700'}`}>
 //                             <Icon name={item.icon} className="w-5 h-5" />
 //                             <span className="ml-4 font-semibold">{item.name}</span>
 //                         </a>
@@ -61,11 +61,11 @@
 //                 </nav>
 //             </div>
 //             <div className="mb-4 px-3">
-//                 <a href="#" className="flex items-center px-4 py-2.5 mt-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+//                 <a href="#" className="flex items-center px-4 py-2.5 mt-2 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
 //                     <Icon name="settings" className="w-5 h-5" />
 //                     <span className="ml-4">Settings</span>
 //                 </a>
-//                 <a href="#" className="flex items-center px-4 py-2.5 mt-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+//                 <a href="#" className="flex items-center px-4 py-2.5 mt-2 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
 //                     <Icon name="log-out" className="w-5 h-5" />
 //                     <span className="ml-4">Logout</span>
 //                 </a>
@@ -75,28 +75,28 @@
 // };
 
 // const Header = ({ toggleSidebar, toggleTheme, theme }) => (
-//     <header className="sticky top-0 flex items-center justify-between p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm z-10 border-b dark:border-gray-700">
+//     <header className="sticky top-0 flex items-center justify-between p-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm z-10 border-b dark:border-slate-700">
 //         <div className="flex items-center">
-//             <button onClick={toggleSidebar} className="lg:hidden mr-4 text-gray-600 dark:text-gray-300">
+//             <button onClick={toggleSidebar} className="lg:hidden mr-4 text-gray-600 dark:text-slate-300">
 //                 <Icon name="menu" className="w-6 h-6" />
 //             </button>
 //             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Dashboard Overview</h1>
 //         </div>
 //         <div className="flex items-center space-x-5">
-//             <button onClick={toggleTheme} className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+//             <button onClick={toggleTheme} className="p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
 //                 <Icon name={theme === 'dark' ? 'moon' : 'sun'} className="w-6 h-6" />
 //             </button>
 //             <div className="relative">
-//                 <button className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+//                 <button className="p-2 rounded-full text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
 //                     <Icon name="bell" className="w-6 h-6" />
 //                 </button>
-//                 <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse"></span>
+//                 <span className="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 animate-pulse"></span>
 //             </div>
 //             <div className="flex items-center space-x-3">
 //                 <img className="h-10 w-10 rounded-full object-cover ring-2 ring-offset-2 dark:ring-offset-gray-800 ring-[#4A90E2]" src="https://placehold.co/100x100/4A90E2/FFFFFF?text=A" alt="Admin profile" />
 //                 <div>
-//                     <p className="font-semibold text-gray-700 dark:text-gray-200">Admin User</p>
-//                     <p className="text-xs text-gray-500 dark:text-gray-400">Super Admin</p>
+//                     <p className="font-semibold text-gray-700 dark:text-slate-200">Admin User</p>
+//                     <p className="text-xs text-gray-500 dark:text-slate-400">Super Admin</p>
 //                 </div>
 //             </div>
 //         </div>
@@ -104,12 +104,12 @@
 // );
 
 // const StatCard = ({ icon, title, value, color }) => (
-//     <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 flex items-center space-x-4">
+//     <div className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm hover:shadow-lg transition-shadow duration-300 flex items-center space-x-4">
 //         <div className={`p-3 bg-${color}-100 dark:bg-${color}-900/50 rounded-full`}>
 //             <Icon name={icon} className={`text-${color}-500 w-6 h-6`} />
 //         </div>
 //         <div>
-//             <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+//             <p className="text-sm text-gray-500 dark:text-slate-400">{title}</p>
 //             <p className="text-2xl font-bold text-gray-800 dark:text-white">{value}</p>
 //         </div>
 //     </div>
@@ -199,27 +199,27 @@
 //                         <p className="text-4xl font-bold mt-2">$15,750.00</p>
 //                         <p className="text-sm mt-2 opacity-80 flex items-center"><Icon name="arrow-up-right" className="inline-block h-4 w-4 mr-1" /> 12.5% vs last month</p>
 //                     </div>
-//                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm"><h3 className="font-semibold text-lg mb-4">Revenue Growth</h3><div className="h-48"><ChartComponent id="revenueGrowthChart" type="line" data={revenueGrowthData} options={revenueGrowthOptions} /></div></div>
-//                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm"><h3 className="font-semibold text-lg mb-4">Revenue by Source</h3><div className="h-48"><ChartComponent id="revenueSourceChart" type="doughnut" data={revenueSourceData} options={revenueSourceOptions} /></div></div>
+//                     <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm"><h3 className="font-semibold text-lg mb-4">Revenue Growth</h3><div className="h-48"><ChartComponent id="revenueGrowthChart" type="line" data={revenueGrowthData} options={revenueGrowthOptions} /></div></div>
+//                     <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm"><h3 className="font-semibold text-lg mb-4">Revenue by Source</h3><div className="h-48"><ChartComponent id="revenueSourceChart" type="doughnut" data={revenueSourceData} options={revenueSourceOptions} /></div></div>
 //                 </div>
-//                 <div className="xl:col-span-3 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm flex flex-col">
+//                 <div className="xl:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm flex flex-col">
 //                     <h3 className="font-semibold text-lg mb-4">Active Hostels by Location</h3>
-//                     <div className="flex-1 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
+//                     <div className="flex-1 rounded-lg overflow-hidden bg-gray-200 dark:bg-slate-700">
 //                         <img src="https://placehold.co/800x600/E2E8F0/4A5568?text=Interactive+Map+View" className="w-full h-full object-cover" alt="Map of hostels" />
 //                     </div>
 //                 </div>
 //             </div>
             
 //             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-//                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+//                  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
 //                     <h3 className="font-semibold text-lg mb-4">Pending Verifications</h3>
 //                     <div className="space-y-4">
-//                         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><div><p className="font-semibold">Sunrise Hostel</p><p className="text-xs text-gray-500">Owner: John Doe</p></div><div className="flex space-x-2"><button className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 rounded-lg"><Icon name="x" className="text-red-500 h-4 w-4" /></button><button className="p-2 bg-green-100 hover:bg-green-200 dark:bg-green-900/50 rounded-lg"><Icon name="check" className="text-green-500 h-4 w-4" /></button></div></div>
-//                         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><div><p className="font-semibold">Scholars Abode</p><p className="text-xs text-gray-500">Owner: Jane Smith</p></div><div className="flex space-x-2"><button className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 rounded-lg"><Icon name="x" className="text-red-500 h-4 w-4" /></button><button className="p-2 bg-green-100 hover:bg-green-200 dark:bg-green-900/50 rounded-lg"><Icon name="check" className="text-green-500 h-4 w-4" /></button></div></div>
+//                         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg"><div><p className="font-semibold">Sunrise Hostel</p><p className="text-xs text-gray-500">Owner: John Doe</p></div><div className="flex space-x-2"><button className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 rounded-lg"><Icon name="x" className="text-red-500 h-4 w-4" /></button><button className="p-2 bg-green-100 hover:bg-green-200 dark:bg-green-900/50 rounded-lg"><Icon name="check" className="text-green-500 h-4 w-4" /></button></div></div>
+//                         <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg"><div><p className="font-semibold">Scholars Abode</p><p className="text-xs text-gray-500">Owner: Jane Smith</p></div><div className="flex space-x-2"><button className="p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/50 rounded-lg"><Icon name="x" className="text-red-500 h-4 w-4" /></button><button className="p-2 bg-green-100 hover:bg-green-200 dark:bg-green-900/50 rounded-lg"><Icon name="check" className="text-green-500 h-4 w-4" /></button></div></div>
 //                         <button className="w-full text-center text-sm font-semibold text-[#4A90E2] hover:underline mt-2">View All Verifications</button>
 //                     </div>
 //                 </div>
-//                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+//                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm">
 //                     <h3 className="font-semibold text-lg mb-4">Real-Time Activity Feed</h3>
 //                     <div className="space-y-4">
 //                         <div className="flex items-start space-x-3"><div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full"><Icon name="list-plus" className="text-blue-500 h-5 w-5" /></div><div><p className="text-sm">New listing <span className="font-semibold">"Cozy Corner PG"</span> submitted.</p><p className="text-xs text-gray-500">2 min ago</p></div></div>
@@ -256,7 +256,7 @@
 //     };
 
 //     return (
-//         <div className="flex h-screen bg-[#F7F9FC] dark:bg-gray-900/50 text-gray-800 dark:text-gray-200">
+//         <div className="flex h-screen bg-[#F7F9FC] dark:bg-slate-900/50 text-gray-800 dark:text-slate-200">
 //             <Sidebar isSidebarOpen={isSidebarOpen} />
 //             <div className="flex-1 flex flex-col overflow-hidden">
 //                 <Header toggleSidebar={toggleSidebar} toggleTheme={toggleTheme} theme={theme} />

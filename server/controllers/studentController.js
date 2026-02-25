@@ -1,61 +1,109 @@
 const Student = require("../models/Student");
 const Hostel = require("../models/Hostel");
-const Booking = require("../models/StudentHostel");
+const Booking = require("../models/Booking");  // Phase 1: was StudentHostel
 const mongoose = require("mongoose");
 const Complaint = require("../models/Complaint");
 const Payment = require("../models/Payment");
+const Due = require("../models/Due");
 const User = require("../models/User");
+const logger = require("../middleware/logger");
 
 exports.addStudent = async (req, res) => {
   try {
-    const { name, email, phone, address, hostel, floor, room } = req.body;
+    const { hostel, floor, room, email, name, phone } = req.body;
     const ownerId = req.user.id;
 
-    if (!name || !email || !phone || !hostel || !floor || !room) {
-      return res
-        .status(400)
-        .json({ message: "All required fields are needed." });
+    if (!hostel || !room) {
+      return res.status(400).json({ message: "hostel and room fields are required." });
+    }
+    if (!email) {
+      return res.status(400).json({ message: "Student email is required." });
     }
 
-    // 1. Check Hostel Availability
+    // 1. Look up User by email — or auto-create one for walk-in students
+    let userDoc = await User.findOne({ email: email.trim().toLowerCase() });
+    let wasAutoCreated = false;
+
+    if (!userDoc) {
+      // Walk-in student: auto-create a User account with a random temp password
+      if (!name) {
+        return res.status(400).json({ message: "Student name is required to create their account." });
+      }
+      const bcrypt = require("bcryptjs");
+      const crypto = require("crypto");
+      const tempPassword = crypto.randomBytes(12).toString("hex"); // 24-char temp password
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+      userDoc = new User({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone || "",
+        role: "student",
+        password: hashedPassword,
+        authProvider: "local",
+        profileCompleted: true,
+      });
+      await userDoc.save();
+      wasAutoCreated = true;
+    } else if (userDoc.role && userDoc.role !== "student") {
+      // Block enrolling Owner or Admin accounts as students — prevents cross-role abuse
+      return res.status(400).json({
+        message: `This email belongs to an ${userDoc.role} account and cannot be enrolled as a student.`,
+      });
+    }
+
+    // 2. Check if this user already has a student profile
+    const existingStudent = await Student.findOne({ user: userDoc._id });
+    if (existingStudent) {
+      return res.status(409).json({
+        message: `${userDoc.name || email} already has a student profile in the system.`,
+      });
+    }
+
+    // 3. Check Hostel Availability
     const hostelDoc = await Hostel.findOne({ _id: hostel, ownerId });
     if (!hostelDoc) {
-      return res.status(404).json({ message: "Hostel not found." });
+      return res.status(404).json({ message: "Hostel not found or you don't own it." });
     }
-
     if (hostelDoc.availableRooms <= 0) {
-      return res
-        .status(400)
-        .json({ message: "No available rooms in this hostel." });
+      return res.status(400).json({ message: "No available rooms in this hostel." });
     }
 
+    // 4. Create Student placement record
     const newStudent = new Student({
-      name,
-      email,
-      phone,
-      address,
-      hostel,
+      user: userDoc._id,
+      currentHostel: hostel,
+      currentOwner: ownerId,
+      roomNumber: String(room),
       floor,
-      room,
-      owner: ownerId,
+      status: "Active",
     });
 
     await newStudent.save();
 
-    // 2. Decrement Available Rooms
+    // 5. Decrement Available Rooms
     hostelDoc.availableRooms = Math.max(0, hostelDoc.availableRooms - 1);
     await hostelDoc.save();
 
-    res
-      .status(201)
-      .json({ message: "Student added successfully", student: newStudent });
+    try {
+      req.app?.locals?.io
+        ?.to(`hostel:${hostel}`)
+        .emit("room:availability_changed", {
+          hostelId: hostel,
+          availableRooms: hostelDoc.availableRooms,
+        });
+    } catch { /* non-critical */ }
+
+    res.status(201).json({
+      message: `${userDoc.name || email} enrolled successfully.${wasAutoCreated ? " A new account was created — they can log in using their email and reset their password." : ""}`,
+      student: newStudent,
+      accountCreated: wasAutoCreated,
+    });
   } catch (err) {
     if (err.code === 11000) {
-      return res
-        .status(400)
-        .json({ message: "Email or phone number already exists." });
+      return res.status(409).json({ message: "This student is already enrolled." });
     }
-    console.error("Error adding student:", err);
+    logger.error("Error adding student: " + err.message);
     res.status(500).json({ message: "Failed to add student." });
   }
 };
@@ -63,9 +111,9 @@ exports.addStudent = async (req, res) => {
 exports.deleteStudent = async (req, res) => {
   try {
     const studentId = req.params.id;
-    const ownerId = req.user.id; // Verify ownership
+    const ownerId = req.user.id;
 
-    const student = await Student.findOne({ _id: studentId, owner: ownerId });
+    const student = await Student.findOne({ _id: studentId, currentOwner: ownerId });
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
     }
@@ -74,7 +122,6 @@ exports.deleteStudent = async (req, res) => {
     if (student.hostel) {
       const hostelDoc = await Hostel.findById(student.hostel);
       if (hostelDoc) {
-        // Ensure we don't exceed total rooms (safety check)
         if (hostelDoc.availableRooms < hostelDoc.totalRooms) {
           hostelDoc.availableRooms += 1;
           await hostelDoc.save();
@@ -82,73 +129,75 @@ exports.deleteStudent = async (req, res) => {
       }
     }
 
-    // 2. Delete Student
-    await Student.findByIdAndDelete(studentId);
+    // 2. Soft-delete Student
+    student.isDeleted = true;
+    await student.save();
+
+    // Broadcast availability change after vacate
+    if (student.hostel) {
+      try {
+        const updatedHostel = await Hostel.findById(student.hostel).select("availableRooms");
+        req.app?.locals?.io
+          ?.to(`hostel:${student.hostel}`)
+          .emit("room:availability_changed", {
+            hostelId: student.hostel,
+            availableRooms: updatedHostel?.availableRooms,
+          });
+      } catch { /* non-critical */ }
+    }
 
     res.status(200).json({ message: "Student removed successfully" });
   } catch (err) {
-    console.error("Error deleting student:", err);
+    logger.error("Error deleting student: " + err.message);
     res.status(500).json({ message: "Failed to remove student." });
   }
 };
 
-// ✅ FIXED VERSION - Add this to your studentController.js
-
 /**
- * Get all students owned by the logged-in owner
- * ✅ FIXED: Returns students with proper formatting for alerts page
- */
-/**
- * Get all students owned by the logged-in owner
- * ✅ FIXED: Only populate 'currentHostel' (hostel field doesn't exist in schema)
+ * Get all students owned by the logged-in owner (paginated)
+ * @route GET /api/students/owner-students?page=1&limit=20
  */
 exports.getOwnerStudents = async (req, res) => {
   try {
     const ownerId = req.user.id;
-    
-    console.log(`📍 Fetching students for owner: ${ownerId}`);
-    
-    // ✅ FIX: Only populate 'currentHostel' since 'hostel' doesn't exist in schema
-    const students = await Student.find({ owner: ownerId })
-      .populate("currentHostel", "name")
-      .select("_id name email phone roomNumber status currentHostel")
-      .sort({ createdAt: -1 });
-    
-    console.log(`✅ Found ${students.length} students for owner ${ownerId}`);
-    
-    res.status(200).json({ 
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const skip = (page - 1) * limit;
+
+    // Phase 1: filter uses currentOwner (renamed from owner)
+    const filter = { currentOwner: ownerId };
+
+    const [students, total] = await Promise.all([
+      Student.find(filter)
+        .populate("user", "name email phone")  // name/email/phone now on User
+        .populate("currentHostel", "name")
+        .populate("currentRoom", "roomNumber floor status")
+        .select("_id roomNumber status currentHostel currentRoom activeBooking user")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Student.countDocuments(filter),
+    ]);
+
+    res.status(200).json({
       success: true,
-      count: students.length,
-      students 
+      students,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   } catch (err) {
-    console.error("❌ Error fetching owner's students:", err);
-    console.error("Full error:", err.stack);
-    res.status(500).json({ 
-      success: false,
-      message: "Failed to fetch students.",
-      error: process.env.NODE_ENV === "development" ? err.message : undefined
-    });
+    logger.error("Error fetching owner's students: " + err.message);
+    res.status(500).json({ success: false, message: "Failed to fetch students." });
   }
 };
-/**
- * ADD THIS TO YOUR studentController.js
- * 
- * This function fetches roommates (students in the same room)
- */
 
 /**
- * @desc    Get roommates (students sharing the same room)
- * @route   GET /api/students/my-roommates
- * @access  Private (Student only)
+ * Get roommates (students sharing the same room)
+ * @route GET /api/students/my-roommates
  */
 exports.getMyRoommates = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log(`📍 Fetching roommates for user: ${userId}`);
-
-    // Find current student's document
     const currentStudent = await Student.findOne({ user: userId });
 
     if (!currentStudent) {
@@ -158,10 +207,11 @@ exports.getMyRoommates = async (req, res) => {
       });
     }
 
-    // Check if student has an active room
+    // Phase 1: use currentRoom (ObjectId) for roommate matching — far more reliable
+    // than roomNumber string comparison across different hostels
     if (
       !currentStudent.currentHostel ||
-      !currentStudent.roomNumber ||
+      !currentStudent.currentRoom ||
       currentStudent.status !== "Active"
     ) {
       return res.status(200).json({
@@ -171,19 +221,13 @@ exports.getMyRoommates = async (req, res) => {
       });
     }
 
-    console.log(
-      `✅ Student in hostel: ${currentStudent.currentHostel}, room: ${currentStudent.roomNumber}`
-    );
-
-    // Find other students in the same hostel and room
     const roommates = await Student.find({
-      currentHostel: currentStudent.currentHostel,
-      roomNumber: currentStudent.roomNumber,
-      _id: { $ne: currentStudent._id }, // Exclude the current student
-      status: "Active", // Only active students
-    }).select("name email phone");
-
-    console.log(`✅ Found ${roommates.length} roommate(s)`);
+      currentRoom: currentStudent.currentRoom,  // ObjectId match — exact and safe
+      _id: { $ne: currentStudent._id },
+      status: "Active",
+    })
+      .populate("user", "name email phone")
+      .select("user status");
 
     res.status(200).json({
       success: true,
@@ -191,7 +235,7 @@ exports.getMyRoommates = async (req, res) => {
       roommates,
     });
   } catch (err) {
-    console.error("❌ Error fetching roommates:", err);
+    logger.error("Error fetching roommates: " + err.message);
     res.status(500).json({
       success: false,
       message: "Failed to fetch roommates.",
@@ -200,85 +244,28 @@ exports.getMyRoommates = async (req, res) => {
   }
 };
 
-/**
- * ============================================================================
- * ADD THIS ROUTE TO routes/studentRoutes.js:
- * ============================================================================
- * 
- * router.get(
- *   "/my-roommates",
- *   requireAuth,
- *   requireStudent,
- *   studentController.getMyRoommates
- * );
- * 
- * ============================================================================
- */
-
-/**
- * ============================================================================
- * TESTING
- * ============================================================================
- * 
- * Test with:
- * curl -H "Authorization: Bearer YOUR_STUDENT_TOKEN" \
- *   http://localhost:5000/api/students/my-roommates
- * 
- * Expected Response:
- * {
- *   "success": true,
- *   "count": 2,
- *   "roommates": [
- *     {
- *       "_id": "...",
- *       "name": "John Doe",
- *       "email": "john@example.com",
- *       "phone": "1234567890"
- *     },
- *     {
- *       "_id": "...",
- *       "name": "Jane Smith",
- *       "email": "jane@example.com",
- *       "phone": "0987654321"
- *     }
- *   ]
- * }
- * 
- * ============================================================================
- */
 // Search for hostels based on location and query
 exports.searchHostels = async (req, res) => {
   try {
     const { location, search } = req.query;
 
-    // 1. Start with an empty query (or isActive if you use that field)
-    // If you haven't set 'isActive' to true for your hostels yet,
-    // comment out the next line and use: const searchQuery = {};
     const searchQuery = { isActive: true };
 
-    // 2. Handle Location Filter
     if (
       location &&
       location.trim() &&
       location !== "Others" &&
       location !== "All"
     ) {
-      // Use Regex for "like" matching (e.g., "Mangal" will find "Mangalpally")
-      // 'i' makes it case-insensitive
       searchQuery.locality = { $regex: location.trim(), $options: "i" };
     }
 
-    // 3. Handle Name Search
     if (search && search.trim()) {
       searchQuery.name = { $regex: search.trim(), $options: "i" };
     }
 
-    console.log("Applying Search Query:", searchQuery);
-
-    // 4. Fetch hostels
     let hostels = await Hostel.find(searchQuery).sort({ createdAt: -1 });
 
-    // 5. Map data for Frontend
     const hostelsWithAvailability = hostels.map((hostel) => {
       const h = hostel.toObject();
       h.available = hostel.availableRooms > 0;
@@ -292,7 +279,7 @@ exports.searchHostels = async (req, res) => {
       hostels: hostelsWithAvailability,
     });
   } catch (err) {
-    console.error("❌ Error searching hostels:", err);
+    logger.error("Error searching hostels: " + err.message);
     res.status(500).json({
       success: false,
       message: "Failed to search for hostels.",
@@ -336,7 +323,7 @@ exports.createBookingRequest = async (req, res) => {
       booking: newBooking,
     });
   } catch (err) {
-    console.error("Error creating booking request:", err);
+    logger.error("Error creating booking request: " + err.message);
     res.status(500).json({ message: "Failed to create booking request." });
   }
 };
@@ -351,7 +338,7 @@ exports.getStudentBookings = async (req, res) => {
 
     res.status(200).json({ bookings });
   } catch (err) {
-    console.error("Error fetching student bookings:", err);
+    logger.error("Error fetching student bookings: " + err.message);
     res.status(500).json({ message: "Failed to fetch bookings." });
   }
 };
@@ -374,163 +361,156 @@ exports.getStudentHostel = async (req, res) => {
 
     res.status(200).json({ hostel: activeBooking.hostel });
   } catch (err) {
-    console.error("Error fetching student's hostel:", err);
+    logger.error("Error fetching student's hostel: " + err.message);
     res.status(500).json({ message: "Failed to fetch student's hostel." });
   }
 };
 
 exports.getStudentDashboardMetrics = async (req, res) => {
   try {
-    const studentId = req.user.id;
+    const userId = req.user.id;
 
-    // Count total hostels
-    const totalHostels = await Hostel.countDocuments({ students: studentId });
+    const student = await Student.findOne({ user: userId }).populate(
+      "currentHostel",
+      "name locality"
+    );
 
-    // Count active and pending complaints
-    const pendingComplaints = await Complaint.countDocuments({
-      student: studentId,
-      status: "Pending",
-    });
+    const hostelName = student?.currentHostel?.name || "N/A";
+    const roomNumber = student?.roomNumber || "N/A";
+    const status = student?.status || "Searching";
 
-    // Find the student's active booking
-    const activeBooking = await Booking.findOne({
-      student: studentId,
-      status: "Active",
-    }).populate("hostel");
-    const hostelName = activeBooking ? activeBooking.hostel.name : "N/A";
-    const roomNumber = activeBooking ? activeBooking.roomNumber : "N/A";
+    let pendingDuesCount = 0;
+    let pendingDuesAmount = 0;
 
-    // Find pending fees (placeholder logic)
-    const pendingFees = await Payment.countDocuments({
-      student: studentId,
-      status: "Pending",
-    });
+    if (student) {
+      const pendingDues = await Due.find({
+        student: student._id,
+        status: { $in: ["PENDING", "OVERDUE", "PARTIAL"] },
+      }).select("amount fineAmount paidAmount");
+
+      pendingDuesCount = pendingDues.length;
+      pendingDuesAmount = pendingDues.reduce(
+        (sum, due) => sum + Math.max(0, due.amount + due.fineAmount - due.paidAmount),
+        0
+      );
+    }
 
     res.json({
       hostelName,
       roomNumber,
-      pendingFees,
-      pendingComplaints,
+      status,
+      pendingDuesCount,
+      pendingDuesAmount,
     });
   } catch (err) {
-    console.error("Error fetching dashboard metrics:", err);
+    logger.error("Error fetching dashboard metrics: " + err.message);
     res.status(500).json({ message: "Failed to load metrics" });
   }
 };
 
 // ==================== INTERESTED / WISHLIST ====================
 
-// Get all interested hostels
 exports.getInterestedHostels = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId).populate("interestedHostels");
+    // Phase 1: interestedHostels moved from User → Student
+    const student = await Student.findOne({ user: userId }).populate("interestedHostels");
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!student) {
+      return res.status(200).json({ success: true, count: 0, data: [] });
     }
 
-    // Map to format expected by frontend
-    const formattedHostels = user.interestedHostels.map((hostel) => {
+    const formattedHostels = (student.interestedHostels || []).map((hostel) => {
       const h = hostel.toObject();
       h.id = h._id;
-      h.image = h.images && h.images.length > 0 ? h.images[0] : null; // Use first image
+      h.image = h.images && h.images.length > 0 ? h.images[0] : null;
       return h;
     });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        count: formattedHostels.length,
-        data: formattedHostels,
-      });
+    res.status(200).json({
+      success: true,
+      count: formattedHostels.length,
+      data: formattedHostels,
+    });
   } catch (err) {
-    console.error("Error fetching interested hostels:", err);
+    logger.error("Error fetching interested hostels: " + err.message);
     res.status(500).json({ message: "Failed to fetch interested hostels." });
   }
 };
 
-// Toggle interested hostel (Add/Remove)
 exports.toggleInterestedHostel = async (req, res) => {
   try {
     const userId = req.user.id;
     const { hostelId } = req.params;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    // Phase 1: interestedHostels moved from User → Student
+    const student = await Student.findOne({ user: userId });
+    if (!student) {
+      // Auto-create minimal student profile if not exists
+      return res.status(404).json({ message: "Student profile not found" });
     }
 
-    // Initialize if undefined
-    if (!user.interestedHostels) {
-      user.interestedHostels = [];
-    }
+    if (!student.interestedHostels) student.interestedHostels = [];
 
-    const index = user.interestedHostels.indexOf(hostelId);
-    let message = "";
-    let added = false;
+    const hostelObjectId = new mongoose.Types.ObjectId(hostelId);
+    const index = student.interestedHostels.findIndex(
+      (id) => id.toString() === hostelId
+    );
+    let message, added;
 
     if (index === -1) {
-      // Add
-      user.interestedHostels.push(hostelId);
+      student.interestedHostels.push(hostelObjectId);
       message = "Added to interested list";
       added = true;
     } else {
-      // Remove
-      user.interestedHostels.splice(index, 1);
+      student.interestedHostels.splice(index, 1);
       message = "Removed from interested list";
       added = false;
     }
 
-    await user.save();
+    await student.save();
     res.status(200).json({ success: true, message, added });
   } catch (err) {
-    console.error("Error toggling interested hostel:", err);
+    logger.error("Error toggling interested hostel: " + err.message);
     res.status(500).json({ message: "Failed to update interested list." });
   }
 };
 
-// Remove interested hostel (Explicit Delete)
 exports.removeInterestedHostel = async (req, res) => {
   try {
     const userId = req.user.id;
     const { hostelId } = req.params;
 
-    await User.findByIdAndUpdate(userId, {
-      $pull: { interestedHostels: hostelId },
-    });
+    // Phase 1: interestedHostels on Student, not User
+    await Student.findOneAndUpdate(
+      { user: userId },
+      { $pull: { interestedHostels: new mongoose.Types.ObjectId(hostelId) } }
+    );
 
-    res
-      .status(200)
-      .json({ success: true, message: "Removed from interested list" });
+    res.status(200).json({ success: true, message: "Removed from interested list" });
   } catch (err) {
-    console.error("Error removing interested hostel:", err);
+    logger.error("Error removing interested hostel: " + err.message);
     res.status(500).json({ message: "Failed to remove from interested list." });
   }
 };
 
-// Clear all interested hostels
 exports.clearInterestedHostels = async (req, res) => {
   try {
     const userId = req.user.id;
-
-    await User.findByIdAndUpdate(userId, {
-      $set: { interestedHostels: [] },
-    });
-
-    res
-      .status(200)
-      .json({ success: true, message: "Cleared all interested hostels" });
+    // Phase 1: interestedHostels on Student, not User
+    await Student.findOneAndUpdate(
+      { user: userId },
+      { $set: { interestedHostels: [] } }
+    );
+    res.status(200).json({ success: true, message: "Cleared all interested hostels" });
   } catch (err) {
-    console.error("Error clearing interested hostels:", err);
+    logger.error("Error clearing interested hostels: " + err.message);
     res.status(500).json({ message: "Failed to clear interested hostels." });
   }
 };
 
 // ==================== RECENTLY VIEWED ====================
 
-// Add to recently viewed
 exports.addToRecentlyViewed = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -540,52 +520,44 @@ exports.addToRecentlyViewed = async (req, res) => {
       return res.status(400).json({ message: "Hostel ID is required" });
     }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    // Phase 1: recentlyViewed moved from User → Student
+    const student = await Student.findOne({ user: userId });
+    if (!student) {
+      return res.status(404).json({ message: "Student profile not found" });
     }
 
-    // Initialize if undefined
-    if (!user.recentlyViewed) {
-      user.recentlyViewed = [];
-    }
+    if (!student.recentlyViewed) student.recentlyViewed = [];
 
-    // Remove existing entry for this hostel to bring it to top
-    user.recentlyViewed = user.recentlyViewed.filter(
-      (item) => item.hostel.toString() !== hostelId,
+    // Remove duplicate if already in list
+    student.recentlyViewed = student.recentlyViewed.filter(
+      (item) => item.hostel.toString() !== hostelId
     );
 
-    // Add to beginning
-    user.recentlyViewed.unshift({
-      hostel: hostelId,
-      viewedAt: new Date(),
-    });
+    student.recentlyViewed.unshift({ hostel: hostelId, viewedAt: new Date() });
 
-    // Limit to 10 items
-    if (user.recentlyViewed.length > 10) {
-      user.recentlyViewed = user.recentlyViewed.slice(0, 10);
+    if (student.recentlyViewed.length > 10) {
+      student.recentlyViewed = student.recentlyViewed.slice(0, 10);
     }
 
-    await user.save();
+    await student.save();
     res.status(200).json({ success: true, message: "Added to view history" });
   } catch (err) {
-    console.error("Error adding to recently viewed:", err);
+    logger.error("Error adding to recently viewed: " + err.message);
     res.status(500).json({ message: "Failed to update view history." });
   }
 };
 
-// Get recently viewed hostels
 exports.getRecentlyViewed = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId).populate("recentlyViewed.hostel");
+    // Phase 1: recentlyViewed on Student, not User
+    const student = await Student.findOne({ user: userId }).populate("recentlyViewed.hostel");
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!student) {
+      return res.status(200).json({ success: true, data: [] });
     }
 
-    // Filter out null hostels (in case they were deleted)
-    const history = user.recentlyViewed
+    const history = (student.recentlyViewed || [])
       .filter((item) => item.hostel)
       .map((item) => {
         const h = item.hostel.toObject();
@@ -596,49 +568,40 @@ exports.getRecentlyViewed = async (req, res) => {
 
     res.status(200).json({ success: true, data: history });
   } catch (err) {
-    console.error("Error fetching view history:", err);
+    logger.error("Error fetching view history: " + err.message);
     res.status(500).json({ message: "Failed to fetch view history." });
   }
 };
 
-// Clear all recently viewed
 exports.clearRecentlyViewed = async (req, res) => {
   try {
     const userId = req.user.id;
-
-    await User.findByIdAndUpdate(userId, {
-      $set: { recentlyViewed: [] },
-    });
-
+    // Phase 1: recentlyViewed on Student, not User
+    await Student.findOneAndUpdate(
+      { user: userId },
+      { $set: { recentlyViewed: [] } }
+    );
     res.status(200).json({ success: true, message: "Cleared view history" });
   } catch (err) {
-    console.error("Error clearing view history:", err);
+    logger.error("Error clearing view history: " + err.message);
     res.status(500).json({ message: "Failed to clear view history." });
   }
 };
 
-// Remove specific hostel from recently viewed
 exports.removeFromRecentlyViewed = async (req, res) => {
   try {
     const userId = req.user.id;
     const { hostelId } = req.params;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Remove the specific hostel from recentlyViewed array
-    user.recentlyViewed = user.recentlyViewed.filter(
-      (item) => item.hostel.toString() !== hostelId,
+    // Phase 1: recentlyViewed on Student, not User
+    await Student.findOneAndUpdate(
+      { user: userId },
+      { $pull: { recentlyViewed: { hostel: new mongoose.Types.ObjectId(hostelId) } } }
     );
 
-    await user.save();
-    res
-      .status(200)
-      .json({ success: true, message: "Removed from view history" });
+    res.status(200).json({ success: true, message: "Removed from view history" });
   } catch (err) {
-    console.error("Error removing from view history:", err);
+    logger.error("Error removing from view history: " + err.message);
     res.status(500).json({ message: "Failed to remove from view history." });
   }
 };

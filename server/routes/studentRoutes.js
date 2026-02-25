@@ -36,6 +36,7 @@ router.get(
 );
 
 const bookingController = require("../controllers/bookingController");
+const { createBookingRules, validate } = require("../middleware/validators/bookingValidators");
 
 // ✅ NEW: Student routes
 router.get(
@@ -62,6 +63,8 @@ router.post(
   "/booking-request",
   requireAuth,
   requireStudent,
+  createBookingRules,
+  validate,
   bookingController.createBookingRequest,
 );
 router.get(

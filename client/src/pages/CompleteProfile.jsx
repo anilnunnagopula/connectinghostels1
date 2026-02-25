@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../apiConfig";
 import { useAuth } from "../context/AuthContext";
 
 const CompleteProfile = () => {
@@ -27,8 +27,8 @@ const CompleteProfile = () => {
 
     try {
       const tempToken = localStorage.getItem("tempToken");
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/auth/complete-profile`,
+      const res = await api.post(
+        `/api/auth/complete-profile`,
         { role, phone, hostelName },
         { headers: { Authorization: `Bearer ${tempToken}` } }
       );
@@ -45,8 +45,8 @@ const CompleteProfile = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900 px-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8 w-full max-w-md">
         <h2 className="text-2xl font-bold text-center mb-6 text-blue-700 dark:text-white">
           Complete Your Profile
         </h2>
@@ -68,7 +68,7 @@ const CompleteProfile = () => {
                 className={`px-4 py-2 rounded-md text-sm font-semibold transition ${
                   role === r
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
+                    : "bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white"
                 }`}
               >
                 {r === "student" ? "Student" : "Hostel Owner"}
@@ -77,14 +77,14 @@ const CompleteProfile = () => {
           </div>
 
           <div>
-            <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
+            <label className="block mb-1 text-sm text-gray-700 dark:text-slate-300">
               Phone Number
             </label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-slate-700 dark:text-white"
               placeholder="10-digit mobile number"
               required
             />
@@ -92,14 +92,14 @@ const CompleteProfile = () => {
 
           {role === "owner" && (
             <div>
-              <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
+              <label className="block mb-1 text-sm text-gray-700 dark:text-slate-300">
                 Hostel Name
               </label>
               <input
                 type="text"
                 value={hostelName}
                 onChange={(e) => setHostelName(e.target.value)}
-                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-slate-700 dark:text-white"
                 placeholder="Enter your hostel name"
                 required
               />

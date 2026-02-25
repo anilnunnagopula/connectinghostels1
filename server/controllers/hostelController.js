@@ -1,7 +1,21 @@
 const Hostel = require("../models/Hostel");
+const Room = require("../models/Room");
 const { getFilePath } = require("../storage/storageAdapter");
 const { invalidateCache } = require("../middleware/cache");
 const logger = require("../middleware/logger");
+
+// Build room docs for one floor (used in auto-generation on hostel create)
+function buildFloorRooms(hostelId, floorNumber, prefix, count, capacity) {
+  return Array.from({ length: count }, (_, i) => ({
+    hostel: hostelId,
+    floor: floorNumber,
+    roomNumber: `${prefix}${String(i + 1).padStart(2, "0")}`,
+    capacity: capacity || 2,
+    status: "available",
+    currentOccupants: [],
+    occupancyCount: 0,
+  }));
+}
 
 // ================= OWNER CONTROLLERS =================
 
@@ -13,33 +27,66 @@ exports.addHostel = async (req, res) => {
       : [];
 
   const totalRooms = Number(req.body.totalRooms);
+  const numFloors = Math.max(1, Number(req.body.floors) || 1);
+  const roomsPerFloor = Math.ceil(totalRooms / numFloors);
 
-  if (isNaN(totalRooms)) {
-    return res.status(400).json({ message: "totalRooms must be a number" });
+  if (isNaN(totalRooms) || totalRooms < 1) {
+    return res.status(400).json({ message: "totalRooms must be a positive number" });
   }
+
+  const lat = parseFloat(req.body.lat);
+  const lng = parseFloat(req.body.lng);
+
+  // Build floor config for auto-generation
+  const floorConfig = Array.from({ length: numFloors }, (_, i) => {
+    const floorNum = i + 1;
+    // Rooms on last floor = remainder if totalRooms not evenly divisible
+    const count = floorNum === numFloors ? totalRooms - roomsPerFloor * (numFloors - 1) : roomsPerFloor;
+    return {
+      floorNumber: floorNum,
+      label: floorNum === 1 && numFloors > 1 ? "Ground Floor" : `Floor ${floorNum}`,
+      prefix: String(floorNum),
+      roomCount: count,
+    };
+  });
 
   const hostel = new Hostel({
     ownerId: req.user.id,
     name: req.body.name,
     address: req.body.address,
     locality: req.body.locality,
-    type: req.body.category,
-    totalRooms: totalRooms,
+    type: req.body.type,
+    floors: numFloors,
+    totalRooms,
     availableRooms: totalRooms,
     pricePerMonth: Number(req.body.pricePerMonth),
     amenities: req.body.amenities ? req.body.amenities.split(",") : [],
     description: req.body.description,
     contactNumber: req.body.contactNumber,
+    coordinates: (!isNaN(lat) && !isNaN(lng)) ? { lat, lng } : undefined,
     images,
-    isActive: true,
+    floorConfig,
+    isActive: false,
   });
 
   await hostel.save();
 
-  // Bust public hostel listing cache so new hostel appears immediately
-  await invalidateCache("/api/hostels*");
+  // Auto-generate rooms
+  const allRooms = [];
+  for (const fc of floorConfig) {
+    const rooms = buildFloorRooms(hostel._id, fc.floorNumber, fc.prefix, fc.roomCount, 2);
+    allRooms.push(...rooms);
+  }
 
-  res.status(201).json({ message: "Hostel added successfully", hostel });
+  if (allRooms.length > 0) {
+    await Room.insertMany(allRooms);
+  }
+
+  res.status(201).json({
+    message: "Hostel submitted for review. It will go live once approved by an admin.",
+    hostel,
+    roomsGenerated: allRooms.length,
+  });
 };
 
 // GET OWNER HOSTELS
@@ -63,6 +110,30 @@ exports.getOwnerHostelById = async (req, res) => {
   }
 
   res.status(200).json({ hostel });
+};
+
+// UPDATE HOSTEL (OWNER)
+exports.updateHostel = async (req, res) => {
+  const hostel = await Hostel.findOne({
+    _id: req.params.id,
+    ownerId: req.user.id,
+  });
+
+  if (!hostel) {
+    return res.status(404).json({ message: "Hostel not found or unauthorized" });
+  }
+
+  const allowed = ["name", "address", "locality", "contactNumber", "description", "pricePerMonth", "amenities"];
+  allowed.forEach((field) => {
+    if (req.body[field] !== undefined) {
+      hostel[field] = req.body[field];
+    }
+  });
+
+  await hostel.save();
+  await invalidateCache("/api/hostels*");
+
+  res.json({ message: "Hostel updated", hostel });
 };
 
 // ================= PUBLIC CONTROLLERS =================

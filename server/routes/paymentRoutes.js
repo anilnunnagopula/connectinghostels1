@@ -1,6 +1,5 @@
 /**
- * Payment Routes - SIMPLE VERSION
- * Only 3 routes: create order, verify payment, get history
+ * Payment Routes
  */
 
 const express = require("express");
@@ -46,5 +45,12 @@ router.get(
   requireStudent,
   paymentController.getMyPayments,
 );
+
+/**
+ * @route   POST /api/payments/webhook
+ * @desc    Handle Razorpay webhook events (no auth — verified via HMAC signature)
+ * @access  Public
+ */
+router.post("/webhook", paymentController.handleWebhook);
 
 module.exports = router;

@@ -67,4 +67,7 @@ const complaintSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+complaintSchema.index({ owner: 1, createdAt: -1 });
+complaintSchema.index({ student: 1, createdAt: -1 });
+
 module.exports = mongoose.model("Complaint", complaintSchema);

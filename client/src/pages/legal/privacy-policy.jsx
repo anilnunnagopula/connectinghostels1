@@ -9,12 +9,12 @@ const PrivacyPolicy = () => {
     // Changed base background to a lighter color for light mode,
     // and kept dark mode styles with 'dark:' prefix.
     // The outer div in App.jsx should handle the overall page background.
-    <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl  p-8 mt-10 md:p-12 text-gray-800 dark:text-gray-200">
+    <div className="max-w-5xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl  p-8 mt-10 md:p-12 text-gray-800 dark:text-slate-200">
       <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
         ConnectingHostels Privacy Policy
       </h1>
 
-      <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+      <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
         At <strong>ConnectingHostels</strong>, we are deeply committed to
         protecting your privacy and personal data. This Privacy Policy explains
         in detail how we collect, use, process, store, and disclose information
@@ -24,10 +24,10 @@ const PrivacyPolicy = () => {
         this policy.
       </p>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         1. Information We Collect
       </h2>
-      <p className="mb-4 text-gray-700 dark:text-gray-300">
+      <p className="mb-4 text-gray-700 dark:text-slate-300">
         We collect various types of information to provide and improve our
         services. This includes:
       </p>
@@ -36,7 +36,7 @@ const PrivacyPolicy = () => {
           <strong className="text-blue-600 dark:text-blue-400">
             1.1. Student Information:
           </strong>
-          <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+          <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
             <li>
               <strong>Personal Identifiers:</strong> Full Name, Email Address,
               Mobile Number.
@@ -67,7 +67,7 @@ const PrivacyPolicy = () => {
           <strong className="text-blue-600 dark:text-blue-400">
             1.2. Hostel Owner Information:
           </strong>
-          <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+          <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
             <li>
               <strong>Personal Identifiers:</strong> Name of Owner/Manager,
               Contact Email, Mobile Number.
@@ -99,7 +99,7 @@ const PrivacyPolicy = () => {
           <strong className="text-blue-600 dark:text-blue-400">
             1.3. Automatically Collected Information:
           </strong>
-          <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-gray-300">
+          <ul className="list-circle pl-6 mt-1 space-y-1 text-gray-700 dark:text-slate-300">
             <li>
               <strong>Location Data:</strong> With your explicit consent, we may
               access your device's GPS data, IP address, or Wi-Fi hotspots to
@@ -129,10 +129,10 @@ const PrivacyPolicy = () => {
         </li>
       </ul>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         2. How We Use Your Data
       </h2>
-      <p className="mb-4 text-gray-700 dark:text-gray-300">
+      <p className="mb-4 text-gray-700 dark:text-slate-300">
         Your information is primarily used to provide, maintain, and improve
         ConnectingHostels. Specific uses include:
       </p>
@@ -192,10 +192,10 @@ const PrivacyPolicy = () => {
         </li>
       </ul>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         3. How We Share and Disclose Your Data
       </h2>
-      <p className="mb-4 text-gray-700 dark:text-gray-300">
+      <p className="mb-4 text-gray-700 dark:text-slate-300">
         We are committed to maintaining your trust, and we do{" "}
         <strong className="text-red-600 dark:text-red-400">NOT</strong> sell
         your personal data to third parties. We only share and disclose your
@@ -253,10 +253,10 @@ const PrivacyPolicy = () => {
         </li>
       </ul>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         4. Data Retention
       </h2>
-      <p className="mb-6 text-gray-700 dark:text-gray-300">
+      <p className="mb-6 text-gray-700 dark:text-slate-300">
         We retain your personal information only for as long as necessary to
         fulfill the purposes for which it was collected, including for the
         purposes of satisfying any legal, accounting, or reporting requirements.
@@ -283,10 +283,10 @@ const PrivacyPolicy = () => {
         </li>
       </ul>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         5. Data Security
       </h2>
-      <p className="mb-6 text-gray-700 dark:text-gray-300">
+      <p className="mb-6 text-gray-700 dark:text-slate-300">
         We implement robust security measures designed to protect your personal
         data from unauthorized access, alteration, disclosure, or destruction.
         These measures include:
@@ -321,10 +321,10 @@ const PrivacyPolicy = () => {
         </li>
       </ul>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         6. Cookies and Tracking Technologies
       </h2>
-      <p className="mb-6 text-gray-700 dark:text-gray-300">
+      <p className="mb-6 text-gray-700 dark:text-slate-300">
         We use cookies and similar tracking technologies to track the activity
         on our service and hold certain information. Cookies are files with a
         small amount of data that are sent to your browser from a website and
@@ -356,10 +356,10 @@ const PrivacyPolicy = () => {
         </li>
       </ul>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         7. Your Data Rights
       </h2>
-      <p className="mb-4 text-gray-700 dark:text-gray-300">
+      <p className="mb-4 text-gray-700 dark:text-slate-300">
         You have significant rights regarding your personal data. We are
         committed to enabling you to exercise these rights:
       </p>
@@ -416,10 +416,10 @@ const PrivacyPolicy = () => {
         </li>
       </ul>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         8. Children's Privacy
       </h2>
-      <p className="mb-6 text-gray-700 dark:text-gray-300">
+      <p className="mb-6 text-gray-700 dark:text-slate-300">
         Our services are not intended for individuals under the age of 18
         ("Children"). We do not knowingly collect personally identifiable
         information from anyone under the age of 18. If you are a parent or
@@ -429,10 +429,10 @@ const PrivacyPolicy = () => {
         consent, we take steps to remove that information from our servers.
       </p>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         9. Third-Party Links
       </h2>
-      <p className="mb-6 text-gray-700 dark:text-gray-300">
+      <p className="mb-6 text-gray-700 dark:text-slate-300">
         Our service may contain links to other sites that are not operated by
         us. If you click on a third-party link, you will be directed to that
         third party's site. We strongly advise you to review the Privacy Policy
@@ -441,10 +441,10 @@ const PrivacyPolicy = () => {
         third-party sites or services.
       </p>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         10. Changes to This Privacy Policy
       </h2>
-      <p className="mb-6 text-gray-700 dark:text-gray-300">
+      <p className="mb-6 text-gray-700 dark:text-slate-300">
         We may update our Privacy Policy from time to time to reflect changes in
         our practices or for other operational, legal, or regulatory reasons. We
         will notify you of any changes by posting the new Privacy Policy on this
@@ -454,10 +454,10 @@ const PrivacyPolicy = () => {
         Privacy Policy periodically for any changes.
       </p>
 
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
         11. Contact Us
       </h2>
-      <p className="mb-8 text-gray-700 dark:text-gray-300">
+      <p className="mb-8 text-gray-700 dark:text-slate-300">
         If you have any questions or concerns about this Privacy Policy or our
         data practices, please do not hesitate to contact us:
       </p>
@@ -470,12 +470,12 @@ const PrivacyPolicy = () => {
           anilnunnagopula15@gmail.com
         </a>
       </p>
-      <p className="mb-8 text-gray-700 dark:text-gray-300">
+      <p className="mb-8 text-gray-700 dark:text-slate-300">
         <strong className="text-gray-900 dark:text-white">Address:</strong>{" "}
         ConnectingHostels - Hyderbad-501506, Telanagana, India
       </p>
 
-      <p className="mt-12 text-sm text-gray-500 dark:text-gray-400 italic text-center">
+      <p className="mt-12 text-sm text-gray-500 dark:text-slate-400 italic text-center">
         <strong>Important Note:</strong> This Privacy Policy is for
         informational purposes and outlines our general practices. It should not
         be considered legal advice. We recommend consulting with a legal
@@ -484,7 +484,7 @@ const PrivacyPolicy = () => {
         specific operations and target regions.
       </p>
 
-      <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+      <p className="mt-4 text-sm text-gray-500 dark:text-slate-400 text-center">
         Last updated: July, 2025
       </p>
     </div>

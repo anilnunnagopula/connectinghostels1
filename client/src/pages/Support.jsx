@@ -8,13 +8,13 @@ const Support = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 md:p-12">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 md:p-12">
         <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
           ConnectingHostels Support Center
         </h1>
 
-        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-lg leading-relaxed text-gray-700 dark:text-slate-300">
           Welcome to the <strong>ConnectingHostels</strong> Support Center! We
           understand that navigating a new platform or managing accommodation
           can sometimes present challenges. Our goal is to provide you with all
@@ -23,10 +23,10 @@ const Support = () => {
           owner managing listings, we're here to help.
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           🚀 Quick Solutions to Common Issues
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Find immediate answers to frequently asked questions and direct links
           to relevant policies:
         </p>
@@ -80,14 +80,14 @@ const Support = () => {
           </li>
         </ul>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           📨 Contact Our Support Team
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           If your issue isn't covered above or requires personalized assistance,
           our dedicated support team is ready to help.
         </p>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">Email Us:</strong>{" "}
           For general inquiries, reporting issues, or any assistance, please
           send us an email at:{" "}
@@ -98,28 +98,28 @@ const Support = () => {
             anilnunnagopula15@gmail.com
           </a>
         </p>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">
             What to Include in Your Email:
           </strong>{" "}
           To help us resolve your issue quickly, please include:
         </p>
-        <ul className="list-disc pl-6 space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+        <ul className="list-disc pl-6 space-y-2 mb-6 text-gray-700 dark:text-slate-300">
           <li>Your full name and registered email address.</li>
           <li>A clear description of the problem or question.</li>
           <li>Any relevant booking IDs, hostel names, or dates.</li>
           <li>Screenshots or error messages, if applicable.</li>
         </ul>
-        <p className="mb-6 text-gray-700 dark:text-gray-300">
+        <p className="mb-6 text-gray-700 dark:text-slate-300">
           We are actively working on building a more robust, real-time support
           system and a comprehensive knowledge base to serve you better in the
           near future. Stay tuned for updates! 🔄
         </p>
 
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-10 mb-4 border-b border-gray-200 dark:border-slate-700 pb-2">
           🧠 Self-Help Resources & Policies
         </h2>
-        <p className="mb-4 text-gray-700 dark:text-gray-300">
+        <p className="mb-4 text-gray-700 dark:text-slate-300">
           Familiarize yourself with our operational policies and guidelines to
           ensure a smooth experience and understand your rights and
           responsibilities on the platform.
@@ -191,14 +191,14 @@ const Support = () => {
           </li>
         </ul>
 
-        <p className="mt-10 text-gray-700 dark:text-gray-300">
+        <p className="mt-10 text-gray-700 dark:text-slate-300">
           <strong className="text-gray-900 dark:text-white">
             ConnectingHostels Address:
           </strong>{" "}
           Hyderabad-501506, Telangana, India
         </p>
 
-        <p className="mt-8 text-sm text-gray-500 dark:text-gray-400 text-center">
+        <p className="mt-8 text-sm text-gray-500 dark:text-slate-400 text-center">
           Last updated: July 17, 2025
         </p>
       </div>

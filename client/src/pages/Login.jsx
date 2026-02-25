@@ -1,127 +1,113 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
+import api from "../apiConfig";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 
+const loginSchema = z.object({
+  email: z.string().email("Enter a valid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
 const Login = () => {
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const [role, setRole] = useState("student");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Google OAuth Handler
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(loginSchema) });
+
+
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setLoading(true);
-      setError("");
-
+      setServerError("");
       try {
-        const res = await axios.post(
-          `${process.env.REACT_APP_API_URL}/api/auth/google`,
-          {
-            credential: tokenResponse.access_token,
-          }
-        );
-
+        const res = await api.post("/api/auth/google", {
+          credential: tokenResponse.access_token,
+        });
         const { token, user, requiresProfileCompletion } = res.data;
-
         if (requiresProfileCompletion) {
           localStorage.setItem("tempToken", token);
           localStorage.setItem("tempUser", JSON.stringify(user));
-          navigate("/complete-profile");
+          window.location.href = "/complete-profile";
         } else {
           login(user, token);
         }
       } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            "Google sign-in failed. Please try again."
-        );
+        setServerError(err.response?.data?.message || "Google sign-in failed. Please try again.");
       } finally {
         setLoading(false);
       }
     },
     onError: () => {
-      setError("Google sign-in failed. Please try again.");
+      setServerError("Google sign-in failed. Please try again.");
     },
   });
 
-  const API_URL = `${process.env.REACT_APP_API_URL}/api/auth/login`;
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (!email || !password) {
-      setError("Please fill all fields.");
-      return;
-    }
-
-    // Test mode for quick dashboard access
-    const testCredentials = {
-      student: { email: "student@gmail.com", password: "student" },
-      owner: { email: "owner@gmail.com", password: "owner" },
-    };
-    if (
-      email === testCredentials[role].email &&
-      password === testCredentials[role].password
-    ) {
-      const testUser = {
-        _id: `test_${Date.now()}`,
-        name: email.split("@")[0],
-        email,
-        role,
-      };
-      const testToken = `dummy_test_token_${Date.now()}`;
-      alert(`🔐 Logged in as ${role} (TEST MODE)`);
-      login(testUser, testToken);
-      return;
-    }
-
-    // Real API login logic
+  const onSubmit = async (data) => {
+    setServerError("");
     setLoading(true);
     try {
-      const response = await axios.post(API_URL, { email, password, role });
+      const response = await api.post("/api/auth/login", {
+        email: data.email,
+        password: data.password,
+        role,
+      });
       const { token, user } = response.data;
-
       if (token && user) {
         login(user, token);
       } else {
         throw new Error("Invalid response format from server.");
       }
     } catch (err) {
-      console.error("Login error:", err);
-      const errorMsg =
-        err.response?.data?.message ||
-        "Login failed. Invalid credentials or server error.";
-      setError(errorMsg);
+      setServerError(
+        err.response?.data?.message || "Login failed. Invalid credentials or server error."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-5">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6 text-blue-700 dark:text-white">
-          Sign in to ConnectingHostels
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950 px-4 py-10">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8 w-full max-w-md">
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-600 text-white text-[11px] font-black select-none">
+            CH
+          </span>
+          <span className="text-xl font-bold text-slate-900 dark:text-white">ConnectingHostels</span>
+        </div>
 
-        <div className="flex justify-center gap-4 mb-6 ">
+        <h2 className="text-2xl font-bold text-center mb-1 text-slate-900 dark:text-white">
+          Welcome back
+        </h2>
+        <p className="text-center text-sm text-slate-500 dark:text-slate-400 mb-6">
+          Sign in to your account
+        </p>
+
+        {/* Role Toggle */}
+        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-6 gap-1">
           {["student", "owner"].map((r) => (
             <button
               key={r}
+              type="button"
               onClick={() => setRole(r)}
-              className={`px-4 py-2 rounded-md text-sm font-semibold ${
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                 role === r
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
+                  ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               }`}
             >
               {r === "student" ? "Student" : "Hostel Owner"}
@@ -129,97 +115,109 @@ const Login = () => {
           ))}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-2 bg-red-100 text-red-700 text-sm rounded">
-            {error}
+        {/* Server Error */}
+        {serverError && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-lg">
+            {serverError}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Email */}
           <div>
-            <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
+            <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
               Email
             </label>
             <input
+              {...register("email")}
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               placeholder="you@example.com"
-              required
             />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+            )}
           </div>
+
+          {/* Password */}
           <div>
-            <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Password
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="relative">
               <input
+                {...register("password")}
                 type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 placeholder="Enter password"
-                required
               />
-              <span
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 cursor-pointer text-sm text-gray-500"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? "🙈" : "👁️"}
-              </span>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
-            <Link
-              to="/forgot-password"
-              className="text-sm text-blue-600 hover:underline block text-right mt-1"
-            >
-              Forgot password?
-            </Link>
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
+            )}
           </div>
+
           <button
             type="submit"
             disabled={loading}
-            className={`w-full ${
-              loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
-            } text-white font-semibold py-2 rounded`}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors"
           >
-            {loading ? "Logging in..." : `Login as ${role}`}
-          </button>
-
-          <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
-            Don't have an account?{" "}
-            <Link
-              to="/register"
-              className="text-blue-600 hover:underline font-medium"
-            >
-              Register here
-            </Link>
-          </p>
-          {/* Google Sign-In Button */}
-          <button
-            onClick={() => handleGoogleLogin()}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 text-gray-700 dark:text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 mb-6"
-          >
-            {loading ? (
-              "Signing in..."
-            ) : (
-              <>
-                <img
-                  src="https://www.google.com/favicon.ico"
-                  alt="Google"
-                  className="w-5 h-5"
-                />
-                Continue with Google
-              </>
-            )}
+            {loading ? "Signing in…" : `Sign in as ${role}`}
           </button>
         </form>
 
-        {/* Updated Bottom Text */}
-        <p className="text-center text-sm mt-3 text-gray-600 dark:text-gray-300">
-          By continuing, you agree to our Terms and Privacy Policy
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+          <span className="text-xs text-slate-400">or</span>
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+        </div>
+
+        {/* Google Sign-In */}
+        <button
+          type="button"
+          onClick={() => handleGoogleLogin()}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 text-slate-700 dark:text-slate-200 font-medium py-2.5 rounded-lg transition disabled:opacity-50"
+        >
+          {loading ? (
+            "Signing in…"
+          ) : (
+            <>
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+              Continue with Google
+            </>
+          )}
+        </button>
+
+        <p className="text-center text-sm mt-5 text-slate-500 dark:text-slate-400">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+            Create one
+          </Link>
+        </p>
+
+        <p className="text-center text-xs mt-3 text-slate-400 dark:text-slate-500">
+          By continuing, you agree to our{" "}
+          <Link to="/legal/terms-and-conditions" className="underline hover:text-slate-600 dark:hover:text-slate-300">Terms</Link>
+          {" "}and{" "}
+          <Link to="/legal/privacy-policy" className="underline hover:text-slate-600 dark:hover:text-slate-300">Privacy Policy</Link>
         </p>
       </div>
     </div>

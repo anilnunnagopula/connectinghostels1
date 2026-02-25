@@ -2,10 +2,13 @@ const express = require("express");
 const router = express.Router();
 const hostelController = require("../controllers/hostelController");
 const ownerController = require("../controllers/ownerController");
+const roomController = require("../controllers/roomController");
 const { requireAuth, requireOwner } = require("../middleware/authMiddleware");
 const { getStorage } = require("../storage/storageAdapter");
 const multer = require("multer");
 const path = require("path");
+const { validate } = require("../middleware/validators/authValidators");
+const { createHostelRules, updateHostelRules, hostelIdRules } = require("../middleware/validators/hostelValidators");
 
 const ALLOWED_IMAGE_TYPES = /jpeg|jpg|png|webp/;
 
@@ -52,8 +55,10 @@ router.post(
   requireOwner,
   upload.fields([
     { name: "images", maxCount: 5 },
-    { name: "video", maxCount: 1 },
+    { name: "video",  maxCount: 1 },
   ]),
+  createHostelRules,
+  validate,
   hostelController.addHostel,
 );
 
@@ -69,6 +74,38 @@ router.get(
   requireAuth,
   requireOwner,
   hostelController.getOwnerHostelById,
+);
+
+router.put(
+  "/:id",
+  requireAuth,
+  requireOwner,
+  hostelIdRules,
+  updateHostelRules,
+  validate,
+  hostelController.updateHostel,
+);
+
+// ========== FLOOR + ROOM GENERATION ROUTES ==========
+router.post(
+  "/:hostelId/generate-rooms",
+  requireAuth,
+  requireOwner,
+  roomController.generateRooms,
+);
+
+router.post(
+  "/:hostelId/floors",
+  requireAuth,
+  requireOwner,
+  roomController.addFloor,
+);
+
+router.delete(
+  "/:hostelId/floors/:floorNumber",
+  requireAuth,
+  requireOwner,
+  roomController.deleteFloor,
 );
 
 module.exports = router;

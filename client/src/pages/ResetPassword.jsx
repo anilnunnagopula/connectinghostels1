@@ -1,7 +1,7 @@
 // src/pages/auth/ResetPassword.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../apiConfig";
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -20,25 +20,24 @@ const ResetPassword = () => {
 
   // Verify token on component mount
   useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        await api.get(
+          `/api/auth/verify-reset-token/${token}`,
+        );
+        setTokenValid(true);
+      } catch (error) {
+        setMessage({
+          type: "error",
+          text: error.response?.data?.message || "Invalid or expired reset link",
+        });
+        setTokenValid(false);
+      } finally {
+        setVerifying(false);
+      }
+    };
     verifyToken();
   }, [token]);
-
-  const verifyToken = async () => {
-    try {
-      await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/auth/verify-reset-token/${token}`,
-      );
-      setTokenValid(true);
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.response?.data?.message || "Invalid or expired reset link",
-      });
-      setTokenValid(false);
-    } finally {
-      setVerifying(false);
-    }
-  };
 
   const checkPasswordStrength = (password) => {
     if (password.length === 0) return "";
@@ -93,8 +92,8 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/auth/reset-password/${token}`,
+      const response = await api.post(
+        `/api/auth/reset-password/${token}`,
         { password, confirmPassword },
       );
 

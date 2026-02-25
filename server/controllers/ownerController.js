@@ -30,14 +30,14 @@ exports.getOwnerDashboardMetrics = async (req, res) => {
     const roomsFilled = totalRooms - availableRooms;
 
     // ========== Students Count ==========
-    // Make sure Student model uses 'ownerId' field as well
-    const totalStudents = await Student.countDocuments({ ownerId });
+    // Student schema uses 'owner' field (ObjectId ref to User), not 'ownerId'
+    const totalStudents = await Student.countDocuments({ owner: ownerId });
 
     // ========== Complaints Count ==========
-    // Get pending complaints (adjust field name based on your schema)
+    // Complaint schema uses 'owner' field (ObjectId ref to User), not 'ownerId'
     const complaintsCount = await Complaint.countDocuments({
-      ownerId,
-      status: "Pending", // or use: { $in: ['Pending', 'In-Progress'] }
+      owner: ownerId,
+      status: "Pending",
     });
 
     // ========== BONUS: Additional Metrics ==========
@@ -56,7 +56,7 @@ exports.getOwnerDashboardMetrics = async (req, res) => {
     const hostelsByType = {
       Boys: hostels.filter((h) => h.type === "Boys").length,
       Girls: hostels.filter((h) => h.type === "Girls").length,
-      "Co-Live": hostels.filter((h) => h.type === "Co-Live").length,
+      "Co-ed": hostels.filter((h) => h.type === "Co-ed").length,
     };
 
     // Hostel breakdown by locality
@@ -65,16 +65,13 @@ exports.getOwnerDashboardMetrics = async (req, res) => {
       return acc;
     }, {});
 
-    // ========== Pending Requests (if you have BookingRequest model) ==========
-    // Uncomment when you have BookingRequest model
-    /*
+    // ========== Pending Requests ==========
+    // BookingRequest schema uses 'owner' field (ObjectId ref to User)
     const BookingRequest = require("../models/BookingRequest");
     const pendingRequestsCount = await BookingRequest.countDocuments({
-      ownerId,
-      status: "pending"
+      owner: ownerId,
+      status: "Pending",
     });
-    */
-    const pendingRequestsCount = 0; // Placeholder
 
     // ========== RESPONSE ==========
     res.status(200).json({
@@ -166,13 +163,15 @@ exports.getHostelQuickStats = async (req, res) => {
         : 0;
 
     // Get student count for this hostel
+    // Student schema uses 'currentHostel' to track placement, not 'hostelId'
     const studentsCount = await Student.countDocuments({
-      hostelId,
+      currentHostel: hostelId,
     });
 
     // Get complaints for this hostel
+    // Complaint schema uses 'hostel' field (ObjectId ref to Hostel), not 'hostelId'
     const complaintsCount = await Complaint.countDocuments({
-      hostelId,
+      hostel: hostelId,
       status: "Pending",
     });
 

@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(xargs:*)",
+      "Bash(npm test:*)",
+      "Bash(CI=false npm run build)"
     ]
   }
 }

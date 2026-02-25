@@ -1,10 +1,9 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../apiConfig";
 
 const AuthContext = createContext(null);
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -29,7 +28,7 @@ export const AuthProvider = ({ children }) => {
 
       // No cached user — check if a valid cookie session exists
       try {
-        const { data } = await axios.get(`${API_BASE}/api/auth/profile`, {
+        const { data } = await api.get("/api/auth/profile", {
           withCredentials: true,
         });
         setUser(data);
@@ -66,7 +65,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       // Clear the httpOnly cookie server-side
-      await axios.post(`${API_BASE}/api/auth/logout`, {}, { withCredentials: true });
+      await api.post("/api/auth/logout", {}, { withCredentials: true });
     } catch {
       // Continue logout even if the server call fails
     }
